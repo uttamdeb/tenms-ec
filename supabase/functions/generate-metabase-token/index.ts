@@ -22,6 +22,10 @@ serve(async (req) => {
       throw new Error('Metabase secret key not configured');
     }
 
+    // Parse request body to get theme
+    const { theme } = await req.json().catch(() => ({ theme: 'dark' }));
+    const isDarkMode = theme === 'dark';
+
     // Create the key for signing
     const encoder = new TextEncoder();
     const keyData = encoder.encode(secretKey);
@@ -44,9 +48,11 @@ serve(async (req) => {
     // Sign the token
     const token = await create({ alg: "HS256", typ: "JWT" }, payload, key);
     
-    const iframeUrl = `${METABASE_SITE_URL}/embed/dashboard/${token}#theme=night&bordered=true&titled=true`;
+    // Generate iframe URL with appropriate theme parameter
+    const themeParam = isDarkMode ? 'theme=night&' : '';
+    const iframeUrl = `${METABASE_SITE_URL}/embed/dashboard/${token}#${themeParam}bordered=true&titled=true`;
 
-    console.log('Generated Metabase embed URL successfully');
+    console.log(`Generated Metabase embed URL successfully (theme: ${theme})`);
 
     return new Response(
       JSON.stringify({ iframeUrl }),

@@ -3,18 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 const MetabaseDashboard = () => {
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { theme } = useTheme();
 
   const fetchEmbedUrl = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-metabase-token');
+      const { data, error } = await supabase.functions.invoke('generate-metabase-token', {
+        body: { theme: theme || 'dark' }
+      });
       
       if (error) {
         console.error('Error fetching embed URL:', error);
@@ -33,16 +37,23 @@ const MetabaseDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
-    fetchEmbedUrl();
+    // Only fetch if theme is defined (wait for next-themes to mount)
+    if (theme) {
+      fetchEmbedUrl();
+    }
     
     // Refresh token every 8 minutes (before 10 min expiry)
-    const refreshInterval = setInterval(fetchEmbedUrl, 8 * 60 * 1000);
+    const refreshInterval = setInterval(() => {
+      if (theme) {
+        fetchEmbedUrl();
+      }
+    }, 8 * 60 * 1000);
     
     return () => clearInterval(refreshInterval);
-  }, [fetchEmbedUrl]);
+  }, [fetchEmbedUrl, theme]);
 
   if (loading) {
     return (
