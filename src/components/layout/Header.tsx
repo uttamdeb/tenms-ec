@@ -23,9 +23,11 @@ const Header = () => {
     <header className="w-full bg-card border-b border-border px-4 py-3 sm:px-6">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">10</span>
-          </div>
+          <img 
+            src="https://placehold.co/40x40/png?text=Logo" 
+            alt="Logo" 
+            className="w-10 h-10 rounded-lg object-cover"
+          />
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-foreground">
               10 Minute School
