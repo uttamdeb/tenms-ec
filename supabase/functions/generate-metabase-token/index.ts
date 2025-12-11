@@ -23,7 +23,7 @@ serve(async (req) => {
     }
 
     // Parse request body to get theme
-    const { theme } = await req.json().catch(() => ({ theme: 'dark' }));
+    const { theme } = await req.json().catch(() => ({ theme: 'light' }));
     const isDarkMode = theme === 'dark';
 
     // Create the key for signing

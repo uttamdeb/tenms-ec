@@ -16,8 +16,9 @@ const MetabaseDashboard = () => {
     setError(null);
     
     try {
+      console.log('Fetching embed URL with theme:', theme);
       const { data, error } = await supabase.functions.invoke('generate-metabase-token', {
-        body: { theme: theme || 'dark' }
+        body: { theme: theme || 'light' }
       });
       
       if (error) {
@@ -26,6 +27,7 @@ const MetabaseDashboard = () => {
       }
       
       if (data?.iframeUrl) {
+        console.log('Received iframe URL:', data.iframeUrl);
         setIframeUrl(data.iframeUrl);
       } else {
         throw new Error('No URL received from server');
