@@ -20,8 +20,8 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full bg-card border-b border-border px-4 py-3 sm:px-6">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
+    <header className="w-full bg-card border-b border-border py-3">
+      <div className="flex items-center justify-between w-full px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <img 
             src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_12%2C30%2C40%C3%A2%C2%80%C2%AFPM_1765434652652.png"
