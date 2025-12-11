@@ -25,15 +25,9 @@ const Header = () => {
         <div className="flex items-center gap-3">
           <img 
             src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_11%2C20%2C12%C3%A2%C2%80%C2%AFAM_1765430485151.png" 
-            alt="Logo" 
+            alt="10 Minute School English Centre" 
             className="h-10 w-auto rounded-lg object-contain"
           />
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-foreground">
-              10 Minute School
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">English Centre</p>
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
