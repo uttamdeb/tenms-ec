@@ -24,7 +24,7 @@ const Header = () => {
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
           <img 
-            src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_11%2C20%2C12%C3%A2%C2%80%C2%AFAM_1765430485151.png" 
+            src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_12%2C30%2C40%C3%A2%C2%80%C2%AFPM_1765434652652.png"
             alt="10 Minute School English Centre" 
             className="h-10 w-auto object-contain"
           />
