@@ -26,7 +26,7 @@ const Header = () => {
           <img 
             src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_11%2C20%2C12%C3%A2%C2%80%C2%AFAM_1765430485151.png" 
             alt="Logo" 
-            className="w-10 h-10 rounded-lg object-cover"
+            className="h-10 w-auto rounded-lg object-contain"
           />
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-foreground">
