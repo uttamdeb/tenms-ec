@@ -115,7 +115,7 @@ const Auth = () => {
             <img 
               src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_11%2C20%2C12%C3%A2%C2%80%C2%AFAM_1765430485151.png" 
               alt="10 Minute School English Centre" 
-              className="h-16 w-auto mx-auto rounded-lg object-contain"
+              className="h-16 w-auto mx-auto object-contain"
             />
           </div>
 
