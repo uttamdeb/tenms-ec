@@ -112,13 +112,11 @@ const Auth = () => {
         <div className="w-full max-w-md space-y-6">
           {/* Brand Header */}
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 rounded-xl bg-primary mx-auto flex items-center justify-center shadow-lg">
-              <span className="text-primary-foreground font-bold text-2xl">10</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              10 Minute School
-            </h1>
-            <p className="text-lg text-primary font-semibold">English Centre</p>
+            <img 
+              src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_11%2C20%2C12%C3%A2%C2%80%C2%AFAM_1765430485151.png" 
+              alt="10 Minute School English Centre" 
+              className="h-16 w-auto mx-auto rounded-lg object-contain"
+            />
           </div>
 
           {/* Auth Card */}
