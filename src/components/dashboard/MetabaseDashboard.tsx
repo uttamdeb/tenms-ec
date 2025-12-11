@@ -87,6 +87,7 @@ const MetabaseDashboard = () => {
   return (
     <div className="flex-1 w-full bg-background">
       <iframe
+        key={iframeUrl}
         src={iframeUrl || ''}
         className="w-full h-full border-0"
         title="10 Minute School Dashboard"
