@@ -42,7 +42,6 @@ serve(async (req) => {
       resource: { dashboard: 332 },
       params: params || {},
       exp: Math.round(Date.now() / 1000) + (10 * 60), // 10 minute expiration
-      iat: Math.round(Date.now() / 1000),
     };
 
     // Sign the token
