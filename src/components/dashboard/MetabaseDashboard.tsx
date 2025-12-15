@@ -21,7 +21,7 @@ const MetabaseDashboard = () => {
       // Pass params to filter the dashboard
       // Leave empty object to show all data, or specify filters:
       // Example: { "branch_name": ["Uttara"] }
-      const params = {"branch_name": ["Uttara"]};
+      const params = {};
       
       console.log('Sending request with params:', params);
       
