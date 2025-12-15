@@ -47,9 +47,8 @@ serve(async (req) => {
     // Sign the token
     const token = await create({ alg: "HS256", typ: "JWT" }, payload, key);
     
-    // Generate iframe URL with proper theme
-    const themeParam = isDarkMode ? 'theme=night&' : '';
-    const iframeUrl = `${METABASE_SITE_URL}/embed/dashboard/${token}#${themeParam}bordered=true&titled=true`;
+    // Generate iframe URL without theme for now (testing)
+    const iframeUrl = `${METABASE_SITE_URL}/embed/dashboard/${token}#bordered=true&titled=true`;
 
     console.log(`Generated Metabase embed URL successfully (${isDarkMode ? 'dark' : 'light'} mode), params:`, params);
 
