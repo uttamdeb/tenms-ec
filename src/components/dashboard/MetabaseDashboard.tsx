@@ -18,12 +18,12 @@ const MetabaseDashboard = () => {
     try {
       console.log('Fetching embed URL with theme:', theme);
       
-      // Example: pass params to filter the dashboard
-      // Uncomment and modify the params object to add filters
-      const params = {
-        "branch_name": ["Uttara"],
-        // "date_range": ["2025-01-01", "2025-12-31"],
-      };
+      // Pass params to filter the dashboard
+      // Leave empty object to show all data, or specify filters:
+      // Example: { "branch_name": ["Uttara"] }
+      const params = {};
+      
+      console.log('Sending request with params:', params);
       
       const { data, error } = await supabase.functions.invoke('generate-metabase-token', {
         body: { 
