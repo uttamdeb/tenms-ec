@@ -22,8 +22,8 @@ serve(async (req) => {
       throw new Error('Metabase secret key not configured');
     }
 
-    // Parse request body to get theme
-    const { theme } = await req.json().catch(() => ({ theme: 'light' }));
+    // Parse request body to get theme and params
+    const { theme, params } = await req.json().catch(() => ({ theme: 'light', params: {} }));
     const isDarkMode = theme === 'dark';
 
     // Create the key for signing
@@ -37,10 +37,10 @@ serve(async (req) => {
       ["sign", "verify"]
     );
 
-    // Create JWT payload with 10 minute expiration
+    // Create JWT payload with 10 minute expiration and params for dashboard filters
     const payload = {
       resource: { dashboard: 332 },
-      params: {},
+      params: params || {},
       exp: Math.round(Date.now() / 1000) + (10 * 60), // 10 minute expiration
       iat: Math.round(Date.now() / 1000),
     };
@@ -51,7 +51,7 @@ serve(async (req) => {
     // Generate iframe URL - always use light mode (no theme parameter)
     const iframeUrl = `${METABASE_SITE_URL}/embed/dashboard/${token}#bordered=true&titled=true`;
 
-    console.log('Generated Metabase embed URL successfully (light mode)');
+    console.log('Generated Metabase embed URL successfully (light mode), params:', params);
 
     return new Response(
       JSON.stringify({ iframeUrl }),
