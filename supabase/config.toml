@@ -1,1 +1,7 @@
 project_id = "wxwoazvqmdvgghdqzdln"
+
+[functions.chat-with-agent]
+verify_jwt = false
+
+[functions.generate-metabase-token]
+verify_jwt = false
