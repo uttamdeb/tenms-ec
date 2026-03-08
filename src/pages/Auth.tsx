@@ -7,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock, User } from "lucide-react";
 import Footer from "@/components/layout/Footer";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
@@ -64,7 +65,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!email || !password || !fullName.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -81,6 +82,7 @@ const Auth = () => {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
+        data: { full_name: fullName.trim() },
       },
     });
 
@@ -181,6 +183,21 @@ const Auth = () => {
 
                 <TabsContent value="signup">
                   <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-fullname">Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-fullname"
+                          type="text"
+                          placeholder="John Doe"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="pl-10"
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-email">Email</Label>
                       <div className="relative">
