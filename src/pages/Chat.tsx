@@ -124,7 +124,7 @@ const Chat = () => {
         {/* Chat area */}
         <div className="flex-1 flex flex-col min-w-0">
           {messages.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
               <div className="text-center space-y-4">
                 <div className="h-16 w-16 rounded-2xl bg-primary mx-auto flex items-center justify-center">
                   <Bot className="h-9 w-9 text-primary-foreground" />
@@ -133,6 +133,9 @@ const Chat = () => {
                 <p className="text-muted-foreground max-w-md">
                   I'm here to help you explore and analyze your English Centre data. Ask me anything about branches, students, revenue, and more!
                 </p>
+              </div>
+              <div className="mt-8">
+                <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
           ) : (
