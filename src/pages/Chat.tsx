@@ -9,6 +9,8 @@ import SuggestedMessages from "@/components/chat/SuggestedMessages";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import ProfileDropdown from "@/components/profile/ProfileDropdown";
+import { useProfile } from "@/hooks/useProfile";
 import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Bot } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback } from "react";
@@ -19,6 +21,7 @@ const Chat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { profile, updateProfile, uploadAvatar } = useProfile();
 
   const {
     sessions,
@@ -100,6 +103,13 @@ const Chat = () => {
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Dashboard</span>
           </Button>
+          {profile && (
+            <ProfileDropdown
+              profile={profile}
+              onUpdateProfile={updateProfile}
+              onUploadAvatar={uploadAvatar}
+            />
+          )}
         </div>
       </header>
 
@@ -142,7 +152,7 @@ const Chat = () => {
             <ScrollArea className="flex-1">
               <div className="max-w-3xl mx-auto">
                 {messages.map((msg) => (
-                  <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} />
+                  <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} userAvatarUrl={profile?.avatar_url} userInitials={profile?.full_name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U"} />
                 ))}
                 {isLoading && (
                   <div className="flex gap-3 py-4 px-4">
