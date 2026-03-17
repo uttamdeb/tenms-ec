@@ -21,6 +21,7 @@ const Chat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { profile, updateProfile, uploadAvatar } = useProfile();
 
   const {
     sessions,
