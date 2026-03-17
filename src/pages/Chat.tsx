@@ -5,6 +5,7 @@ import { useChat } from "@/hooks/useChat";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
 import ChatInput from "@/components/chat/ChatInput";
+import SuggestedMessages from "@/components/chat/SuggestedMessages";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
