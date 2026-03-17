@@ -94,6 +94,24 @@ export type Database = {
         }
         Relationships: []
       }
+      suggested_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
