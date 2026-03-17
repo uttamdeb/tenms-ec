@@ -1,7 +1,8 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { User, Bot } from "lucide-react";
+import { Bot } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableHeader,
@@ -14,9 +15,11 @@ import {
 interface ChatMessageBubbleProps {
   role: "user" | "assistant";
   content: string;
+  userAvatarUrl?: string | null;
+  userInitials?: string;
 }
 
-const ChatMessageBubble = ({ role, content }: ChatMessageBubbleProps) => {
+const ChatMessageBubble = ({ role, content, userAvatarUrl, userInitials = "U" }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
 
   return (
@@ -59,9 +62,10 @@ const ChatMessageBubble = ({ role, content }: ChatMessageBubbleProps) => {
         )}
       </div>
       {isUser && (
-        <div className="shrink-0 h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
-          <User className="h-5 w-5 text-secondary-foreground" />
-        </div>
+        <Avatar className="shrink-0 h-8 w-8">
+          <AvatarImage src={userAvatarUrl || undefined} />
+          <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">{userInitials}</AvatarFallback>
+        </Avatar>
       )}
     </div>
   );

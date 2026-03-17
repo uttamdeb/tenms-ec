@@ -152,7 +152,7 @@ const Chat = () => {
             <ScrollArea className="flex-1">
               <div className="max-w-3xl mx-auto">
                 {messages.map((msg) => (
-                  <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} />
+                  <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} userAvatarUrl={profile?.avatar_url} userInitials={profile?.full_name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U"} />
                 ))}
                 {isLoading && (
                   <div className="flex gap-3 py-4 px-4">
