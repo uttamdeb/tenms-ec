@@ -1,23 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, MessageSquare } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import ProfileDropdown from "@/components/profile/ProfileDropdown";
+import { useProfile } from "@/hooks/useProfile";
 
 const Header = () => {
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Error signing out");
-      console.error("Logout error:", error);
-    } else {
-      toast.success("Signed out successfully");
-      navigate("/auth");
-    }
-  };
+  const { profile, updateProfile, uploadAvatar } = useProfile();
 
   return (
     <header className="w-full bg-card border-b border-border py-3">
@@ -40,15 +30,13 @@ const Header = () => {
             <span className="hidden sm:inline">Chat with Data Agent</span>
           </Button>
           <ThemeToggle />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </Button>
+          {profile && (
+            <ProfileDropdown
+              profile={profile}
+              onUpdateProfile={updateProfile}
+              onUploadAvatar={uploadAvatar}
+            />
+          )}
         </div>
       </div>
     </header>
