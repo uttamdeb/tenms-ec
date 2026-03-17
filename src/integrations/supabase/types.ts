@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_sql_runs: {
+        Row: {
+          bq_result: string
+          created_at: string
+          executed_sql: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          bq_result: string
+          created_at?: string
+          executed_sql: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          bq_result?: string
+          created_at?: string
+          executed_sql?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_sql_runs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
