@@ -150,7 +150,9 @@ export function useChat() {
 
       if (error) throw error;
 
-      const assistantContent = data?.output || data?.message || data?.response || JSON.stringify(data);
+      // Handle array response from webhook
+      const responseData = Array.isArray(data) ? data[0] : data;
+      const assistantContent = responseData?.output || responseData?.message || responseData?.response || JSON.stringify(responseData);
 
       // Save assistant message
       const { data: assistantMsg, error: assistantErr } = await supabase
@@ -163,6 +165,18 @@ export function useChat() {
         console.error("Failed to save assistant message:", assistantErr);
       } else {
         setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
+
+        // Save SQL run data if present
+        if (responseData?.executed_sql && responseData?.bq_result) {
+          const bqResultStr = typeof responseData.bq_result === 'string' 
+            ? responseData.bq_result 
+            : JSON.stringify(responseData.bq_result);
+          await supabase.from("agent_sql_runs").insert({
+            message_id: (assistantMsg as ChatMessage).id,
+            executed_sql: responseData.executed_sql,
+            bq_result: bqResultStr,
+          });
+        }
       }
     } catch (err) {
       console.error("Error calling agent:", err);
