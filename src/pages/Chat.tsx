@@ -243,7 +243,7 @@ const Chat = () => {
             </ScrollArea>
           )}
 
-          <ChatInput onSend={sendMessage} disabled={isLoading} />
+          <ChatInput onSend={(msg, attachment) => sendMessage(msg, attachment)} disabled={isLoading} />
         </div>
       </div>
     </div>
