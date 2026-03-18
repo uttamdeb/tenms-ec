@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Mail, Lock, User } from "lucide-react";
 import Footer from "@/components/layout/Footer";
 import { runWithViewTransition } from "@/lib/viewTransitions";
+import { lovable } from "@/integrations/lovable/index";
 
 const Auth = () => {
   const navigate = useNavigate();
