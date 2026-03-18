@@ -11,9 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Bot } from "lucide-react";
+import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback } from "react";
+import tentenIcon from "@/assets/tenten-icon.png";
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -85,9 +86,7 @@ const Chat = () => {
             {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
           </Button>
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Bot className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={tentenIcon} alt="EC Data Agent" className="h-8 w-8 rounded-lg object-cover" />
             <div className="hidden sm:block">
               <h1 className="text-sm font-semibold leading-none">EC Data Agent</h1>
               <p className="text-xs text-muted-foreground">Your data assistant</p>
@@ -137,9 +136,7 @@ const Chat = () => {
           {messages.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-4">
               <div className="text-center space-y-4">
-                <div className="h-16 w-16 rounded-2xl bg-primary mx-auto flex items-center justify-center">
-                  <Bot className="h-9 w-9 text-primary-foreground" />
-                </div>
+                <img src={tentenIcon} alt="EC Data Agent" className="h-16 w-16 rounded-2xl object-cover mx-auto" />
                 <h2 className="text-xl font-semibold">Hello! I'm EC Data Agent</h2>
                 <p className="text-muted-foreground max-w-md">
                   I'm here to help you explore and analyze your English Centre data. Ask me anything about branches, students, revenue, and more!
@@ -169,9 +166,7 @@ const Chat = () => {
                 ))}
                 {isLoading && (
                   <div className="flex gap-3 py-4 px-4">
-                    <div className="shrink-0 h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                      <Bot className="h-5 w-5 text-primary-foreground" />
-                    </div>
+                    <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
                     <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span className="text-sm text-muted-foreground">Thinking...</span>

@@ -2,7 +2,7 @@ import ReactMarkdown from "react-markdown";
 import { useState } from "react";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { Bot, Check, Copy, Bug, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Check, Copy, Bug, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import tentenIcon from "@/assets/tenten-icon.png";
 import { toast } from "sonner";
 
 interface ChatMessageBubbleProps {
@@ -142,9 +143,7 @@ const ChatMessageBubble = ({
   return (
     <div className={cn("flex gap-3 py-4 px-4", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <div className="shrink-0 h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <Bot className="h-5 w-5 text-primary-foreground" />
-        </div>
+        <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
       )}
       <div
         className={cn(
