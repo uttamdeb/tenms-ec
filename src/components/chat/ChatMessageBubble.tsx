@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import { Children, isValidElement, useMemo, useState, type ReactNode } from "react";
+import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp } from "lucide-react";
@@ -21,10 +22,13 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import tentenIcon from "@/assets/tenten-icon.png";
 import { toast } from "sonner";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const extractText = (node: ReactNode): string => {
   if (typeof node === "string" || typeof node === "number") {
@@ -147,6 +151,15 @@ const MarkdownTable = ({ children }: { children: ReactNode }) => {
   );
 };
 
+const normalizeMarkdownContent = (value: string) => {
+  return value
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\r\n/g, "\n")
+    .trimEnd();
+};
+
 interface ChatMessageBubbleProps {
   id: string;
   role: "user" | "assistant";
@@ -173,7 +186,7 @@ const ChatMessageBubble = ({
   onFeedbackChange,
 }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
-  const normalizedContent = useMemo(() => content.replace(/\\n/g, "\n"), [content]);
+  const normalizedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
   const [copied, setCopied] = useState(false);
   const [debugCopied, setDebugCopied] = useState(false);
   const [dislikeOpen, setDislikeOpen] = useState(false);
@@ -278,10 +291,54 @@ const ChatMessageBubble = ({
         {isUser ? (
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none [&_table]:my-2 [&_pre]:bg-background/50 [&_pre]:p-3 [&_pre]:rounded-lg [&_code]:text-xs">
+          <div className="prose prose-sm dark:prose-invert max-w-none break-words prose-headings:mb-3 prose-headings:mt-5 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.85em] [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
               components={{
+                h1: ({ children }) => <h1 className="text-2xl font-semibold tracking-tight">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-xl font-semibold tracking-tight">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-lg font-semibold tracking-tight">{children}</h3>,
+                h4: ({ children }) => <h4 className="text-base font-semibold tracking-tight">{children}</h4>,
+                p: ({ children }) => <p className="whitespace-pre-wrap leading-7">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc pl-6">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-6">{children}</ol>,
+                blockquote: ({ children }) => <blockquote>{children}</blockquote>,
+                hr: () => <Separator className="my-5" />,
+                a: ({ children, href }) => (
+                  <a href={href} target="_blank" rel="noreferrer noopener">
+                    {children}
+                  </a>
+                ),
+                code: ({ children, className, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || "");
+                  const codeContent = String(children).replace(/\n$/, "");
+
+                  if (match) {
+                    return (
+                      <SyntaxHighlighter
+                        style={oneDark}
+                        language={match[1]}
+                        PreTag="div"
+                        customStyle={{
+                          margin: 0,
+                          borderRadius: "0.75rem",
+                          background: "transparent",
+                          padding: "1rem",
+                        }}
+                      >
+                        {codeContent}
+                      </SyntaxHighlighter>
+                    );
+                  }
+
+                  return (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                pre: ({ children }) => <pre>{children}</pre>,
                 table: ({ children }) => <MarkdownTable>{children}</MarkdownTable>,
                 thead: ({ children }) => <TableHeader>{children}</TableHeader>,
                 tbody: ({ children }) => <TableBody>{children}</TableBody>,
