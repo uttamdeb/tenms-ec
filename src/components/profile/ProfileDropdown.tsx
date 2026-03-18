@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Settings, LogOut } from "lucide-react";
 import ProfileSettings from "./ProfileSettings";
 import type { Profile } from "@/hooks/useProfile";
+import { runWithViewTransition } from "@/lib/viewTransitions";
 
 interface ProfileDropdownProps {
   profile: Profile;
@@ -31,7 +32,7 @@ const ProfileDropdown = ({ profile, onUpdateProfile, onUploadAvatar }: ProfileDr
       toast.error("Error signing out");
     } else {
       toast.success("Signed out successfully");
-      navigate("/auth");
+      runWithViewTransition(() => navigate("/auth"));
     }
   };
 

@@ -334,7 +334,7 @@ const ChatMessageBubble = memo(({
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out" style={{ animation: "slideInUp 0.3s ease-out" }}>
+    <div className="fluent-enter motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
       <div className={cn("flex gap-3 py-4 px-4", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
@@ -543,6 +543,7 @@ const ChatMessageBubble = memo(({
           <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">{userInitials}</AvatarFallback>
         </Avatar>
       )}
+      </div>
 
       <Dialog open={dislikeOpen} onOpenChange={setDislikeOpen}>
         <DialogContent className="sm:max-w-md">

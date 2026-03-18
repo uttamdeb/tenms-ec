@@ -1,47 +1,51 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/*
+  Fluent motion layer.
+  - Centralizes keyframes/tokens that aren't convenient as Tailwind utilities.
+  - Plays nicely with shadcn/radix `data-state` animations + tailwindcss-animate.
+  - Respects reduced motion.
+*/
+
+:root {
+  /* Durations */
+  --motion-quick: 140ms;
+  --motion-fast: 200ms;
+  --motion-base: 280ms;
+  --motion-slow: 420ms;
+
+  /* Easing */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-quick: 1ms;
+    --motion-fast: 1ms;
+    --motion-base: 1ms;
+    --motion-slow: 1ms;
   }
 }
 
-.card {
-  padding: 2em;
+/* View Transitions (route changes, theme toggle) */
+@supports (view-transition-name: none) {
+  :root {
+    view-transition-name: app-root;
+  }
+
+  ::view-transition-old(app-root),
+  ::view-transition-new(app-root) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--ease-emphasized);
+  }
+
+  /* Prevent weird cross-fades on theme flip in some browsers */
+  ::view-transition-old(app-root) {
+    mix-blend-mode: normal;
+  }
 }
 
-.read-the-docs {
-  color: #888;
-}
-
-/* Fluent animations for UI transitions */
+/* Keyframes */
 @keyframes slideInUp {
   from {
     opacity: 0;
@@ -117,26 +121,41 @@
   }
 }
 
-/* Smooth transitions for all interactive elements */
-.transition-smooth {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
-}
-
-/* Button press animation */
 @keyframes buttonPress {
   0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(0.97);
+    transform: scale(0.985);
   }
   100% {
     transform: scale(1);
   }
 }
 
-button:active {
-  animation: buttonPress 0.2s ease-out;
+/* Utilities (opt-in via className) */
+.transition-smooth {
+  transition-property: transform, opacity, background-color, border-color, color, box-shadow, filter;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-in-out);
+  will-change: transform;
+}
+
+.fluent-enter {
+  animation: slideInUp var(--motion-base) var(--ease-out) both;
+}
+
+.fluent-pop {
+  animation: fadeInScale var(--motion-fast) var(--ease-out) both;
+}
+
+.fluent-pulse {
+  animation: pulse-soft 900ms var(--ease-in-out) infinite;
+}
+
+/* Subtle press feedback across the app (motion-safe) */
+@media (prefers-reduced-motion: no-preference) {
+  button:active {
+    animation: buttonPress var(--motion-quick) var(--ease-out);
+  }
 }

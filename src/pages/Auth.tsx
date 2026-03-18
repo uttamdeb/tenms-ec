@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Mail, Lock, User } from "lucide-react";
 import Footer from "@/components/layout/Footer";
+import { runWithViewTransition } from "@/lib/viewTransitions";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Auth = () => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        runWithViewTransition(() => navigate("/"));
       }
       setCheckingSession(false);
     });
@@ -30,7 +31,7 @@ const Auth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/");
+        runWithViewTransition(() => navigate("/"));
       }
     });
 

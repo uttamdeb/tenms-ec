@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MetabaseDashboard from "@/components/dashboard/MetabaseDashboard";
 import { Loader2 } from "lucide-react";
+import { runWithViewTransition } from "@/lib/viewTransitions";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -14,14 +15,14 @@ const Dashboard = () => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
-        navigate("/auth");
+        runWithViewTransition(() => navigate("/auth"));
       }
     });
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        navigate("/auth");
+        runWithViewTransition(() => navigate("/auth"));
       }
       setLoading(false);
     });

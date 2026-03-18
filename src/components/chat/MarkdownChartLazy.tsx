@@ -79,18 +79,28 @@ const ChartHeader = memo(({ title, description }: { title: string; description: 
 ));
 
 export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
-  if (spec.type === "pie") {
-    const pieConfig: ChartConfig = useMemo(() => ({
+  // Hooks must be unconditional; compute both configs and use the one we need.
+  const pieConfig = useMemo<ChartConfig | null>(() => {
+    if (spec.type !== "pie") return null;
+
+    return {
       [spec.valueKey]: {
         label: spec.options?.valueLabel || spec.valueKey,
         color: "#f59e0b",
       },
-    }), [spec.valueKey, spec.options?.valueLabel]);
+    };
+  }, [spec]);
 
+  const chartConfig = useMemo<ChartConfig | null>(() => {
+    if (spec.type === "pie") return null;
+    return buildChartConfig(spec.series);
+  }, [spec]);
+
+  if (spec.type === "pie") {
     return (
       <div className={CHART_CONTAINER_CLASS}>
         <ChartHeader title={spec.title} description={spec.description} />
-        <ChartContainer config={pieConfig} className="h-[300px] w-full">
+        <ChartContainer config={pieConfig ?? {}} className="h-[300px] w-full">
           <PieChart>
             {spec.options?.showTooltip && (
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
@@ -118,12 +128,10 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     );
   }
 
-  const chartConfig = useMemo(() => buildChartConfig(spec.series), [spec.series]);
-
   return (
     <div className={CHART_CONTAINER_CLASS}>
       <ChartHeader title={spec.title} description={spec.description} />
-      <ChartContainer config={chartConfig} className="h-[300px] w-full">
+      <ChartContainer config={chartConfig ?? {}} className="h-[300px] w-full">
         {(spec.type === "bar" ? (
           <BarChart data={spec.data}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}

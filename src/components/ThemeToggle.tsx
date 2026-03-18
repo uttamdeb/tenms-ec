@@ -2,6 +2,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { runWithViewTransition } from "@/lib/viewTransitions";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -24,13 +25,15 @@ export function ThemeToggle() {
     <Button
       variant="outline"
       size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="w-9 h-9 transition-all duration-300 ease-in-out"
+      onClick={() =>
+        runWithViewTransition(() => setTheme(theme === "dark" ? "light" : "dark"))
+      }
+      className="w-9 h-9 transition-smooth"
     >
       {theme === "dark" ? (
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all duration-300" />
+        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-smooth" />
       ) : (
-        <Moon className="h-[1.2rem] w-[1.2rem] rotate-90 scale-100 transition-all duration-300" />
+        <Moon className="h-[1.2rem] w-[1.2rem] rotate-90 scale-100 transition-smooth" />
       )}
       <span className="sr-only">Toggle theme</span>
     </Button>

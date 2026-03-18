@@ -15,6 +15,7 @@ import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus } from "lucide-reac
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback } from "react";
 import tentenIcon from "@/assets/tenten-icon.png";
+import { runWithViewTransition } from "@/lib/viewTransitions";
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -43,10 +44,10 @@ const Chat = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) navigate("/auth");
+      if (!session) runWithViewTransition(() => navigate("/auth"));
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/auth");
+      if (!session) runWithViewTransition(() => navigate("/auth"));
       setLoading(false);
     });
     return () => subscription.unsubscribe();
@@ -143,8 +144,8 @@ const Chat = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => navigate("/")} 
-            className="gap-2 transition-all duration-200 hover:scale-105 active:scale-95"
+            onClick={() => runWithViewTransition(() => navigate("/"))}
+            className="gap-2 transition-smooth hover:scale-105 active:scale-95"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Dashboard</span>

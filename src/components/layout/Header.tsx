@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
+import { runWithViewTransition } from "@/lib/viewTransitions";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -23,8 +24,8 @@ const Header = () => {
           <Button
             variant="default"
             size="sm"
-            onClick={() => navigate("/chat")}
-            className="gap-2"
+            onClick={() => runWithViewTransition(() => navigate("/chat"))}
+            className="gap-2 transition-smooth"
           >
             <MessageSquare className="h-4 w-4" />
             <span className="hidden sm:inline">Chat with Data Agent</span>
