@@ -1,8 +1,8 @@
 import ReactMarkdown from "react-markdown";
-import { useState } from "react";
+import { Children, isValidElement, useMemo, useState, type ReactNode } from "react";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { Check, Copy, Bug, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,127 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import tentenIcon from "@/assets/tenten-icon.png";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
+
+const extractText = (node: ReactNode): string => {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(extractText).join("").trim();
+  }
+
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return extractText(node.props.children);
+  }
+
+  return "";
+};
+
+const parseMarkdownTable = (children: ReactNode) => {
+  const rows = Children.toArray(children)
+    .filter(isValidElement)
+    .map((section) => {
+      const sectionChildren = Children.toArray(section.props.children).filter(isValidElement);
+
+      return sectionChildren.map((row) => {
+        const cells = Children.toArray(row.props.children).filter(isValidElement);
+        return cells.map((cell) => extractText(cell.props.children));
+      });
+    })
+    .flat();
+
+  const [header = [], ...body] = rows;
+
+  return {
+    header,
+    body,
+    rows,
+  };
+};
+
+const MarkdownTable = ({ children }: { children: ReactNode }) => {
+  const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const { header, body, rows } = useMemo(() => parseMarkdownTable(children), [children]);
+
+  const handleCopyTable = async () => {
+    const tableText = rows.map((row) => row.join("\t")).join("\n");
+
+    try {
+      await navigator.clipboard.writeText(tableText);
+      setCopied(true);
+      toast.success("Table copied");
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      console.error("Failed to copy table:", error);
+      toast.error("Failed to copy table");
+    }
+  };
+
+  const handleDownloadTable = () => {
+    try {
+      const worksheetData = body.length > 0
+        ? [header, ...body]
+        : rows;
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Table");
+      XLSX.writeFile(workbook, `ec-data-agent-table-${Date.now()}.xlsx`);
+
+      setDownloaded(true);
+      toast.success("Table downloaded");
+      window.setTimeout(() => setDownloaded(false), 1500);
+    } catch (error) {
+      console.error("Failed to download table:", error);
+      toast.error("Failed to download table");
+    }
+  };
+
+  return (
+    <div className="my-2 rounded-lg border border-border">
+      <div className="flex items-center justify-end gap-1 border-b border-border/80 px-2 py-1.5">
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleCopyTable}
+                aria-label={copied ? "Copied table" : "Copy table"}
+              >
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{copied ? "Copied table" : "Copy table"}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleDownloadTable}
+                aria-label={downloaded ? "Downloaded table" : "Download xlsx"}
+              >
+                {downloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{downloaded ? "Downloaded table" : "Download xlsx"}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <div className="overflow-x-auto">
+        <Table>{children}</Table>
+      </div>
+    </div>
+  );
+};
 
 interface ChatMessageBubbleProps {
   id: string;
@@ -52,6 +173,7 @@ const ChatMessageBubble = ({
   onFeedbackChange,
 }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
+  const normalizedContent = useMemo(() => content.replace(/\\n/g, "\n"), [content]);
   const [copied, setCopied] = useState(false);
   const [debugCopied, setDebugCopied] = useState(false);
   const [dislikeOpen, setDislikeOpen] = useState(false);
@@ -71,7 +193,7 @@ const ChatMessageBubble = ({
   };
 
   const handleCopyMessage = async () => {
-    await copyToClipboard(content, "Response copied", setCopied);
+    await copyToClipboard(normalizedContent, "Response copied", setCopied);
   };
 
   const handleCopyDebugInfo = async () => {
@@ -160,11 +282,7 @@ const ChatMessageBubble = ({
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-2 rounded-lg border border-border">
-                    <Table>{children}</Table>
-                  </div>
-                ),
+                table: ({ children }) => <MarkdownTable>{children}</MarkdownTable>,
                 thead: ({ children }) => <TableHeader>{children}</TableHeader>,
                 tbody: ({ children }) => <TableBody>{children}</TableBody>,
                 tr: ({ children }) => <TableRow>{children}</TableRow>,
@@ -172,7 +290,7 @@ const ChatMessageBubble = ({
                 td: ({ children }) => <TableCell className="text-xs">{children}</TableCell>,
               }}
             >
-              {content}
+              {normalizedContent}
             </ReactMarkdown>
           </div>
         )}
