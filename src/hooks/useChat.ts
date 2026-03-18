@@ -185,8 +185,12 @@ export function useChat() {
     setIsLoading(true);
     setStreamingMessage("");
     try {
+      const body: Record<string, unknown> = { user: userName, input: messageContent, sessionId };
+      if (attachmentUrl) {
+        body.attachments = [{ file_url: attachmentUrl }];
+      }
       const { data, error } = await supabase.functions.invoke("chat-with-agent", {
-        body: { user: userName, input: input.trim(), sessionId },
+        body,
       });
 
       if (error) throw error;
