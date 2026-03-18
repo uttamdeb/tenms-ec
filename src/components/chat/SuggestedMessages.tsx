@@ -27,12 +27,12 @@ const SuggestedMessages = ({ onSelect }: SuggestedMessagesProps) => {
   if (suggestions.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 justify-center px-4 pb-2">
+    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 items-center justify-center px-3 sm:px-4 pb-2">
       {suggestions.map((msg) => (
         <button
           key={msg}
           onClick={() => onSelect(msg)}
-          className="px-4 py-2.5 rounded-xl border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-accent transition-colors"
+          className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-border bg-card text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-accent transition-colors text-left sm:text-center"
         >
           {msg}
         </button>

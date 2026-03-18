@@ -335,13 +335,13 @@ const ChatMessageBubble = memo(({
 
   return (
     <div className="fluent-enter">
-      <div className={cn("flex gap-3 py-4 px-4", isUser ? "justify-end" : "justify-start")}>
+      <div className={cn("flex gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
+        <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-6 w-6 sm:h-8 sm:w-8 rounded-lg object-cover mt-0.5" />
       )}
       <div
         className={cn(
-          "max-w-[85%] rounded-xl px-4 py-3 text-sm sm:max-w-[80%] transition-all duration-300 ease-out hover:shadow-md",
+          "max-w-[92%] sm:max-w-[80%] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md",
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground hover:bg-muted/80"
@@ -350,15 +350,15 @@ const ChatMessageBubble = memo(({
         {isUser ? (
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none break-words prose-headings:mb-3 prose-headings:mt-5 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.85em] [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0">
+          <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-x-auto prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-2 sm:prose-p:my-3 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
               components={{
-                h1: ({ children }) => <h1 className="text-2xl font-semibold tracking-tight">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-xl font-semibold tracking-tight">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-lg font-semibold tracking-tight">{children}</h3>,
-                h4: ({ children }) => <h4 className="text-base font-semibold tracking-tight">{children}</h4>,
+                h1: ({ children }) => <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-base sm:text-lg font-semibold tracking-tight">{children}</h3>,
+                h4: ({ children }) => <h4 className="text-sm sm:text-base font-semibold tracking-tight">{children}</h4>,
                 p: ({ children }) => <p className="whitespace-pre-wrap leading-7">{children}</p>,
                 ul: ({ children }) => <ul className="list-disc pl-6">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal pl-6">{children}</ol>,
@@ -431,14 +431,14 @@ const ChatMessageBubble = memo(({
 
         {!isUser && (
           <TooltipProvider delayDuration={150}>
-            <div className="mt-3 flex flex-wrap items-center gap-0.5 border-t border-border/60 pt-2.5 text-muted-foreground">
+            <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-0 sm:gap-0.5 border-t border-border/60 pt-2 sm:pt-2.5 text-muted-foreground">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-full"
+                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
                     onClick={handleCopyMessage}
                     aria-label={copied ? "Copied" : "Copy text"}
                   >
@@ -538,9 +538,9 @@ const ChatMessageBubble = memo(({
         )}
       </div>
       {isUser && (
-        <Avatar className="shrink-0 h-8 w-8">
+        <Avatar className="shrink-0 h-6 w-6 sm:h-8 sm:w-8">
           <AvatarImage src={userAvatarUrl || undefined} />
-          <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">{userInitials}</AvatarFallback>
+          <AvatarFallback className="text-[10px] sm:text-xs bg-secondary text-secondary-foreground">{userInitials}</AvatarFallback>
         </Avatar>
       )}
       </div>

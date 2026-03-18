@@ -108,50 +108,48 @@ const Chat = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-dvh flex flex-col bg-background overflow-x-hidden">
       {/* Top bar */}
-      <header className="h-14 shrink-0 border-b border-border bg-card flex items-center justify-between px-4">
-        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top duration-300">
+      <header className="h-12 sm:h-14 shrink-0 border-b border-border bg-card flex items-center justify-between px-2 sm:px-4">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="transition-transform duration-200 hover:scale-110"
+            className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 transition-transform duration-200 hover:scale-110"
           >
-            {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
+            {sidebarOpen ? <PanelLeftClose className="h-4 w-4 sm:h-5 sm:w-5" /> : <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
-          <div className="flex items-center gap-2">
-            <img src={tentenIcon} alt="EC Data Agent" className="h-8 w-8 rounded-lg object-cover" />
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-cover" />
             <div className="hidden sm:block">
               <h1 className="text-sm font-semibold leading-none">EC Data Agent</h1>
               <p className="text-xs text-muted-foreground">Your data assistant</p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5 sm:gap-2">
           <Button 
             variant="ghost" 
-            size="sm" 
-            className="gap-2 transition-all duration-200 hover:scale-105 active:scale-95" 
+            size="icon" 
+            className="shrink-0 h-8 w-8 sm:h-9 sm:w-auto sm:px-3 transition-all duration-200 hover:scale-105 active:scale-95" 
             onClick={handleNewChat}
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Chat</span>
+            <span className="hidden sm:inline ml-1 text-sm">New Chat</span>
           </Button>
-          <div className="transition-transform duration-300 ease-in-out">
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
           <Button 
-            variant="outline" 
-            size="sm" 
+            variant="ghost" 
+            size="icon" 
             onClick={() => runWithViewTransition(() => navigate("/"))}
-            className="gap-2 transition-smooth hover:scale-105 active:scale-95"
+            className="shrink-0 h-8 w-8 sm:h-9 sm:w-auto sm:px-3 transition-smooth hover:scale-105 active:scale-95"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Dashboard</span>
+            <span className="hidden sm:inline ml-1 text-sm">Dashboard</span>
           </Button>
           {profile && (
-            <div className="transition-all duration-200 animate-in fade-in">
+            <div className="shrink-0">
               <ProfileDropdown
                 profile={profile}
                 onUpdateProfile={updateProfile}
@@ -166,7 +164,7 @@ const Chat = () => {
         {/* Sidebar */}
         <div className={`transition-all duration-300 ease-in-out transform overflow-hidden ${
           sidebarOpen 
-            ? `${isMobile ? "absolute inset-y-14 left-0 z-40 w-64" : "w-64 shrink-0"}` 
+            ? `${isMobile ? "absolute inset-y-12 sm:inset-y-14 left-0 z-40 w-64" : "w-64 shrink-0"}` 
             : isMobile ? "-translate-x-full" : "w-0"
         }`}>
           <ChatSidebar
@@ -188,21 +186,21 @@ const Chat = () => {
         {/* Chat area */}
         <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
           {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
-              <div className="text-center space-y-4 animate-in slide-in-from-bottom-4 duration-700">
-                <img src={tentenIcon} alt="EC Data Agent" className="h-16 w-16 rounded-2xl object-cover mx-auto animate-in zoom-in duration-700" />
-                <h2 className="text-xl font-semibold animate-in fade-in duration-700 delay-200">Hello! I'm EC Data Agent</h2>
-                <p className="text-muted-foreground max-w-md animate-in fade-in duration-700 delay-300">
+            <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 animate-in fade-in duration-500">
+              <div className="text-center space-y-3 sm:space-y-4 animate-in slide-in-from-bottom-4 duration-700 max-w-sm sm:max-w-md px-2">
+                <img src={tentenIcon} alt="EC Data Agent" className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-cover mx-auto animate-in zoom-in duration-700" />
+                <h2 className="text-lg sm:text-xl font-semibold animate-in fade-in duration-700 delay-200">Hello! I'm EC Data Agent</h2>
+                <p className="text-sm sm:text-base text-muted-foreground animate-in fade-in duration-700 delay-300">
                   I'm here to help you explore and analyze your English Centre data. Ask me anything about branches, students, revenue, and more!
                 </p>
               </div>
-              <div className="mt-8 animate-in fade-in duration-700 delay-500">
+              <div className="mt-6 sm:mt-8 w-full animate-in fade-in duration-700 delay-500">
                 <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
           ) : (
             <ScrollArea className="flex-1">
-              <div className="max-w-3xl mx-auto">
+              <div className="max-w-3xl mx-auto px-0 sm:px-0">
                 {messages.map((msg) => {
                   const sqlData = sqlRunData[msg.id];
                   return (
