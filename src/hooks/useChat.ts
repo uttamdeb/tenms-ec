@@ -116,9 +116,32 @@ export function useChat() {
     return session.id;
   }, [userId]);
 
+  // Upload attachment to storage
+  const uploadAttachment = useCallback(async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 15)}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("chat-images")
+      .upload(filePath, file);
+
+    if (error) {
+      console.error("Failed to upload attachment:", error);
+      toast.error("Failed to upload image");
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("chat-images")
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  }, [userId]);
+
   // Send message
-  const sendMessage = useCallback(async (input: string) => {
-    if (!userId || !input.trim()) return;
+  const sendMessage = useCallback(async (input: string, attachment?: File) => {
+    if (!userId || (!input.trim() && !attachment)) return;
 
     let sessionId = currentSessionId;
     if (!sessionId) {
@@ -126,10 +149,18 @@ export function useChat() {
       if (!sessionId) return;
     }
 
-    // Save user message
+    // Upload attachment if present
+    let attachmentUrl: string | null = null;
+    if (attachment) {
+      attachmentUrl = await uploadAttachment(attachment);
+      if (!attachmentUrl) return; // upload failed
+    }
+
+    // Save user message (include image URL in content if attached)
+    const messageContent = input.trim() || (attachmentUrl ? "[Image]" : "");
     const { data: userMsg, error: userErr } = await supabase
       .from("chat_messages")
-      .insert({ session_id: sessionId, user_id: userId, role: "user", content: input.trim() })
+      .insert({ session_id: sessionId, user_id: userId, role: "user", content: messageContent })
       .select()
       .single();
 
@@ -154,8 +185,12 @@ export function useChat() {
     setIsLoading(true);
     setStreamingMessage("");
     try {
+      const body: Record<string, unknown> = { user: userName, input: messageContent, sessionId };
+      if (attachmentUrl) {
+        body.attachments = [{ file_url: attachmentUrl }];
+      }
       const { data, error } = await supabase.functions.invoke("chat-with-agent", {
-        body: { user: userName, input: input.trim(), sessionId },
+        body,
       });
 
       if (error) throw error;
