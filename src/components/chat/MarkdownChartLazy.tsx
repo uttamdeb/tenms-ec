@@ -77,12 +77,12 @@ export const MarkdownChart = ({ spec }: { spec: ChartSpec }) => {
     };
 
     return (
-      <div className="my-4 rounded-xl border border-border bg-background/40 p-4">
-        <div className="mb-4 space-y-1">
+      <div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6">
+        <div className="w-full space-y-2">
           <h4 className="text-base font-semibold text-foreground">{spec.title}</h4>
-          <p className="text-sm text-muted-foreground">{spec.description}</p>
+          <p className="whitespace-normal break-words text-sm text-muted-foreground leading-relaxed">{spec.description}</p>
         </div>
-        <ChartContainer config={pieConfig} className="mx-auto h-[320px] w-full max-w-xl">
+        <ChartContainer config={pieConfig} className="h-[300px] w-full">
           <PieChart>
             {spec.options?.showTooltip && (
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
@@ -113,12 +113,12 @@ export const MarkdownChart = ({ spec }: { spec: ChartSpec }) => {
   const chartConfig = buildChartConfig(spec.series);
 
   return (
-    <div className="my-4 rounded-xl border border-border bg-background/40 p-4">
-      <div className="mb-4 space-y-1">
+    <div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6">
+      <div className="w-full space-y-2">
         <h4 className="text-base font-semibold text-foreground">{spec.title}</h4>
-        <p className="text-sm text-muted-foreground">{spec.description}</p>
+        <p className="whitespace-normal break-words text-sm text-muted-foreground leading-relaxed">{spec.description}</p>
       </div>
-      <ChartContainer config={chartConfig} className="h-[320px] w-full">
+      <ChartContainer config={chartConfig} className="h-[300px] w-full">
         {spec.type === "bar" ? (
           <BarChart data={spec.data}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}
