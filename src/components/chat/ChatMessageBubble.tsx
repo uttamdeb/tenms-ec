@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import { Children, isValidElement, useMemo, useState, type ReactNode, lazy, Suspense } from "react";
+import { Children, isValidElement, useMemo, useState, type ReactNode, lazy, Suspense, memo } from "react";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,7 @@ const parseMarkdownTable = (children: ReactNode) => {
   };
 };
 
-const MarkdownTable = ({ children }: { children: ReactNode }) => {
+const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const { header, body, rows } = useMemo(() => parseMarkdownTable(children), [children]);
@@ -158,7 +158,7 @@ const MarkdownTable = ({ children }: { children: ReactNode }) => {
       </div>
     </div>
   );
-};
+});
 
 const normalizeMarkdownContent = (value: string) => {
   return value
@@ -212,7 +212,7 @@ interface ChatMessageBubbleProps {
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
 }
 
-const ChatMessageBubble = ({
+const ChatMessageBubble = memo(({
   id,
   role,
   content,
@@ -359,7 +359,7 @@ const ChatMessageBubble = ({
 
                       if (isChartSpec(parsed)) {
                         return (
-                          <Suspense fallback={<div className="my-4 rounded-xl border border-border bg-background/40 p-4 text-muted-foreground">Loading chart...</div>}>
+                          <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>}>
                             <MarkdownChartLazy spec={parsed} />
                           </Suspense>
                         );
@@ -512,6 +512,6 @@ const ChatMessageBubble = ({
       </Dialog>
     </div>
   );
-};
+});
 
 export default ChatMessageBubble;
