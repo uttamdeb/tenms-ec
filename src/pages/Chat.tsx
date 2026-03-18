@@ -20,6 +20,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
@@ -59,6 +60,33 @@ const Chat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  // Fetch SQL run data for assistant messages
+  useEffect(() => {
+    const fetchSqlData = async () => {
+      const assistantMessages = messages.filter(m => m.role === "assistant");
+      if (assistantMessages.length === 0) return;
+
+      const messageIds = assistantMessages.map(m => m.id);
+      const { data } = await supabase
+        .from("agent_sql_runs")
+        .select("message_id, executed_sql, bq_result")
+        .in("message_id", messageIds);
+
+      if (data) {
+        const dataByMessageId: Record<string, { executed_sql: string; bq_result: string }> = {};
+        data.forEach(row => {
+          dataByMessageId[row.message_id] = {
+            executed_sql: row.executed_sql,
+            bq_result: row.bq_result
+          };
+        });
+        setSqlRunData(dataByMessageId);
+      }
+    };
+
+    fetchSqlData();
+  }, [messages]);
 
   if (loading) {
     return (
@@ -150,21 +178,27 @@ const Chat = () => {
           ) : (
             <ScrollArea className="flex-1">
               <div className="max-w-3xl mx-auto">
-                {messages.map((msg) => (
-                  <ChatMessageBubble
-                    key={msg.id}
-                    id={msg.id}
-                    role={msg.role}
-                    content={msg.content}
-                    sessionId={msg.session_id}
-                    userId={msg.user_id}
-                    feedback={msg.feedback}
-                    feedbackNote={msg.feedback_note}
-                    onFeedbackChange={updateMessageFeedback}
-                    userAvatarUrl={profile?.avatar_url}
-                    userInitials={profile?.full_name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U"}
-                  />
-                ))}
+                {messages.map((msg) => {
+                  const sqlData = sqlRunData[msg.id];
+                  return (
+                    <ChatMessageBubble
+                      key={msg.id}
+                      id={msg.id}
+                      role={msg.role}
+                      content={msg.content}
+                      sessionId={msg.session_id}
+                      userId={msg.user_id}
+                      feedback={msg.feedback}
+                      feedbackNote={msg.feedback_note}
+                      onFeedbackChange={updateMessageFeedback}
+                      userAvatarUrl={profile?.avatar_url}
+                      userInitials={profile?.full_name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U"}
+                      userRole={profile?.role}
+                      executed_sql={sqlData?.executed_sql || null}
+                      bq_result={sqlData?.bq_result || null}
+                    />
+                  );
+                })}
                 {isLoading && !streamingMessage && (
                   <div className="flex gap-3 py-4 px-4">
                     <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />

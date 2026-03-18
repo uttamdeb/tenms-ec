@@ -209,6 +209,9 @@ interface ChatMessageBubbleProps {
   feedbackNote?: string | null;
   userAvatarUrl?: string | null;
   userInitials?: string;
+  userRole?: string | null;
+  executed_sql?: string | null;
+  bq_result?: string | null;
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
 }
 
@@ -222,12 +225,18 @@ const ChatMessageBubble = memo(({
   feedbackNote,
   userAvatarUrl,
   userInitials = "U",
+  userRole,
+  executed_sql,
+  bq_result,
   onFeedbackChange,
 }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
   const normalizedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
+  const isBIUser = userRole === "BI";
   const [copied, setCopied] = useState(false);
   const [debugCopied, setDebugCopied] = useState(false);
+  const [sqlCopied, setSqlCopied] = useState(false);
+  const [bqCopied, setBqCopied] = useState(false);
   const [dislikeOpen, setDislikeOpen] = useState(false);
   const [note, setNote] = useState(feedback === "dislike" ? feedbackNote || "" : "");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
@@ -256,6 +265,16 @@ const ChatMessageBubble = memo(({
     ].join("\n");
 
     await copyToClipboard(debugInfo, "Debug info copied", setDebugCopied);
+  };
+
+  const handleCopySql = async () => {
+    if (!executed_sql) return;
+    await copyToClipboard(executed_sql, "SQL copied", setSqlCopied);
+  };
+
+  const handleCopyBqResult = async () => {
+    if (!bq_result) return;
+    await copyToClipboard(bq_result, "BigQuery result copied", setBqCopied);
   };
 
   const handleLike = async () => {
@@ -475,6 +494,42 @@ const ChatMessageBubble = memo(({
                 </TooltipTrigger>
                 <TooltipContent>{debugCopied ? "Copied debug info" : "Copy debug info"}</TooltipContent>
               </Tooltip>
+
+              {isBIUser && executed_sql && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={handleCopySql}
+                      aria-label={sqlCopied ? "Copied SQL" : "Copy SQL"}
+                    >
+                      {sqlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{sqlCopied ? "Copied SQL" : "Copy SQL"}</TooltipContent>
+                </Tooltip>
+              )}
+
+              {isBIUser && bq_result && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={handleCopyBqResult}
+                      aria-label={bqCopied ? "Copied BQ result" : "Copy BigQuery result"}
+                    >
+                      {bqCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{bqCopied ? "Copied BQ result" : "Copy BigQuery result"}</TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </TooltipProvider>
         )}
