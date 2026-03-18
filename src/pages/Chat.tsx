@@ -29,6 +29,7 @@ const Chat = () => {
     currentSessionId,
     messages,
     isLoading,
+    streamingMessage,
     sendMessage,
     createSession,
     selectSession,
@@ -164,7 +165,7 @@ const Chat = () => {
                     userInitials={profile?.full_name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U"}
                   />
                 ))}
-                {isLoading && (
+                {isLoading && !streamingMessage && (
                   <div className="flex gap-3 py-4 px-4">
                     <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
                     <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-2">
@@ -172,6 +173,13 @@ const Chat = () => {
                       <span className="text-sm text-muted-foreground">Thinking...</span>
                     </div>
                   </div>
+                )}
+                {streamingMessage && (
+                  <ChatMessageBubble
+                    id="streaming-preview"
+                    role="assistant"
+                    content={streamingMessage}
+                  />
                 )}
                 <div ref={messagesEndRef} />
               </div>

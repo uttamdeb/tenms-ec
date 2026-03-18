@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const STREAM_CHUNK_SIZE = 3;
+const STREAM_INTERVAL_MS = 18;
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -25,6 +28,7 @@ export function useChat() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<string | null>(null);
   const [userName, setUserName] = useState("user");
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -88,6 +92,7 @@ export function useChat() {
   useEffect(() => {
     if (currentSessionId) loadMessages(currentSessionId);
     else setMessages([]);
+    setStreamingMessage(null);
   }, [currentSessionId, loadMessages]);
 
   // Create new session
@@ -147,6 +152,7 @@ export function useChat() {
 
     // Call webhook
     setIsLoading(true);
+    setStreamingMessage("");
     try {
       const { data, error } = await supabase.functions.invoke("chat-with-agent", {
         body: { user: userName, input: input.trim(), sessionId },
@@ -158,6 +164,20 @@ export function useChat() {
       const responseData = Array.isArray(data) ? data[0] : data;
       const assistantContent = responseData?.output || responseData?.message || responseData?.response || JSON.stringify(responseData);
 
+      await new Promise<void>((resolve) => {
+        let currentIndex = 0;
+
+        const streamTimer = window.setInterval(() => {
+          currentIndex = Math.min(currentIndex + STREAM_CHUNK_SIZE, assistantContent.length);
+          setStreamingMessage(assistantContent.slice(0, currentIndex));
+
+          if (currentIndex >= assistantContent.length) {
+            window.clearInterval(streamTimer);
+            resolve();
+          }
+        }, STREAM_INTERVAL_MS);
+      });
+
       // Save assistant message
       const { data: assistantMsg, error: assistantErr } = await supabase
         .from("chat_messages")
@@ -168,6 +188,7 @@ export function useChat() {
       if (assistantErr) {
         console.error("Failed to save assistant message:", assistantErr);
       } else {
+        setStreamingMessage(null);
         setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
 
         // Save SQL run data if present
@@ -184,6 +205,7 @@ export function useChat() {
       }
     } catch (err) {
       console.error("Error calling agent:", err);
+      setStreamingMessage(null);
       toast.error("Failed to get response from agent");
     } finally {
       setIsLoading(false);
@@ -230,6 +252,7 @@ export function useChat() {
     currentSessionId,
     messages,
     isLoading,
+    streamingMessage,
     userName,
     sendMessage,
     createSession,

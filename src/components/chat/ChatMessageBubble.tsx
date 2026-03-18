@@ -25,7 +25,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import tentenIcon from "@/assets/tenten-icon.png";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 
 const extractText = (node: ReactNode): string => {
   if (typeof node === "string" || typeof node === "number") {
@@ -84,8 +83,9 @@ const MarkdownTable = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const handleDownloadTable = () => {
+  const handleDownloadTable = async () => {
     try {
+      const XLSX = await import("xlsx");
       const worksheetData = body.length > 0
         ? [header, ...body]
         : rows;
