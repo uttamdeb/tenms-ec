@@ -116,9 +116,32 @@ export function useChat() {
     return session.id;
   }, [userId]);
 
+  // Upload attachment to storage
+  const uploadAttachment = useCallback(async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 15)}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("chat-images")
+      .upload(filePath, file);
+
+    if (error) {
+      console.error("Failed to upload attachment:", error);
+      toast.error("Failed to upload image");
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("chat-images")
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  }, [userId]);
+
   // Send message
-  const sendMessage = useCallback(async (input: string) => {
-    if (!userId || !input.trim()) return;
+  const sendMessage = useCallback(async (input: string, attachment?: File) => {
+    if (!userId || (!input.trim() && !attachment)) return;
 
     let sessionId = currentSessionId;
     if (!sessionId) {

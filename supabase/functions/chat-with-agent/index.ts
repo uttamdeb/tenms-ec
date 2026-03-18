@@ -37,7 +37,7 @@ serve(async (req) => {
       );
     }
 
-    const { user, input, sessionId } = await req.json();
+    const { user, input, sessionId, attachments } = await req.json();
 
     if (!user || !input || !sessionId) {
       return new Response(
@@ -46,10 +46,15 @@ serve(async (req) => {
       );
     }
 
+    const webhookBody: Record<string, unknown> = { user, input, sessionId };
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      webhookBody.attachments = attachments;
+    }
+
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user, input, sessionId }),
+      body: JSON.stringify(webhookBody),
     });
 
     const responseText = await response.text();
