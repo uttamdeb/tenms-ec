@@ -200,7 +200,7 @@ const Chat = () => {
             </div>
           ) : (
             <ScrollArea className="flex-1">
-              <div className="max-w-3xl mx-auto px-0 sm:px-0">
+              <div className="max-w-3xl w-full mx-auto overflow-hidden">
                 {messages.map((msg) => {
                   const sqlData = sqlRunData[msg.id];
                   return (

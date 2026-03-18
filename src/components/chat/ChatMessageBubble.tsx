@@ -334,17 +334,17 @@ const ChatMessageBubble = memo(({
   };
 
   return (
-    <div className="fluent-enter">
-      <div className={cn("flex gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4", isUser ? "justify-end" : "justify-start")}>
+    <div className="fluent-enter w-full overflow-hidden">
+      <div className={cn("flex gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4 w-full overflow-hidden", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-6 w-6 sm:h-8 sm:w-8 rounded-lg object-cover mt-0.5" />
       )}
       <div
         className={cn(
-          "max-w-[92%] sm:max-w-[80%] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md overflow-hidden min-w-0",
+          "rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md overflow-hidden min-w-0",
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground hover:bg-muted/80"
+            ? "max-w-[85%] sm:max-w-[80%] bg-primary text-primary-foreground"
+            : "flex-1 sm:max-w-[80%] bg-muted text-foreground hover:bg-muted/80"
         )}
       >
         {isUser ? (
