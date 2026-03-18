@@ -149,10 +149,18 @@ export function useChat() {
       if (!sessionId) return;
     }
 
-    // Save user message
+    // Upload attachment if present
+    let attachmentUrl: string | null = null;
+    if (attachment) {
+      attachmentUrl = await uploadAttachment(attachment);
+      if (!attachmentUrl) return; // upload failed
+    }
+
+    // Save user message (include image URL in content if attached)
+    const messageContent = input.trim() || (attachmentUrl ? "[Image]" : "");
     const { data: userMsg, error: userErr } = await supabase
       .from("chat_messages")
-      .insert({ session_id: sessionId, user_id: userId, role: "user", content: input.trim() })
+      .insert({ session_id: sessionId, user_id: userId, role: "user", content: messageContent })
       .select()
       .single();
 
