@@ -22,6 +22,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 interface ChatMessageBubbleProps {
@@ -178,50 +179,75 @@ const ChatMessageBubble = ({
         )}
 
         {!isUser && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1.5 px-2 text-xs"
-              onClick={handleCopyMessage}
-            >
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              <span>{copied ? "Copied" : "Copy text"}</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={cn("h-8 gap-1.5 px-2 text-xs", feedback === "like" && "text-primary")}
-              onClick={handleLike}
-              disabled={isSubmittingFeedback}
-            >
-              <ThumbsUp className="h-3.5 w-3.5" />
-              <span>Like</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={cn("h-8 gap-1.5 px-2 text-xs", feedback === "dislike" && "text-destructive")}
-              onClick={handleDislikeClick}
-              disabled={isSubmittingFeedback}
-            >
-              <ThumbsDown className="h-3.5 w-3.5" />
-              <span>Dislike</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1.5 px-2 text-xs"
-              onClick={handleCopyDebugInfo}
-            >
-              {debugCopied ? <Check className="h-3.5 w-3.5" /> : <Bug className="h-3.5 w-3.5" />}
-              <span>{debugCopied ? "Copied" : "Copy debug info"}</span>
-            </Button>
-          </div>
+          <TooltipProvider delayDuration={150}>
+            <div className="mt-3 flex flex-wrap items-center gap-0.5 border-t border-border/60 pt-2.5 text-muted-foreground">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={handleCopyMessage}
+                    aria-label={copied ? "Copied" : "Copy text"}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{copied ? "Copied" : "Copy text"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-8 w-8 rounded-full", feedback === "like" && "text-foreground")}
+                    onClick={handleLike}
+                    disabled={isSubmittingFeedback}
+                    aria-label={feedback === "like" ? "Remove like" : "Like response"}
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{feedback === "like" ? "Remove like" : "Like"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-8 w-8 rounded-full", feedback === "dislike" && "text-foreground")}
+                    onClick={handleDislikeClick}
+                    disabled={isSubmittingFeedback}
+                    aria-label={feedback === "dislike" ? "Remove dislike" : "Dislike response"}
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{feedback === "dislike" ? "Remove dislike" : "Dislike"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={handleCopyDebugInfo}
+                    aria-label={debugCopied ? "Copied debug info" : "Copy debug info"}
+                  >
+                    {debugCopied ? <Check className="h-4 w-4" /> : <Bug className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{debugCopied ? "Copied debug info" : "Copy debug info"}</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         )}
       </div>
       {isUser && (
