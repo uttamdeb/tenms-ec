@@ -277,6 +277,8 @@ const Auth = () => {
                 </svg>
                 Sign in with Google
               </Button>
+            </CardContent>
+          </Card>
         </div>
       </main>
       <Footer />
