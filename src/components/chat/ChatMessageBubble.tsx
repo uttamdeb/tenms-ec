@@ -334,7 +334,7 @@ const ChatMessageBubble = memo(({
   };
 
   return (
-    <div className="fluent-enter motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+    <div className="fluent-enter">
       <div className={cn("flex gap-3 py-4 px-4", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />

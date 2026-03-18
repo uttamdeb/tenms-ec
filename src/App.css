@@ -138,6 +138,10 @@
   transition-property: transform, opacity, background-color, border-color, color, box-shadow, filter;
   transition-duration: var(--motion-base);
   transition-timing-function: var(--ease-in-out);
+}
+
+.transition-smooth:hover,
+.transition-smooth:focus-within {
   will-change: transform;
 }
 
