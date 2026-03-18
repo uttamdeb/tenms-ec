@@ -334,23 +334,23 @@ const ChatMessageBubble = memo(({
   };
 
   return (
-    <div className="fluent-enter w-full overflow-hidden">
-      <div className={cn("flex gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4 w-full overflow-hidden", isUser ? "justify-end" : "justify-start")}>
+    <div className="fluent-enter w-full min-w-0">
+      <div className={cn("flex gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4 w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-6 w-6 sm:h-8 sm:w-8 rounded-lg object-cover mt-0.5" />
       )}
       <div
         className={cn(
-          "rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md overflow-hidden min-w-0",
+          "rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md min-w-0",
           isUser
-            ? "max-w-[85%] sm:max-w-[80%] bg-primary text-primary-foreground"
-            : "flex-1 sm:max-w-[80%] bg-muted text-foreground hover:bg-muted/80"
+            ? "max-w-[85%] sm:max-w-[80%] bg-primary text-primary-foreground ml-auto break-words"
+            : "flex-1 overflow-x-auto sm:max-w-[80%] bg-muted text-foreground hover:bg-muted/80 break-words"
         )}
       >
         {isUser ? (
-          <p className="whitespace-pre-wrap">{content}</p>
+          <p className="whitespace-pre-wrap break-words">{content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-x-auto prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-2 sm:prose-p:my-3 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0">
+          <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 break-words prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-2 sm:prose-p:my-3 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
@@ -379,9 +379,11 @@ const ChatMessageBubble = memo(({
 
                       if (isChartSpec(parsed)) {
                         return (
-                          <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>}>
-                            <MarkdownChartLazy spec={parsed} />
-                          </Suspense>
+                          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden">
+                            <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>}>
+                              <MarkdownChartLazy spec={parsed} />
+                            </Suspense>
+                          </div>
                         );
                       }
                     } catch (error) {
@@ -415,8 +417,12 @@ const ChatMessageBubble = memo(({
                     </code>
                   );
                 },
-                pre: ({ children }) => <pre>{children}</pre>,
-                table: ({ children }) => <MarkdownTable>{children}</MarkdownTable>,
+                pre: ({ children }) => <pre className="max-w-full overflow-x-auto">{children}</pre>,
+                table: ({ children }) => (
+                  <div className="w-full min-w-0 overflow-x-auto pb-1">
+                    <MarkdownTable>{children}</MarkdownTable>
+                  </div>
+                ),
                 thead: ({ children }) => <TableHeader>{children}</TableHeader>,
                 tbody: ({ children }) => <TableBody>{children}</TableBody>,
                 tr: ({ children }) => <TableRow>{children}</TableRow>,

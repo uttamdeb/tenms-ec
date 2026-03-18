@@ -58,7 +58,7 @@ export type PieChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec;
 
-const CHART_CONTAINER_CLASS = "my-3 sm:my-4 flex w-full flex-col items-center gap-3 sm:gap-4 rounded-lg border border-border bg-muted/20 p-3 sm:p-6 overflow-hidden";
+const CHART_CONTAINER_CLASS = "my-3 sm:my-4 flex w-full max-w-full min-w-0 flex-col items-center gap-3 sm:gap-4 rounded-lg border border-border bg-muted/20 p-3 sm:p-6 overflow-hidden";
 const CHART_HEADER_CLASS = "w-full space-y-2";
 
 const buildChartConfig = (series: ChartSeries[]): ChartConfig => {
