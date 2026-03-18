@@ -67,14 +67,14 @@ const ProfileSettings = ({ open, onOpenChange, profile, onUpdateProfile, onUploa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md animate-in fade-in zoom-in-95 duration-300 ease-out">
         <DialogHeader>
           <DialogTitle>Profile Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-4">
           {/* Avatar */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="relative group cursor-pointer" onClick={() => fileRef.current?.click()}>
+          <div className="flex flex-col items-center gap-3 group">
+            <div className="relative group cursor-pointer transition-transform hover:scale-110 duration-200" onClick={() => fileRef.current?.click()}>
               <Avatar className="h-20 w-20">
                 <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback className="text-lg bg-primary text-primary-foreground">{initials}</AvatarFallback>

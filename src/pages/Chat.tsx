@@ -110,8 +110,13 @@ const Chat = () => {
     <div className="h-screen flex flex-col bg-background">
       {/* Top bar */}
       <header className="h-14 shrink-0 border-b border-border bg-card flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top duration-300">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="transition-transform duration-200 hover:scale-110"
+          >
             {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
           </Button>
           <div className="flex items-center gap-2">
@@ -123,55 +128,74 @@ const Chat = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="gap-2" onClick={handleNewChat}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-2 transition-all duration-200 hover:scale-105 active:scale-95" 
+            onClick={handleNewChat}
+          >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">New Chat</span>
           </Button>
-          <ThemeToggle />
-          <Button variant="outline" size="sm" onClick={() => navigate("/")} className="gap-2">
+          <div className="transition-transform duration-300 ease-in-out">
+            <ThemeToggle />
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate("/")} 
+            className="gap-2 transition-all duration-200 hover:scale-105 active:scale-95"
+          >
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Dashboard</span>
           </Button>
           {profile && (
-            <ProfileDropdown
-              profile={profile}
-              onUpdateProfile={updateProfile}
-              onUploadAvatar={uploadAvatar}
-            />
+            <div className="transition-all duration-200 animate-in fade-in">
+              <ProfileDropdown
+                profile={profile}
+                onUpdateProfile={updateProfile}
+                onUploadAvatar={uploadAvatar}
+              />
+            </div>
           )}
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        {sidebarOpen && (
-          <div className={`${isMobile ? "absolute inset-y-14 left-0 z-40 w-64" : "w-64 shrink-0"}`}>
-            <ChatSidebar
-              sessions={sessions}
-              currentSessionId={currentSessionId}
-              onSelectSession={handleSelectSession}
-              onNewChat={handleNewChat}
-            />
-          </div>
-        )}
+        <div className={`transition-all duration-300 ease-in-out transform ${
+          sidebarOpen 
+            ? `${isMobile ? "absolute inset-y-14 left-0 z-40 w-64" : "w-64 shrink-0"}` 
+            : isMobile ? "-translate-x-full" : "w-0"
+        }`}>
+          <ChatSidebar
+            sessions={sessions}
+            currentSessionId={currentSessionId}
+            onSelectSession={handleSelectSession}
+            onNewChat={handleNewChat}
+          />
+        </div>
 
         {/* Overlay for mobile sidebar */}
         {sidebarOpen && isMobile && (
-          <div className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <div 
+            className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" 
+            onClick={() => setSidebarOpen(false)} 
+          />
         )}
 
         {/* Chat area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
           {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-4">
-              <div className="text-center space-y-4">
-                <img src={tentenIcon} alt="EC Data Agent" className="h-16 w-16 rounded-2xl object-cover mx-auto" />
-                <h2 className="text-xl font-semibold">Hello! I'm EC Data Agent</h2>
-                <p className="text-muted-foreground max-w-md">
+            <div className="flex-1 flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
+              <div className="text-center space-y-4 animate-in slide-in-from-bottom-4 duration-700">
+                <img src={tentenIcon} alt="EC Data Agent" className="h-16 w-16 rounded-2xl object-cover mx-auto animate-in zoom-in duration-700" />
+                <h2 className="text-xl font-semibold animate-in fade-in duration-700 delay-200">Hello! I'm EC Data Agent</h2>
+                <p className="text-muted-foreground max-w-md animate-in fade-in duration-700 delay-300">
                   I'm here to help you explore and analyze your English Centre data. Ask me anything about branches, students, revenue, and more!
                 </p>
               </div>
-              <div className="mt-8">
+              <div className="mt-8 animate-in fade-in duration-700 delay-500">
                 <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
@@ -200,9 +224,9 @@ const Chat = () => {
                   );
                 })}
                 {isLoading && !streamingMessage && (
-                  <div className="flex gap-3 py-4 px-4">
+                  <div className="flex gap-3 py-4 px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
-                    <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-2">
+                    <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-2 transition-colors duration-300">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span className="text-sm text-muted-foreground">Thinking...</span>
                     </div>

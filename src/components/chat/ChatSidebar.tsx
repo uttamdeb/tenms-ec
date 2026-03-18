@@ -13,9 +13,14 @@ interface ChatSidebarProps {
 
 const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat }: ChatSidebarProps) => {
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
-      <div className="p-3 border-b border-border">
-        <Button onClick={onNewChat} variant="outline" className="w-full gap-2" size="sm">
+    <div className="flex flex-col h-full bg-card border-r border-border transition-colors duration-300 ease-in-out">
+      <div className="p-3 border-b border-border transition-colors duration-300">
+        <Button 
+          onClick={onNewChat} 
+          variant="outline" 
+          className="w-full gap-2 transition-all duration-200 hover:scale-105 active:scale-95" 
+          size="sm"
+        >
           <Plus className="h-4 w-4" />
           New Chat
         </Button>
@@ -27,9 +32,9 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat }:
               key={session.id}
               onClick={() => onSelectSession(session.id)}
               className={cn(
-                "w-full text-left px-3 py-2 rounded-md text-sm truncate flex items-center gap-2 transition-colors",
+                "w-full text-left px-3 py-2 rounded-md text-sm truncate flex items-center gap-2 transition-all duration-200 transform hover:scale-105",
                 session.id === currentSessionId
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-accent text-accent-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >

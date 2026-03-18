@@ -39,26 +39,26 @@ const ProfileDropdown = ({ profile, onUpdateProfile, onUploadAvatar }: ProfileDr
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <Avatar className="h-8 w-8 cursor-pointer">
+          <button className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-110 active:scale-95">
+            <Avatar className="h-8 w-8 cursor-pointer transition-all duration-300 hover:shadow-md">
               <AvatarImage src={profile.avatar_url || undefined} />
               <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
             </Avatar>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <div className="px-2 py-1.5">
+        <DropdownMenuContent align="end" className="w-48 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
+          <div className="px-2 py-1.5 transition-colors duration-300">
             <p className="text-sm font-medium truncate">{profile.full_name || "User"}</p>
             <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
           </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-            <Settings className="h-4 w-4 mr-2" />
+          <DropdownMenuSeparator className="transition-colors duration-300" />
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="transition-colors duration-200 hover:bg-accent/50 cursor-pointer">
+            <Settings className="h-4 w-4 mr-2 transition-transform duration-200" />
             Profile Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
+          <DropdownMenuSeparator className="transition-colors duration-300" />
+          <DropdownMenuItem onClick={handleLogout} className="transition-colors duration-200 hover:bg-destructive/10 cursor-pointer">
+            <LogOut className="h-4 w-4 mr-2 transition-transform duration-200" />
             Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>
