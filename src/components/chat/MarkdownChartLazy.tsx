@@ -58,7 +58,7 @@ export type PieChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec;
 
-const CHART_CONTAINER_CLASS = "my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6";
+const CHART_CONTAINER_CLASS = "my-3 sm:my-4 flex w-full flex-col items-center gap-3 sm:gap-4 rounded-lg border border-border bg-muted/20 p-3 sm:p-6 overflow-hidden";
 const CHART_HEADER_CLASS = "w-full space-y-2";
 
 const buildChartConfig = (series: ChartSeries[]): ChartConfig => {
@@ -73,8 +73,8 @@ const buildChartConfig = (series: ChartSeries[]): ChartConfig => {
 
 const ChartHeader = memo(({ title, description }: { title: string; description: string }) => (
   <div className={CHART_HEADER_CLASS}>
-    <h4 className="text-base font-semibold text-foreground">{title}</h4>
-    <p className="whitespace-normal break-words text-sm text-muted-foreground leading-relaxed">{description}</p>
+    <h4 className="text-sm sm:text-base font-semibold text-foreground">{title}</h4>
+    <p className="whitespace-normal break-words text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
   </div>
 ));
 
@@ -100,7 +100,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     return (
       <div className={CHART_CONTAINER_CLASS}>
         <ChartHeader title={spec.title} description={spec.description} />
-        <ChartContainer config={pieConfig ?? {}} className="h-[300px] w-full">
+        <ChartContainer config={pieConfig ?? {}} className="h-[250px] sm:h-[300px] w-full">
           <PieChart>
             {spec.options?.showTooltip && (
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
@@ -112,7 +112,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
               nameKey={spec.labelKey}
               cx="50%"
               cy="50%"
-              outerRadius={110}
+              outerRadius={80}
               label={spec.options?.showLabels}
             >
               {spec.data.map((entry, index) => (
@@ -131,7 +131,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   return (
     <div className={CHART_CONTAINER_CLASS}>
       <ChartHeader title={spec.title} description={spec.description} />
-      <ChartContainer config={chartConfig ?? {}} className="h-[300px] w-full">
+      <ChartContainer config={chartConfig ?? {}} className="h-[250px] sm:h-[300px] w-full">
         {(spec.type === "bar" ? (
           <BarChart data={spec.data}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}

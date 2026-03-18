@@ -118,7 +118,7 @@ const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <div className="my-2 rounded-lg border border-border">
+    <div className="my-2 rounded-lg border border-border overflow-hidden">
       <div className="flex items-center justify-end gap-1 border-b border-border/80 px-2 py-1.5">
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -341,7 +341,7 @@ const ChatMessageBubble = memo(({
       )}
       <div
         className={cn(
-          "max-w-[92%] sm:max-w-[80%] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md",
+          "max-w-[92%] sm:max-w-[80%] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md overflow-hidden min-w-0",
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground hover:bg-muted/80"
