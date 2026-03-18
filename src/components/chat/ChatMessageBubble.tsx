@@ -54,11 +54,16 @@ const parseMarkdownTable = (children: ReactNode) => {
   const rows = Children.toArray(children)
     .filter(isValidElement)
     .map((section) => {
-      const sectionChildren = Children.toArray(section.props.children).filter(isValidElement);
+      const el = section as React.ReactElement<{ children?: ReactNode }>;
+      const sectionChildren = Children.toArray(el.props.children).filter(isValidElement);
 
       return sectionChildren.map((row) => {
-        const cells = Children.toArray(row.props.children).filter(isValidElement);
-        return cells.map((cell) => extractText(cell.props.children));
+        const rowEl = row as React.ReactElement<{ children?: ReactNode }>;
+        const cells = Children.toArray(rowEl.props.children).filter(isValidElement);
+        return cells.map((cell) => {
+          const cellEl = cell as React.ReactElement<{ children?: ReactNode }>;
+          return extractText(cellEl.props.children);
+        });
       });
     })
     .flat();
@@ -354,15 +359,13 @@ const ChatMessageBubble = ({
 
                       if (isChartSpec(parsed)) {
                         return (
-                          <Suspense fallback={<div className="my-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>}>
+                          <Suspense fallback={<div className="my-4 rounded-xl border border-border bg-background/40 p-4 text-muted-foreground">Loading chart...</div>}>
                             <MarkdownChartLazy spec={parsed} />
                           </Suspense>
                         );
                       }
                     } catch (error) {
-                      // Chart block detected but incomplete/invalid JSON - show loading state instead of code
                       console.error("Failed to parse chart block:", error);
-                      return <div className="my-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Chart loading...</div>;
                     }
                   }
 
