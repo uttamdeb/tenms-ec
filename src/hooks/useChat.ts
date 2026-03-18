@@ -7,6 +7,10 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+  session_id: string;
+  user_id: string;
+  feedback?: "like" | "dislike" | null;
+  feedback_note?: string | null;
 }
 
 export interface ChatSession {
@@ -190,6 +194,37 @@ export function useChat() {
     setCurrentSessionId(sessionId);
   }, []);
 
+  const updateMessageFeedback = useCallback(async (
+    messageId: string,
+    feedback: "like" | "dislike" | null,
+    feedbackNote?: string | null,
+  ) => {
+    const updates = {
+      feedback,
+      feedback_note: feedback === "dislike" ? (feedbackNote?.trim() || null) : null,
+    };
+
+    const { error } = await supabase
+      .from("chat_messages")
+      .update(updates)
+      .eq("id", messageId);
+
+    if (error) {
+      console.error("Failed to update message feedback:", error);
+      throw error;
+    }
+
+    setMessages((prev) => prev.map((message) => (
+      message.id === messageId
+        ? {
+            ...message,
+            feedback,
+            feedback_note: updates.feedback_note,
+          }
+        : message
+    )));
+  }, []);
+
   return {
     sessions,
     currentSessionId,
@@ -199,5 +234,6 @@ export function useChat() {
     sendMessage,
     createSession,
     selectSession,
+    updateMessageFeedback,
   };
 }
