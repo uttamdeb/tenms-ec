@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import { Children, isValidElement, useMemo, useState, type ReactNode } from "react";
+import { Children, isValidElement, useMemo, useState, type ReactNode, lazy, Suspense } from "react";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,10 @@ import tentenIcon from "@/assets/tenten-icon.png";
 import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
+
+const MarkdownChartLazy = lazy(() => import("@/components/chat/MarkdownChartLazy").then((m) => ({ default: m.MarkdownChart })));
+
 
 const extractText = (node: ReactNode): string => {
   if (typeof node === "string" || typeof node === "number") {
@@ -158,6 +162,36 @@ const normalizeMarkdownContent = (value: string) => {
     .replace(/\\t/g, "\t")
     .replace(/\r\n/g, "\n")
     .trimEnd();
+};
+
+const isChartSpec = (value: unknown): value is ChartSpec => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const chart = value as Partial<ChartSpec>;
+
+  if (chart.type === "bar" || chart.type === "line") {
+    return Boolean(
+      chart.title &&
+      chart.description &&
+      chart.xKey &&
+      Array.isArray(chart.series) &&
+      Array.isArray(chart.data),
+    );
+  }
+
+  if (chart.type === "pie") {
+    return Boolean(
+      chart.title &&
+      chart.description &&
+      chart.labelKey &&
+      chart.valueKey &&
+      Array.isArray(chart.data),
+    );
+  }
+
+  return false;
 };
 
 interface ChatMessageBubbleProps {
@@ -313,6 +347,22 @@ const ChatMessageBubble = ({
                 code: ({ children, className, ...props }) => {
                   const match = /language-(\w+)/.exec(className || "");
                   const codeContent = String(children).replace(/\n$/, "");
+
+                  if (match?.[1] === "chart") {
+                    try {
+                      const parsed = JSON.parse(codeContent);
+
+                      if (isChartSpec(parsed)) {
+                        return (
+                          <Suspense fallback={<div className="my-4 rounded-xl border border-border bg-background/40 p-4 text-muted-foreground">Loading chart...</div>}>
+                            <MarkdownChartLazy spec={parsed} />
+                          </Suspense>
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Failed to parse chart block:", error);
+                    }
+                  }
 
                   if (match) {
                     return (
