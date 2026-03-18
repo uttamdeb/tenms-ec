@@ -124,7 +124,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     <div className={CHART_CONTAINER_CLASS}>
       <ChartHeader title={spec.title} description={spec.description} />
       <ChartContainer config={chartConfig} className="h-[300px] w-full">
-        {spec.type === "bar" ? (
+        {(spec.type === "bar" ? (
           <BarChart data={spec.data}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}
             <XAxis dataKey={spec.xKey} tickLine={false} axisLine={false} minTickGap={24} />
@@ -136,9 +136,15 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
             ))}
           </BarChart>
         ) : (
-          <LineChart data={spec.data}>
+          <LineChart data={spec.data} margin={{ bottom: 80, top: 10, right: 10, left: 0 }}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}
-            <XAxis dataKey={spec.xKey} tickLine={false} axisLine={false} minTickGap={24} />
+            <XAxis 
+              dataKey={spec.xKey} 
+              tickLine={false} 
+              axisLine={false}
+              angle={Number(-45)}
+              textAnchor="end"
+              height={120} />
             <YAxis tickLine={false} axisLine={false} />
             {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
             {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
@@ -154,7 +160,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
               />
             ))}
           </LineChart>
-        )}
+        ))}
       </ChartContainer>
     </div>
   );

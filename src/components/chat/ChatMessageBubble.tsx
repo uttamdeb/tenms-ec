@@ -3,7 +3,7 @@ import { Children, isValidElement, useMemo, useState, type ReactNode, lazy, Susp
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp, Code, Database } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -384,7 +384,9 @@ const ChatMessageBubble = memo(({
                         );
                       }
                     } catch (error) {
+                      // Chart block detected but JSON is incomplete or invalid - show loading instead of code
                       console.error("Failed to parse chart block:", error);
+                      return <div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>;
                     }
                   }
 
@@ -495,40 +497,40 @@ const ChatMessageBubble = memo(({
                 <TooltipContent>{debugCopied ? "Copied debug info" : "Copy debug info"}</TooltipContent>
               </Tooltip>
 
-              {isBIUser && executed_sql && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={handleCopySql}
-                      aria-label={sqlCopied ? "Copied SQL" : "Copy SQL"}
-                    >
-                      {sqlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{sqlCopied ? "Copied SQL" : "Copy SQL"}</TooltipContent>
-                </Tooltip>
-              )}
+              {isBIUser && executed_sql && bq_result && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={handleCopySql}
+                        aria-label={sqlCopied ? "Copied code" : "Copy code"}
+                      >
+                        {sqlCopied ? <Check className="h-4 w-4" /> : <Code className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{sqlCopied ? "Copied code" : "Copy code"}</TooltipContent>
+                  </Tooltip>
 
-              {isBIUser && bq_result && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={handleCopyBqResult}
-                      aria-label={bqCopied ? "Copied BQ result" : "Copy BigQuery result"}
-                    >
-                      {bqCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{bqCopied ? "Copied BQ result" : "Copy BigQuery result"}</TooltipContent>
-                </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={handleCopyBqResult}
+                        aria-label={bqCopied ? "Copied results" : "Copy results"}
+                      >
+                        {bqCopied ? <Check className="h-4 w-4" /> : <Database className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{bqCopied ? "Copied results" : "Copy results"}</TooltipContent>
+                  </Tooltip>
+                </>
               )}
             </div>
           </TooltipProvider>
