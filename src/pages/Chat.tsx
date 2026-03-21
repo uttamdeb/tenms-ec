@@ -125,8 +125,8 @@ const Chat = () => {
   return (
     <div className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground">
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
-      <header className="surface-shell relative z-20 flex h-16 shrink-0 items-center justify-between px-3 sm:px-6">
-        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+      <header className="surface-shell relative z-20 flex h-16 shrink-0 items-center justify-between gap-2 px-3 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -135,19 +135,19 @@ const Chat = () => {
           >
             {sidebarOpen ? <PanelLeftClose className="h-4 w-4 sm:h-5 sm:w-5" /> : <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
-          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <img src={tentenIcon} alt="EC Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-            <div className="min-w-0">
-              <h1 className="headline-agent truncate text-xl leading-[1.05] sm:text-[1.75rem]">EC Data Agent</h1>
+            <div className="min-w-0 flex-1">
+              <h1 className="headline-agent truncate text-[0.95rem] leading-[1.05] sm:text-[1.75rem]">EC Data Agent</h1>
               <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Button 
             variant="default"
             size="sm"
-            className="shrink-0 px-4 sm:px-5"
+            className="h-10 w-10 shrink-0 px-0 sm:h-9 sm:w-auto sm:px-5"
             onClick={handleNewChat}
           >
             <Plus className="h-4 w-4" />
@@ -201,43 +201,43 @@ const Chat = () => {
         {/* Chat area */}
         <div className="surface-panel relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
           {messages.length === 0 ? (
-            <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 animate-in fade-in duration-500">
-              <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-2xl space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-10 sm:py-12 animate-in fade-in duration-500">
+              <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-10 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-2xl space-y-4 sm:space-y-6 animate-in slide-in-from-bottom-4 duration-700">
                   <p className="label-tech">EC data workspace</p>
-                  <div className="space-y-4">
-                    <h2 className="headline-agent max-w-xl text-4xl leading-[0.92] sm:text-6xl">
+                  <div className="space-y-3 sm:space-y-4">
+                    <h2 className="headline-agent max-w-xl text-[2.65rem] leading-[0.92] sm:text-6xl">
                       Explore the <span className="text-primary">Dashboard</span>
                       <br />
                       with EC Data Agent.
                     </h2>
-                    <p className="max-w-xl text-lg leading-8 text-[hsl(var(--on-surface-variant))]">
+                    <p className="max-w-xl text-base leading-7 text-[hsl(var(--on-surface-variant))] sm:text-lg sm:leading-8">
                       Ask about branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, and other English Centre metrics to begin the deep dive.
                     </p>
                   </div>
                 </div>
-                <div className="grid w-full max-w-xl gap-4 sm:grid-cols-2">
-                  <div className="surface-card rounded-[1.5rem] p-5 shadow-sm sm:col-span-2">
-                    <div className="mb-10 flex items-start justify-between gap-4">
+                <div className="grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
+                  <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:col-span-2 sm:p-5">
+                    <div className="mb-6 flex items-start justify-between gap-4 sm:mb-10">
                       <img src={tentenIcon} alt="EC Data Agent" className="h-10 w-10 rounded-xl object-contain" />
                       <span className="label-tech">EC Data Dashboard</span>
                     </div>
                     <div>
-                      <h3 className="headline-agent text-2xl">Branch Performance Overview</h3>
+                      <h3 className="headline-agent text-xl sm:text-2xl">Branch Performance Overview</h3>
                       <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">Review RTA, admissions, and revenue trends across all branches.</p>
                     </div>
                   </div>
-                  <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
+                  <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:p-5">
                     <span className="label-tech">Revenue collection</span>
-                    <p className="mt-8 text-lg font-semibold">Track month-wise revenue collected amount since Jan 2026.</p>
+                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">Track month-wise revenue collected amount since Jan 2026.</p>
                   </div>
-                  <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
+                  <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:p-5">
                     <span className="label-tech">Agent analysis</span>
-                    <p className="mt-8 text-lg font-semibold">Generate summaries, compare branches, and validate operational data quickly.</p>
+                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">Generate summaries, compare branches, and validate operational data quickly.</p>
                   </div>
                 </div>
               </div>
-              <div className="mt-10 w-full animate-in fade-in duration-700 delay-500">
+              <div className="mt-5 w-full animate-in fade-in duration-700 delay-500 sm:mt-10">
                 <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
