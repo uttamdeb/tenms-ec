@@ -118,7 +118,7 @@ const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <div className="my-2 rounded-lg border border-border overflow-hidden">
+    <div className="my-2 w-full min-w-0 overflow-hidden rounded-lg border border-border">
       <div className="flex items-center justify-end gap-1 border-b border-border/80 px-2 py-1.5">
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -153,7 +153,7 @@ const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <div className="overflow-x-auto">
+      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <Table>{children}</Table>
       </div>
     </div>
@@ -337,14 +337,12 @@ const ChatMessageBubble = memo(({
     <div className="fluent-enter w-full min-w-0">
       <div className={cn("flex w-full min-w-0 gap-2 px-2 py-3 sm:gap-3 sm:px-4 sm:py-4", isUser ? "justify-end" : "justify-start")}>
         {!isUser && (
-          <div className="cta-gradient mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
-            <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
-          </div>
+          <img src={tentenIcon} alt="EC Data Agent" className="mt-0.5 h-8 w-8 shrink-0 rounded-xl object-contain" />
         )}
         <div
           className={cn(
             "min-w-0 text-sm transition-all duration-300 ease-out",
-            isUser ? "ml-auto max-w-[88%] sm:max-w-[78%]" : "flex-1 sm:max-w-[82%]"
+            isUser ? "ml-auto max-w-[82vw] sm:max-w-[78%]" : "max-w-[calc(100vw-5.5rem)] flex-1 sm:max-w-[82%]"
           )}
         >
           <div
@@ -358,7 +356,7 @@ const ChatMessageBubble = memo(({
         {isUser ? (
           <p className="whitespace-pre-wrap break-words">{content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 break-words prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-2 sm:prose-p:my-3 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0">
+          <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 overflow-hidden break-words prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-2 sm:prose-p:my-3 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0 [&_pre]:[-webkit-overflow-scrolling:touch]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
@@ -387,7 +385,7 @@ const ChatMessageBubble = memo(({
 
                       if (isChartSpec(parsed)) {
                         return (
-                          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden">
+                          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
                             <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>}>
                               <MarkdownChartLazy spec={parsed} />
                             </Suspense>
@@ -427,7 +425,7 @@ const ChatMessageBubble = memo(({
                 },
                 pre: ({ children }) => <pre className="max-w-full overflow-x-auto">{children}</pre>,
                 table: ({ children }) => (
-                  <div className="w-full min-w-0 overflow-x-auto pb-1">
+                  <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
                     <MarkdownTable>{children}</MarkdownTable>
                   </div>
                 ),

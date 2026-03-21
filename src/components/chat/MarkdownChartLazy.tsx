@@ -58,7 +58,7 @@ export type PieChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec;
 
-const CHART_CONTAINER_CLASS = "my-3 sm:my-4 flex w-full max-w-full min-w-0 flex-col items-center gap-3 sm:gap-4 rounded-lg border border-border bg-muted/20 p-3 sm:p-6 overflow-hidden";
+const CHART_CONTAINER_CLASS = "my-3 sm:my-4 flex w-full max-w-full min-w-0 flex-col items-center gap-3 sm:gap-4 overflow-hidden rounded-lg border border-border bg-muted/20 p-3 sm:p-6";
 const CHART_HEADER_CLASS = "w-full space-y-2";
 
 const buildChartConfig = (series: ChartSeries[]): ChartConfig => {
@@ -100,8 +100,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     return (
       <div className={CHART_CONTAINER_CLASS}>
         <ChartHeader title={spec.title} description={spec.description} />
-        <ChartContainer config={pieConfig ?? {}} className="h-[250px] sm:h-[300px] w-full">
-          <PieChart>
+        <div className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+          <ChartContainer config={pieConfig ?? {}} className="h-[250px] w-full min-w-[320px] sm:h-[300px]">
+            <PieChart>
             {spec.options?.showTooltip && (
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
             )}
@@ -122,8 +123,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 />
               ))}
             </Pie>
-          </PieChart>
-        </ChartContainer>
+            </PieChart>
+          </ChartContainer>
+        </div>
       </div>
     );
   }
@@ -131,9 +133,10 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   return (
     <div className={CHART_CONTAINER_CLASS}>
       <ChartHeader title={spec.title} description={spec.description} />
-      <ChartContainer config={chartConfig ?? {}} className="h-[250px] sm:h-[300px] w-full">
-        {(spec.type === "bar" ? (
-          <BarChart data={spec.data}>
+      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+        <ChartContainer config={chartConfig ?? {}} className="h-[250px] w-full min-w-[360px] sm:h-[300px]">
+          {(spec.type === "bar" ? (
+          <BarChart data={spec.data} width={Math.max(spec.data.length * 72, 360)} height={300}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}
             <XAxis dataKey={spec.xKey} tickLine={false} axisLine={false} minTickGap={24} />
             <YAxis tickLine={false} axisLine={false} />
@@ -144,7 +147,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
             ))}
           </BarChart>
         ) : (
-          <LineChart data={spec.data} margin={{ bottom: 80, top: 10, right: 10, left: 0 }}>
+          <LineChart data={spec.data} width={Math.max(spec.data.length * 72, 360)} height={300} margin={{ bottom: 80, top: 10, right: 10, left: 0 }}>
             {spec.options?.showGrid && <CartesianGrid vertical={false} />}
             <XAxis 
               dataKey={spec.xKey} 
@@ -169,7 +172,8 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
             ))}
           </LineChart>
         ))}
-      </ChartContainer>
+        </ChartContainer>
+      </div>
     </div>
   );
 });

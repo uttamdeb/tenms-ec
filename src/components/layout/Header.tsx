@@ -17,7 +17,7 @@ const Header = () => {
         <div className="flex min-w-0 items-center gap-3">
           <img src={tentenIcon} alt="EC Data Agent" className="h-10 w-10 shrink-0 rounded-xl object-contain" />
           <div className="min-w-0">
-            <p className="headline-agent truncate text-2xl leading-none">EC Data Agent</p>
+            <p className="headline-agent truncate text-2xl leading-[1.05]">EC Data Agent</p>
             <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
           </div>
         </div>

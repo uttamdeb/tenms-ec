@@ -22,6 +22,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
+  const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
@@ -61,6 +62,20 @@ const Chat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    if (!isLoading || streamingMessage) {
+      setThinkingSeconds(0);
+      return;
+    }
+
+    setThinkingSeconds(0);
+    const timer = window.setInterval(() => {
+      setThinkingSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isLoading, streamingMessage]);
 
   // Fetch SQL run data for assistant messages
   useEffect(() => {
@@ -123,7 +138,7 @@ const Chat = () => {
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <img src={tentenIcon} alt="EC Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
             <div className="min-w-0">
-              <h1 className="headline-agent truncate text-xl leading-none sm:text-[1.75rem]">EC Data Agent</h1>
+              <h1 className="headline-agent truncate text-xl leading-[1.05] sm:text-[1.75rem]">EC Data Agent</h1>
               <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             </div>
           </div>
@@ -257,7 +272,11 @@ const Chat = () => {
                     </div>
                     <div className="surface-card flex items-center gap-2 rounded-[1.25rem] px-4 py-3 transition-colors duration-300">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">Thinking...</span>
+                      <span className="text-sm text-muted-foreground">
+                        {thinkingSeconds <= 0
+                          ? "Thinking..."
+                          : `Thinking for ${thinkingSeconds} ${thinkingSeconds === 1 ? "sec" : "secs"}`}
+                      </span>
                     </div>
                   </div>
                 )}
