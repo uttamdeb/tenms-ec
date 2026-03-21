@@ -15,12 +15,10 @@ const Header = () => {
     <header className="surface-shell relative z-20 px-3 py-4 sm:px-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="cta-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
-            <img src={tentenIcon} alt="EC Data Agent" className="h-5 w-5 object-contain" />
-          </div>
+          <img src={tentenIcon} alt="EC Data Agent" className="h-10 w-10 shrink-0 rounded-xl object-contain" />
           <div className="min-w-0">
             <p className="headline-agent truncate text-2xl leading-none">EC Data Agent</p>
-            <p className="label-tech mt-1 hidden sm:block">Executive command surface</p>
+            <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

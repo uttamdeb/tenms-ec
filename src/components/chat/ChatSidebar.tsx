@@ -26,7 +26,7 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat }:
           size="sm"
         >
           <Plus className="h-4 w-4" />
-          <span>+ New Chat</span>
+          <span>New Chat</span>
         </Button>
       </div>
       <ScrollArea className="flex-1">

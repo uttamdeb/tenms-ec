@@ -121,12 +121,10 @@ const Chat = () => {
             {sidebarOpen ? <PanelLeftClose className="h-4 w-4 sm:h-5 sm:w-5" /> : <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <div className="cta-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
-              <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
-            </div>
+            <img src={tentenIcon} alt="EC Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
             <div className="min-w-0">
               <h1 className="headline-agent truncate text-xl leading-none sm:text-[1.75rem]">EC Data Agent</h1>
-              <p className="label-tech mt-1 hidden sm:block">Decision intelligence interface</p>
+              <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             </div>
           </div>
         </div>
@@ -191,41 +189,36 @@ const Chat = () => {
             <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 animate-in fade-in duration-500">
               <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
                 <div className="max-w-2xl space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-                  <p className="label-tech">Market intelligence workspace</p>
+                  <p className="label-tech">EC data workspace</p>
                   <div className="space-y-4">
                     <h2 className="headline-agent max-w-xl text-4xl leading-[0.92] sm:text-6xl">
-                      Analyzing the <span className="text-primary">Trends</span>
+                      Explore the <span className="text-primary">Dashboard</span>
                       <br />
-                      of Tomorrow.
+                      with EC Data Agent.
                     </h2>
                     <p className="max-w-xl text-lg leading-8 text-[hsl(var(--on-surface-variant))]">
-                      I am your dedicated data agency. Upload reports, inspect branch performance, and ask precise questions to begin the deep dive.
+                      Ask about branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, and other English Centre metrics to begin the deep dive.
                     </p>
                   </div>
                 </div>
                 <div className="grid w-full max-w-xl gap-4 sm:grid-cols-2">
                   <div className="surface-card rounded-[1.5rem] p-5 shadow-sm sm:col-span-2">
                     <div className="mb-10 flex items-start justify-between gap-4">
-                      <div className="cta-gradient flex h-10 w-10 items-center justify-center rounded-xl">
-                        <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
-                      </div>
-                      <span className="label-tech">Market intelligence</span>
+                      <img src={tentenIcon} alt="EC Data Agent" className="h-10 w-10 rounded-xl object-contain" />
+                      <span className="label-tech">EC Data Dashboard</span>
                     </div>
                     <div>
-                      <h3 className="headline-agent text-2xl">Market Trends Q3</h3>
-                      <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">Last updated 2 hours ago</p>
+                      <h3 className="headline-agent text-2xl">Branch Performance Overview</h3>
+                      <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">Review RTA, admissions, and revenue trends across all branches.</p>
                     </div>
                   </div>
                   <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
-                    <span className="label-tech">Revenue forecast</span>
-                    <div className="mt-10 h-1.5 w-10 rounded-full bg-primary" />
+                    <span className="label-tech">Revenue collection</span>
+                    <p className="mt-8 text-lg font-semibold">Track month-wise revenue collected amount since Jan 2026.</p>
                   </div>
                   <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
-                    <span className="label-tech">User growth</span>
-                    <div className="mt-10 flex gap-1.5">
-                      <div className="h-1.5 w-6 rounded-full bg-primary/50" />
-                      <div className="h-1.5 w-10 rounded-full bg-primary" />
-                    </div>
+                    <span className="label-tech">Agent analysis</span>
+                    <p className="mt-8 text-lg font-semibold">Generate summaries, compare branches, and validate operational data quickly.</p>
                   </div>
                 </div>
               </div>
