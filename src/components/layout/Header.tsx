@@ -5,30 +5,33 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
 import { runWithViewTransition } from "@/lib/viewTransitions";
+import tentenIcon from "@/assets/tenten-icon.png";
 
 const Header = () => {
   const navigate = useNavigate();
   const { profile, updateProfile, uploadAvatar } = useProfile();
 
   return (
-    <header className="w-full bg-card border-b border-border py-3">
-      <div className="flex items-center justify-between w-full px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <img 
-            src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_12%2C30%2C40%C3%A2%C2%80%C2%AFPM_1765434652652.png"
-            alt="10 Minute School English Centre" 
-            className="h-10 w-auto object-contain"
-          />
+    <header className="surface-shell relative z-20 px-3 py-4 sm:px-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="cta-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
+            <img src={tentenIcon} alt="EC Data Agent" className="h-5 w-5 object-contain" />
+          </div>
+          <div className="min-w-0">
+            <p className="headline-agent truncate text-2xl leading-none">EC Data Agent</p>
+            <p className="label-tech mt-1 hidden sm:block">Executive command surface</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="default"
             size="sm"
             onClick={() => runWithViewTransition(() => navigate("/chat"))}
-            className="gap-2 transition-smooth"
+            className="gap-2"
           >
             <MessageSquare className="h-4 w-4" />
-            <span className="hidden sm:inline">Chat with Data Agent</span>
+            <span className="hidden sm:inline">New Chat</span>
           </Button>
           <ThemeToggle />
           {profile && (

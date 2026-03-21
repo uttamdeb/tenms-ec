@@ -68,30 +68,37 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
   }, [input]);
 
   return (
-    <div className="border-t border-border bg-card p-2 sm:p-4 transition-all duration-300 ease-in-out">
-      <div className="max-w-3xl mx-auto">
+    <div className="surface-panel px-3 pb-3 pt-2 sm:px-6 sm:pb-6 sm:pt-3 transition-all duration-300 ease-in-out">
+      <div className="mx-auto max-w-5xl">
         {/* Image preview */}
         {preview && (
-          <div className="mb-2 relative inline-block">
+          <div className="mb-3 inline-block rounded-[1.25rem] bg-card p-2 shadow-sm">
+            <div className="relative inline-block">
             <img
               src={preview}
               alt="Attachment preview"
-              className="h-20 w-20 object-cover rounded-lg border border-border"
+              className="h-20 w-20 rounded-xl object-cover"
             />
             <button
               onClick={removeAttachment}
-              className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:scale-110 transition-transform"
+              type="button"
+              aria-label="Remove attachment"
+              title="Remove attachment"
+              className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground transition-transform hover:scale-110"
             >
               <X className="h-3 w-3" />
             </button>
+            </div>
           </div>
         )}
-        <div className="flex items-end gap-1.5 sm:gap-2">
+        <div className="surface-recessed flex items-end gap-2 rounded-[1.75rem] px-3 py-3 shadow-[inset_0_0_0_1px_hsl(var(--outline-ghost)/0.15)] transition-all duration-300 focus-within:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] sm:px-4">
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
             className="hidden"
+            aria-label="Upload image attachment"
+            title="Upload image attachment"
             onChange={handleFileSelect}
           />
           <Button
@@ -100,7 +107,7 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || !!attachment}
-            className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 text-muted-foreground hover:text-foreground transition-colors"
+            className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
           >
             <ImagePlus className="h-5 w-5" />
           </Button>
@@ -111,21 +118,22 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
             onKeyDown={handleKeyDown}
             placeholder="Ask about your data..."
             disabled={disabled}
-            className="resize-none min-h-[40px] sm:min-h-[44px] max-h-[120px] sm:max-h-[150px] text-sm transition-all duration-300 ease-out focus:ring-2 focus:ring-primary/50"
+            className="min-h-[40px] max-h-[150px] resize-none border-0 bg-transparent px-0 text-sm text-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             rows={1}
           />
           <Button
             onClick={handleSend}
             disabled={(!input.trim() && !attachment) || disabled}
             size="icon"
-            className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50"
+            className="shrink-0 h-11 w-11"
           >
             <Send className="h-4 w-4 transition-transform duration-200" />
           </Button>
         </div>
-        <p className="hidden sm:block text-center text-xs text-muted-foreground mt-2">
-          Data Agent can make mistakes. Please verify important information.
-        </p>
+        <div className="mt-3 hidden items-center justify-between sm:flex">
+          <p className="label-tech">System status: operational</p>
+          <p className="label-tech">Data Agent can make mistakes. Verify important information.</p>
+        </div>
       </div>
     </div>
   );

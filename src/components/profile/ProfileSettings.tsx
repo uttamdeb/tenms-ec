@@ -67,15 +67,15 @@ const ProfileSettings = ({ open, onOpenChange, profile, onUpdateProfile, onUploa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md animate-in fade-in zoom-in-95 duration-300 ease-out">
+      <DialogContent className="glass-panel border-0 sm:max-w-md animate-in fade-in zoom-in-95 duration-300 ease-out">
         <DialogHeader>
-          <DialogTitle>Profile Settings</DialogTitle>
+          <DialogTitle className="headline-agent text-2xl">Profile Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-4">
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3 group">
             <div className="relative group cursor-pointer transition-transform hover:scale-110 duration-200" onClick={() => fileRef.current?.click()}>
-              <Avatar className="h-20 w-20">
+              <Avatar className="h-20 w-20 border border-white/10">
                 <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback className="text-lg bg-primary text-primary-foreground">{initials}</AvatarFallback>
               </Avatar>
@@ -83,7 +83,7 @@ const ProfileSettings = ({ open, onOpenChange, profile, onUpdateProfile, onUploa
                 {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
               </div>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" aria-label="Upload profile photo" title="Upload profile photo" onChange={handleFileChange} />
             <p className="text-xs text-muted-foreground">Click to change photo</p>
           </div>
 

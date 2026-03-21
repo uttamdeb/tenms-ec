@@ -15,7 +15,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="outline" size="icon" className="w-8 h-8 sm:w-9 sm:h-9">
+      <Button variant="outline" size="icon" className="h-10 w-10 bg-card/70">
         <Sun className="h-[1.2rem] w-[1.2rem]" />
       </Button>
     );
@@ -28,7 +28,7 @@ export function ThemeToggle() {
       onClick={() =>
         runWithViewTransition(() => setTheme(theme === "dark" ? "light" : "dark"))
       }
-      className="w-8 h-8 sm:w-9 sm:h-9 transition-smooth"
+      className="h-10 w-10 bg-card/70 transition-smooth"
     >
       {theme === "dark" ? (
         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-smooth" />

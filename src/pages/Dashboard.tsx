@@ -39,9 +39,13 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="surface-shell min-h-screen flex flex-col">
       <Header />
-      <MetabaseDashboard />
+      <main className="flex-1 px-2 pb-2 sm:px-4 sm:pb-4">
+        <div className="surface-panel h-full overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
+          <MetabaseDashboard />
+        </div>
+      </main>
       <Footer />
     </div>
   );

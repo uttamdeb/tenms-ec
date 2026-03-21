@@ -11,6 +11,7 @@ import { Loader2, Mail, Lock, User } from "lucide-react";
 import Footer from "@/components/layout/Footer";
 import { runWithViewTransition } from "@/lib/viewTransitions";
 import { lovable } from "@/integrations/lovable/index";
+import tentenIcon from "@/assets/tenten-icon.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -104,36 +105,54 @@ const Auth = () => {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="surface-shell min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
-          {/* Brand Header */}
-          <div className="text-center space-y-2">
-            <img 
-              src="https://s3.ap-southeast-1.amazonaws.com/cdn.10minuteschool.com/lms10/Screenshot_2025-12-11_at_11%2C20%2C12%C3%A2%C2%80%C2%AFAM_1765430485151.png" 
-              alt="10 Minute School English Centre" 
-              className="h-16 w-auto mx-auto object-contain"
-            />
-          </div>
+    <div className="surface-shell min-h-screen flex flex-col">
+      <main className="flex flex-1 items-center justify-center p-4 sm:p-6">
+        <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="surface-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-12">
+            <p className="label-tech">Secure access portal</p>
+            <div className="mt-6 flex items-center gap-3">
+              <div className="cta-gradient flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
+                <img src={tentenIcon} alt="EC Data Agent" className="h-6 w-6 object-contain" />
+              </div>
+              <div>
+                <h1 className="headline-agent text-4xl sm:text-6xl leading-[0.92]">
+                  Access the
+                  <span className="text-primary"> Monolith</span>
+                </h1>
+              </div>
+            </div>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-[hsl(var(--on-surface-variant))]">
+              Sign in to inspect dashboards, launch new analyses, and collaborate with the EC Data Agent through a premium decision workspace.
+            </p>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
+                <p className="label-tech">Market intelligence</p>
+                <p className="mt-8 text-xl font-semibold">Live dashboards and embedded reporting</p>
+              </div>
+              <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
+                <p className="label-tech">Agent workflows</p>
+                <p className="mt-8 text-xl font-semibold">Chat, SQL traces, and executive summaries</p>
+              </div>
+            </div>
+          </section>
 
-          {/* Auth Card */}
-          <Card className="border border-border shadow-lg">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-xl">Welcome</CardTitle>
+          <Card className="glass-panel rounded-[2rem] border-0 shadow-none">
+            <CardHeader className="pb-2 text-center">
+              <CardTitle className="headline-agent text-3xl">Welcome</CardTitle>
               <CardDescription>
                 Sign in to access your dashboard
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsList className="mb-6 grid w-full grid-cols-2 rounded-full bg-muted/70 p-1">
                   <TabsTrigger value="signin">Sign In</TabsTrigger>
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
@@ -246,10 +265,10 @@ const Auth = () => {
 
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
+                  <span className="w-full bg-[hsl(var(--outline-ghost)/0.15)] h-px" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                  <span className="surface-high px-2 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
 

@@ -40,14 +40,14 @@ const ProfileDropdown = ({ profile, onUpdateProfile, onUploadAvatar }: ProfileDr
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-110 active:scale-95">
-            <Avatar className="h-8 w-8 cursor-pointer transition-all duration-300 hover:shadow-md">
+          <button className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105 active:scale-95">
+            <Avatar className="h-10 w-10 cursor-pointer border border-white/10 transition-all duration-300 hover:shadow-md">
               <AvatarImage src={profile.avatar_url || undefined} />
               <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
             </Avatar>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
+        <DropdownMenuContent align="end" className="glass-panel w-56 rounded-[1.5rem] p-2 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
           <div className="px-2 py-1.5 transition-colors duration-300">
             <p className="text-sm font-medium truncate">{profile.full_name || "User"}</p>
             <p className="text-xs text-muted-foreground truncate">{profile.email}</p>

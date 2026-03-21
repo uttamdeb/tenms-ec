@@ -108,45 +108,47 @@ const Chat = () => {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-background overflow-x-hidden">
-      {/* Top bar */}
-      <header className="h-12 sm:h-14 shrink-0 border-b border-border bg-card flex items-center justify-between px-2 sm:px-4">
-        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+    <div className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground">
+      <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
+      <header className="surface-shell relative z-20 flex h-16 shrink-0 items-center justify-between px-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 transition-transform duration-200 hover:scale-110"
+            className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
           >
             {sidebarOpen ? <PanelLeftClose className="h-4 w-4 sm:h-5 sm:w-5" /> : <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-cover" />
-            <div className="hidden sm:block">
-              <h1 className="text-sm font-semibold leading-none">EC Data Agent</h1>
-              <p className="text-xs text-muted-foreground">Your data assistant</p>
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="cta-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
+              <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="headline-agent truncate text-xl leading-none sm:text-[1.75rem]">EC Data Agent</h1>
+              <p className="label-tech mt-1 hidden sm:block">Decision intelligence interface</p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <Button 
-            variant="ghost" 
-            size="icon" 
-            className="shrink-0 h-8 w-8 sm:h-9 sm:w-auto sm:px-3 transition-all duration-200 hover:scale-105 active:scale-95" 
+            variant="default"
+            size="sm"
+            className="shrink-0 px-4 sm:px-5"
             onClick={handleNewChat}
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline ml-1 text-sm">New Chat</span>
+            <span className="ml-1 hidden sm:inline">New Chat</span>
           </Button>
           <ThemeToggle />
           <Button 
-            variant="ghost" 
-            size="icon" 
+            variant="ghost"
+            size="sm"
             onClick={() => runWithViewTransition(() => navigate("/"))}
-            className="shrink-0 h-8 w-8 sm:h-9 sm:w-auto sm:px-3 transition-smooth hover:scale-105 active:scale-95"
+            className="hidden sm:inline-flex"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline ml-1 text-sm">Dashboard</span>
+            <span className="ml-1">Dashboard</span>
           </Button>
           {profile && (
             <div className="shrink-0">
@@ -160,12 +162,12 @@ const Chat = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative z-10 flex flex-1 overflow-hidden px-2 pb-2 sm:px-4 sm:pb-4">
         {/* Sidebar */}
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
           isMobile
             ? `absolute inset-y-12 left-0 z-40 w-64 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
-            : sidebarOpen ? "w-64 shrink-0" : "w-0"
+            : sidebarOpen ? "w-[18rem] shrink-0 pr-3" : "w-0"
         }`}>
           <ChatSidebar
             sessions={sessions}
@@ -178,29 +180,62 @@ const Chat = () => {
         {/* Overlay for mobile sidebar */}
         {sidebarOpen && isMobile && (
           <div 
-            className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" 
+            className="fixed inset-0 z-30 bg-background/72 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" 
             onClick={() => setSidebarOpen(false)} 
           />
         )}
 
         {/* Chat area */}
-        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+        <div className="surface-panel relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
           {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 animate-in fade-in duration-500">
-              <div className="text-center space-y-3 sm:space-y-4 animate-in slide-in-from-bottom-4 duration-700 max-w-sm sm:max-w-md px-2">
-                <img src={tentenIcon} alt="EC Data Agent" className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl object-cover mx-auto animate-in zoom-in duration-700" />
-                <h2 className="text-lg sm:text-xl font-semibold animate-in fade-in duration-700 delay-200">Hello! I'm EC Data Agent</h2>
-                <p className="text-sm sm:text-base text-muted-foreground animate-in fade-in duration-700 delay-300">
-                  I'm here to help you explore and analyze your English Centre data. Ask me anything about branches, students, revenue, and more!
-                </p>
+            <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 animate-in fade-in duration-500">
+              <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-2xl space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+                  <p className="label-tech">Market intelligence workspace</p>
+                  <div className="space-y-4">
+                    <h2 className="headline-agent max-w-xl text-4xl leading-[0.92] sm:text-6xl">
+                      Analyzing the <span className="text-primary">Trends</span>
+                      <br />
+                      of Tomorrow.
+                    </h2>
+                    <p className="max-w-xl text-lg leading-8 text-[hsl(var(--on-surface-variant))]">
+                      I am your dedicated data agency. Upload reports, inspect branch performance, and ask precise questions to begin the deep dive.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid w-full max-w-xl gap-4 sm:grid-cols-2">
+                  <div className="surface-card rounded-[1.5rem] p-5 shadow-sm sm:col-span-2">
+                    <div className="mb-10 flex items-start justify-between gap-4">
+                      <div className="cta-gradient flex h-10 w-10 items-center justify-center rounded-xl">
+                        <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
+                      </div>
+                      <span className="label-tech">Market intelligence</span>
+                    </div>
+                    <div>
+                      <h3 className="headline-agent text-2xl">Market Trends Q3</h3>
+                      <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">Last updated 2 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
+                    <span className="label-tech">Revenue forecast</span>
+                    <div className="mt-10 h-1.5 w-10 rounded-full bg-primary" />
+                  </div>
+                  <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
+                    <span className="label-tech">User growth</span>
+                    <div className="mt-10 flex gap-1.5">
+                      <div className="h-1.5 w-6 rounded-full bg-primary/50" />
+                      <div className="h-1.5 w-10 rounded-full bg-primary" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="mt-6 sm:mt-8 w-full animate-in fade-in duration-700 delay-500">
+              <div className="mt-10 w-full animate-in fade-in duration-700 delay-500">
                 <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
           ) : (
             <ScrollArea className="flex-1">
-              <div className="max-w-3xl w-full mx-auto overflow-hidden">
+              <div className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden px-3 py-4 sm:px-6 sm:py-6">
                 {messages.map((msg) => {
                   const sqlData = sqlRunData[msg.id];
                   return (
@@ -223,9 +258,11 @@ const Chat = () => {
                   );
                 })}
                 {isLoading && !streamingMessage && (
-                  <div className="flex gap-3 py-4 px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-8 w-8 rounded-lg object-cover" />
-                    <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-2 transition-colors duration-300">
+                  <div className="animate-in fade-in slide-in-from-bottom-2 flex gap-3 px-2 py-4 duration-300 sm:px-4">
+                    <div className="cta-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
+                      <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
+                    </div>
+                    <div className="surface-card flex items-center gap-2 rounded-[1.25rem] px-4 py-3 transition-colors duration-300">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span className="text-sm text-muted-foreground">Thinking...</span>
                     </div>

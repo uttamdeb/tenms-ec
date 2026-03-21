@@ -70,10 +70,10 @@ const MetabaseDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background">
+      <div className="surface-panel flex h-full min-h-[60vh] flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
+          <p className="label-tech">Loading dashboard</p>
         </div>
       </div>
     );
@@ -81,10 +81,10 @@ const MetabaseDashboard = () => {
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background p-4">
-        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+      <div className="surface-panel flex h-full min-h-[60vh] flex-1 items-center justify-center p-4">
+        <div className="glass-panel flex max-w-md flex-col items-center gap-4 rounded-[1.75rem] p-8 text-center">
           <AlertCircle className="h-12 w-12 text-destructive" />
-          <h2 className="text-xl font-semibold text-foreground">Failed to Load Dashboard</h2>
+          <h2 className="headline-agent text-3xl text-foreground">Failed to Load Dashboard</h2>
           <p className="text-muted-foreground">{error}</p>
           <Button onClick={fetchEmbedUrl} className="gap-2">
             <RefreshCw className="h-4 w-4" />
@@ -96,14 +96,14 @@ const MetabaseDashboard = () => {
   }
 
   return (
-    <div className="flex-1 w-full bg-background">
+    <div className="surface-panel h-full w-full">
       <iframe
         key={iframeUrl}
         src={iframeUrl || ''}
         className="w-full h-full border-0"
         title="10 Minute School Dashboard"
         allowFullScreen
-        style={{ minHeight: 'calc(100vh - 140px)' }}
+        style={{ minHeight: 'calc(100vh - 180px)' }}
       />
     </div>
   );

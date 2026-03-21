@@ -335,18 +335,26 @@ const ChatMessageBubble = memo(({
 
   return (
     <div className="fluent-enter w-full min-w-0">
-      <div className={cn("flex gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4 w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
-      {!isUser && (
-        <img src={tentenIcon} alt="EC Data Agent" className="shrink-0 h-6 w-6 sm:h-8 sm:w-8 rounded-lg object-cover mt-0.5" />
-      )}
-      <div
-        className={cn(
-          "rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm transition-all duration-300 ease-out hover:shadow-md min-w-0",
-          isUser
-            ? "max-w-[85%] sm:max-w-[80%] bg-primary text-primary-foreground ml-auto break-words"
-            : "flex-1 overflow-x-auto sm:max-w-[80%] bg-muted text-foreground hover:bg-muted/80 break-words"
+      <div className={cn("flex w-full min-w-0 gap-2 px-2 py-3 sm:gap-3 sm:px-4 sm:py-4", isUser ? "justify-end" : "justify-start")}>
+        {!isUser && (
+          <div className="cta-gradient mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
+            <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
+          </div>
         )}
-      >
+        <div
+          className={cn(
+            "min-w-0 text-sm transition-all duration-300 ease-out",
+            isUser ? "ml-auto max-w-[88%] sm:max-w-[78%]" : "flex-1 sm:max-w-[82%]"
+          )}
+        >
+          <div
+            className={cn(
+              "min-w-0 break-words rounded-[1.5rem] px-4 py-3 shadow-sm",
+              isUser
+                ? "cta-gradient text-primary-foreground"
+                : "surface-card text-foreground"
+            )}
+          >
         {isUser ? (
           <p className="whitespace-pre-wrap break-words">{content}</p>
         ) : (
@@ -437,7 +445,7 @@ const ChatMessageBubble = memo(({
 
         {!isUser && (
           <TooltipProvider delayDuration={150}>
-            <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-0 sm:gap-0.5 border-t border-border/60 pt-2 sm:pt-2.5 text-muted-foreground">
+            <div className="mt-3 flex flex-wrap items-center gap-0.5 px-1 text-muted-foreground">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -542,19 +550,20 @@ const ChatMessageBubble = memo(({
             </div>
           </TooltipProvider>
         )}
-      </div>
-      {isUser && (
-        <Avatar className="shrink-0 h-6 w-6 sm:h-8 sm:w-8">
-          <AvatarImage src={userAvatarUrl || undefined} />
-          <AvatarFallback className="text-[10px] sm:text-xs bg-secondary text-secondary-foreground">{userInitials}</AvatarFallback>
-        </Avatar>
-      )}
+          </div>
+        </div>
+        {isUser && (
+          <Avatar className="h-8 w-8 shrink-0 border border-white/10 sm:h-9 sm:w-9">
+            <AvatarImage src={userAvatarUrl || undefined} />
+            <AvatarFallback className="bg-secondary text-[10px] text-secondary-foreground sm:text-xs">{userInitials}</AvatarFallback>
+          </Avatar>
+        )}
       </div>
 
       <Dialog open={dislikeOpen} onOpenChange={setDislikeOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="glass-panel border-0 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Why was this response not helpful?</DialogTitle>
+            <DialogTitle className="headline-agent text-2xl">Why was this response not helpful?</DialogTitle>
             <DialogDescription>
               Your note will be stored with the message feedback so the team can review it.
             </DialogDescription>
