@@ -25,14 +25,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Auth client — uses the caller's JWT for auth check
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     if (authError || !authUser) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -49,114 +46,45 @@ serve(async (req) => {
       );
     }
 
-    // Service-role client — used to write results back to the DB (bypasses RLS)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
     const webhookBody: Record<string, unknown> = { user, input, sessionId };
     if (attachments && Array.isArray(attachments) && attachments.length > 0) {
       webhookBody.attachments = attachments;
     }
 
-    // --- Fire the webhook, write result to DB (runs in background) ---
-    const backgroundTask = (async () => {
-      try {
-        const webhookController = new AbortController();
-        const webhookTimeout = setTimeout(() => webhookController.abort(), 175_000);
+    const webhookController = new AbortController();
+    const webhookTimeout = setTimeout(() => webhookController.abort(), 175_000); // 175 s — just under Supabase's 180 s platform limit
 
-        let response: Response;
-        try {
-          response = await fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(webhookBody),
-            signal: webhookController.signal,
-          });
-        } finally {
-          clearTimeout(webhookTimeout);
-        }
-
-        const responseText = await response.text();
-        let result;
-        try {
-          result = JSON.parse(responseText);
-        } catch {
-          result = { output: responseText };
-        }
-
-        const responseData = Array.isArray(result) ? result[0] : result;
-        const assistantContent = responseData?.output || responseData?.message || responseData?.response || JSON.stringify(responseData);
-
-        // Write assistant message to DB
-        const { data: assistantMsg, error: insertErr } = await supabaseAdmin
-          .from("chat_messages")
-          .insert({
-            session_id: sessionId,
-            user_id: authUser.id,
-            role: "assistant",
-            content: assistantContent,
-          })
-          .select()
-          .single();
-
-        if (insertErr) {
-          console.error("Failed to insert assistant message:", insertErr);
-          return;
-        }
-
-        // Write SQL run data if present
-        if (responseData?.executed_sql && responseData?.bq_result) {
-          const bqResultStr = typeof responseData.bq_result === 'string'
-            ? responseData.bq_result
-            : JSON.stringify(responseData.bq_result);
-          await supabaseAdmin.from("agent_sql_runs").insert({
-            message_id: assistantMsg.id,
-            executed_sql: responseData.executed_sql,
-            bq_result: bqResultStr,
-          });
-        }
-
-        // Update session timestamp
-        await supabaseAdmin
-          .from("chat_sessions")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", sessionId);
-
-        console.log("Background webhook task completed successfully");
-      } catch (err) {
-        console.error("Background webhook task failed:", err);
-        // Write an error message so the client knows something went wrong
-        await supabaseAdmin
-          .from("chat_messages")
-          .insert({
-            session_id: sessionId,
-            user_id: authUser.id,
-            role: "assistant",
-            content: "Sorry, something went wrong while processing your request. Please try again.",
-          });
-      }
-    })();
-
-    // Keep the Deno isolate alive until the background task finishes,
-    // but return the HTTP response immediately so Cloudflare doesn't time out.
-    // @ts-ignore — EdgeRuntime.waitUntil is available on Supabase Edge Functions (Deno Deploy)
-    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
-      // @ts-ignore
-      EdgeRuntime.waitUntil(backgroundTask);
-    } else {
-      // Fallback: just let the promise float — isolate stays alive until it resolves
-      backgroundTask.catch((e) => console.error("Unhandled background error:", e));
+    let response: Response;
+    try {
+      response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookBody),
+        signal: webhookController.signal,
+      });
+    } finally {
+      clearTimeout(webhookTimeout);
     }
 
-    // Respond instantly — the client will poll chat_messages for the result
+    const responseText = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      result = { output: responseText };
+    }
+
     return new Response(
-      JSON.stringify({ status: "processing" }),
-      { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify(result),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in chat-with-agent:', error);
+    console.error('Error calling webhook:', error);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: isTimeout ? 'The request timed out after 175 seconds. Please try again.' : 'Internal server error' }),
+      { status: isTimeout ? 504 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
