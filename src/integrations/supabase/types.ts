@@ -111,6 +111,24 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_usage: {
+        Row: {
+          characters_used: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          characters_used?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          characters_used?: number
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
