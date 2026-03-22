@@ -52,7 +52,7 @@ serve(async (req) => {
     }
 
     const webhookController = new AbortController();
-    const webhookTimeout = setTimeout(() => webhookController.abort(), 175_000); // 175 s — just under Supabase's 180 s platform limit
+    const webhookTimeout = setTimeout(() => webhookController.abort(), 115_000); // 115 s — under client's 120 s guard
 
     let response: Response;
     try {
@@ -83,7 +83,7 @@ serve(async (req) => {
     console.error('Error calling webhook:', error);
     const isTimeout = error instanceof DOMException && error.name === 'AbortError';
     return new Response(
-      JSON.stringify({ error: isTimeout ? 'The request timed out after 175 seconds. Please try again.' : 'Internal server error' }),
+      JSON.stringify({ error: isTimeout ? 'The request timed out after 115 seconds. Please try again.' : 'Internal server error' }),
       { status: isTimeout ? 504 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
