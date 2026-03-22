@@ -46,24 +46,6 @@ export type Database = {
           },
         ]
       }
-      daily_usage: {
-        Row: {
-          user_id: string
-          usage_date: string
-          characters_used: number
-        }
-        Insert: {
-          user_id: string
-          usage_date?: string
-          characters_used?: number
-        }
-        Update: {
-          user_id?: string
-          usage_date?: string
-          characters_used?: number
-        }
-        Relationships: []
-      }
       chat_messages: {
         Row: {
           content: string
@@ -125,6 +107,24 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_usage: {
+        Row: {
+          characters_used: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          characters_used?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          characters_used?: number
+          usage_date?: string
           user_id?: string
         }
         Relationships: []
