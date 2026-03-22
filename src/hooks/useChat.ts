@@ -23,7 +23,13 @@ export interface ChatSession {
   updated_at: string;
 }
 
-export function useChat() {
+interface UseChatOptions {
+  onCharactersUsed?: (chars: number) => void;
+  hasEnoughTenergy?: boolean;
+}
+
+export function useChat(options: UseChatOptions = {}) {
+  const { onCharactersUsed, hasEnoughTenergy = true } = options;
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -143,6 +149,11 @@ export function useChat() {
   const sendMessage = useCallback(async (input: string, attachment?: File) => {
     if (!userId || (!input.trim() && !attachment)) return;
 
+    if (!hasEnoughTenergy) {
+      toast.error("You've used all your Tenergy for today. Come back tomorrow!");
+      return;
+    }
+
     let sessionId = currentSessionId;
     if (!sessionId) {
       sessionId = await createSession();
@@ -248,6 +259,12 @@ export function useChat() {
         setStreamingMessage(null);
         setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
 
+        // Track character usage (user input + assistant response)
+        if (onCharactersUsed) {
+          const totalChars = messageContent.length + assistantContent.length;
+          onCharactersUsed(totalChars);
+        }
+
         // Save SQL run data if present
         if (responseData?.executed_sql && responseData?.bq_result) {
           const bqResultStr = typeof responseData.bq_result === 'string' 
@@ -267,7 +284,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, currentSessionId, userName, messages.length, createSession]);
+  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, onCharactersUsed]);
 
   const selectSession = useCallback((sessionId: string) => {
     setCurrentSessionId(sessionId);

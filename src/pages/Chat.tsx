@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useChat } from "@/hooks/useChat";
+import { useTenergy } from "@/hooks/useTenergy";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
 import ChatInput from "@/components/chat/ChatInput";
@@ -11,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus } from "lucide-react";
+import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback } from "react";
 import tentenIcon from "@/assets/tenten-icon.png";
@@ -66,6 +67,7 @@ const Chat = () => {
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
+  const { tenergy, isUnlimited, hasEnoughTenergy, addUsage } = useTenergy();
 
   const {
     sessions,
@@ -77,7 +79,7 @@ const Chat = () => {
     createSession,
     selectSession,
     updateMessageFeedback,
-  } = useChat();
+  } = useChat({ onCharactersUsed: addUsage, hasEnoughTenergy });
 
   useEffect(() => {
     if (isMobile) setSidebarOpen(false);
@@ -192,6 +194,13 @@ const Chat = () => {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {!isUnlimited && (
+            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+              <Zap className="h-3.5 w-3.5" />
+              <span>{tenergy}</span>
+              <span className="hidden text-xs font-normal opacity-70 sm:inline">Tenergy</span>
+            </div>
+          )}
           <Button 
             variant="default"
             size="sm"
