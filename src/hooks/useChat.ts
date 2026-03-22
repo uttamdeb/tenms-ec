@@ -192,8 +192,9 @@ export function useChat() {
         body.attachments = [{ file_url: attachmentUrl }];
       }
 
-      // Record the timestamp just before firing so we can detect the new assistant row
-      const fireTimestamp = new Date().toISOString();
+      const lastKnownAssistantId = [...messages]
+        .reverse()
+        .find((message) => message.role === "assistant")?.id ?? null;
 
       // Fire the edge function — don't await the response (avoids Cloudflare 60 s timeout)
       supabase.functions.invoke("chat-with-agent", { body }).catch((err) => {
@@ -208,12 +209,12 @@ export function useChat() {
             reject(new Error("Timed out waiting for agent response after 180 seconds."));
             return;
           }
+
           const { data, error: pollErr } = await supabase
             .from("chat_messages")
             .select("*")
             .eq("session_id", sessionId)
             .eq("role", "assistant")
-            .gt("created_at", fireTimestamp)
             .order("created_at", { ascending: false })
             .limit(1);
 
@@ -221,8 +222,9 @@ export function useChat() {
             console.error("Poll error:", pollErr);
           }
 
-          if (data && data.length > 0) {
-            resolve(data[0] as ChatMessage);
+          const latestAssistant = data?.[0] as ChatMessage | undefined;
+          if (latestAssistant && latestAssistant.id !== lastKnownAssistantId) {
+            resolve(latestAssistant);
             return;
           }
 
@@ -231,6 +233,8 @@ export function useChat() {
         // Start first poll after a short delay (webhook takes at least a few seconds)
         window.setTimeout(poll, POLL_INTERVAL_MS);
       });
+
+      await loadMessages(sessionId);
 
       // Simulate streaming for the polled content
       const assistantContent = assistantRow.content;
@@ -250,7 +254,6 @@ export function useChat() {
       // The assistant message is already in the DB (written by the edge function).
       // Chat.tsx's useEffect will automatically reload SQL run data when messages change.
       setStreamingMessage(null);
-      setMessages((prev) => [...prev, assistantRow]);
     } catch (err) {
       console.error("Error calling agent:", err);
       setStreamingMessage(null);
@@ -258,7 +261,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, currentSessionId, userName, messages.length, createSession]);
+  }, [userId, currentSessionId, userName, messages, createSession, loadMessages, uploadAttachment]);
 
   const selectSession = useCallback((sessionId: string) => {
     setCurrentSessionId(sessionId);
