@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const STREAM_CHUNK_SIZE = 3;
-const STREAM_INTERVAL_MS = 18;
+const STREAM_INTERVAL_MS = 11;
 
 export interface ChatMessage {
   id: string;
