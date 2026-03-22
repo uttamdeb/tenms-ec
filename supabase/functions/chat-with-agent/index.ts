@@ -51,11 +51,20 @@ serve(async (req) => {
       webhookBody.attachments = attachments;
     }
 
-    const response = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(webhookBody),
-    });
+    const webhookController = new AbortController();
+    const webhookTimeout = setTimeout(() => webhookController.abort(), 175_000); // 175 s — just under Supabase's 180 s platform limit
+
+    let response: Response;
+    try {
+      response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookBody),
+        signal: webhookController.signal,
+      });
+    } finally {
+      clearTimeout(webhookTimeout);
+    }
 
     const responseText = await response.text();
 
@@ -72,9 +81,10 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error calling webhook:', error);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: isTimeout ? 'The request timed out after 175 seconds. Please try again.' : 'Internal server error' }),
+      { status: isTimeout ? 504 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

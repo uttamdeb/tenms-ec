@@ -189,9 +189,17 @@ export function useChat() {
       if (attachmentUrl) {
         body.attachments = [{ file_url: attachmentUrl }];
       }
-      const { data, error } = await supabase.functions.invoke("chat-with-agent", {
-        body,
-      });
+      const invokeController = new AbortController();
+      const invokeTimeout = window.setTimeout(() => invokeController.abort(), 180_000); // 180 s client-side guard
+      let data: unknown, error: unknown;
+      try {
+        ({ data, error } = await supabase.functions.invoke("chat-with-agent", {
+          body,
+          fetchOptions: { signal: invokeController.signal },
+        }));
+      } finally {
+        window.clearTimeout(invokeTimeout);
+      }
 
       if (error) throw error;
 
