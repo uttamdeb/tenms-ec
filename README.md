@@ -1,73 +1,74 @@
-# Welcome to your Lovable project
+# EC Data Agent
 
-## Project info
+**A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Overview
 
-## How can I edit this code?
+EC Data Agent is an internal conversational data assistant built for 10 Minute School's English Centre operations. It lets authorised team members query branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, and other EC metrics through a natural-language chat interface backed by an AI agent.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+- **Chat Interface** — conversational Q&A with the EC data agent; supports text input and image attachments
+- **Simulated Streaming** — assistant responses are rendered with a typewriter-style streaming animation
+- **Embedded BI Dashboard** — Metabase dashboards embedded via signed JWT tokens for at-a-glance reporting
+- **Session Management** — persistent chat sessions with history sidebar, session titles, and message feedback (like/dislike)
+- **SQL & BigQuery Inspection** — BI users can view the executed SQL and raw BigQuery results behind any agent answer
+- **Authentication** — email/password and Google OAuth via Supabase Auth
+- **Dark / Light Mode** — full theme support with a toggle in the header
+- **Mobile Responsive** — optimised layout for narrow screens with collapsible sidebar and horizontal-scroll tables/charts
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite |
+| UI | shadcn/ui, Radix primitives, Tailwind CSS |
+| Charts | Recharts (lazy-loaded) |
+| Export | xlsx (lazy-loaded) |
+| Backend | Supabase (Auth, Postgres, Storage, Edge Functions) |
+| Agent | n8n webhook (`ec-data-agent`) via Supabase Edge Function proxy |
+| BI Embed | Metabase (JWT-signed iframe) |
 
-**Use your preferred IDE**
+## Project Structure
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+  pages/          — Auth, Chat, Dashboard, Index, NotFound
+  hooks/          — useChat, useProfile, useMobile, useToast
+  components/
+    chat/         — ChatInput, ChatSidebar, ChatMessageBubble, SuggestedMessages, MarkdownChartLazy
+    dashboard/    — MetabaseDashboard
+    layout/       — Header, Footer
+    profile/      — ProfileDropdown
+    ui/           — shadcn/ui primitives
+  integrations/
+    supabase/     — client, types
+  lib/            — utils
+supabase/
+  functions/
+    chat-with-agent/         — proxies chat requests to the n8n webhook
+    generate-metabase-token/ — signs Metabase embed JWTs
 ```
 
-**Edit a file directly in GitHub**
+## Getting Started
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+# Install dependencies
+npm install
 
-**Use GitHub Codespaces**
+# Start local dev server
+npm run dev
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Production build
+npm run build
+```
 
-## What technologies are used for this project?
+Environment variables required (`.env` or Vite env):
 
-This project is built with:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Supabase Edge Function secrets:
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `METABASE_SECRET_KEY`
