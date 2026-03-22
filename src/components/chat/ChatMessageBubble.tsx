@@ -356,7 +356,7 @@ const ChatMessageBubble = memo(({
         {isUser ? (
           <p className="whitespace-pre-wrap break-words">{content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 overflow-hidden break-words prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-3 sm:prose-p:my-4 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0 [&_pre]:[-webkit-overflow-scrolling:touch]">
+          <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 overflow-hidden break-words prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-4 sm:prose-p:my-5 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0 [&_pre]:[-webkit-overflow-scrolling:touch]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
@@ -365,7 +365,7 @@ const ChatMessageBubble = memo(({
                 h2: ({ children }) => <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{children}</h2>,
                 h3: ({ children }) => <h3 className="text-base sm:text-lg font-semibold tracking-tight">{children}</h3>,
                 h4: ({ children }) => <h4 className="text-sm sm:text-base font-semibold tracking-tight">{children}</h4>,
-                p: ({ children }) => <p className="whitespace-pre-wrap leading-7">{children}</p>,
+                p: ({ children }) => <p className="whitespace-pre-wrap leading-7 my-4 sm:my-5">{children}</p>,
                 ul: ({ children }) => <ul className="list-disc pl-6">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal pl-6">{children}</ol>,
                 blockquote: ({ children }) => <blockquote>{children}</blockquote>,
