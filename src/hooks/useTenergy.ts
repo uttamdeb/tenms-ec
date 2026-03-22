@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 const DAILY_CHAR_LIMIT = 100_000;
 
 function getTodayDate(): string {
+  // Use Bangladesh Standard Time (UTC+6) so Tenergy resets at midnight BST
   const now = new Date();
-  return now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const bst = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  return bst.toISOString().slice(0, 10); // YYYY-MM-DD in BST
 }
 
 export function useTenergy() {

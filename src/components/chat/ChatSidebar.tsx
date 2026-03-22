@@ -16,7 +16,6 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat }:
     <aside className="surface-recessed flex h-full flex-col rounded-[1.75rem] px-3 py-4 text-sidebar-foreground">
       <div className="px-2 pb-4">
         <p className="headline-agent text-xl">Recent Chats</p>
-        <p className="label-tech mt-1">Last 7 days</p>
       </div>
       <div className="px-2 pb-4">
         <Button 
