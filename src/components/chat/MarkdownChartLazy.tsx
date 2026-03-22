@@ -86,10 +86,13 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   const handleDownload = useCallback(async () => {
     if (!chartRef.current) return;
     try {
+      const btn = chartRef.current.querySelector(".chart-download-btn") as HTMLElement | null;
+      if (btn) btn.style.display = "none";
       const dataUrl = await toPng(chartRef.current, {
         backgroundColor: "#1a1a1a",
         pixelRatio: 2,
       });
+      if (btn) btn.style.display = "";
       const link = document.createElement("a");
       link.download = `${spec.title.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
       link.href = dataUrl;
@@ -118,18 +121,18 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
 
   if (spec.type === "pie") {
     return (
-      <div className={CHART_CONTAINER_CLASS}>
+      <div ref={chartRef} className={CHART_CONTAINER_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
           <button
             onClick={handleDownload}
-            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="chart-download-btn shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title="Download chart as PNG"
           >
             <Download className="h-4 w-4" />
           </button>
         </div>
-        <div ref={chartRef} className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+        <div className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
           <ChartContainer config={pieConfig ?? {}} className="aspect-auto h-[280px] w-full min-w-[320px] sm:h-[340px]">
             <PieChart>
             {spec.options?.showTooltip && (
@@ -160,18 +163,18 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   }
 
   return (
-    <div className={CHART_CONTAINER_CLASS}>
+    <div ref={chartRef} className={CHART_CONTAINER_CLASS}>
       <div className="flex items-start justify-between gap-2">
         <ChartHeader title={spec.title} description={spec.description} />
         <button
           onClick={handleDownload}
-          className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="chart-download-btn shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="Download chart as PNG"
         >
           <Download className="h-4 w-4" />
         </button>
       </div>
-      <div ref={chartRef} className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[300px] w-full min-w-[360px] sm:h-[380px]">
           {(spec.type === "bar" ? (
           <BarChart data={spec.data} width={Math.max(spec.data.length * 88, 360)} height={380} margin={{ top: 12, right: 12, left: 0, bottom: 12 }}>
