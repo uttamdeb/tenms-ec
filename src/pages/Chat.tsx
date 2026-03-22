@@ -17,12 +17,52 @@ import { useRef, useCallback } from "react";
 import tentenIcon from "@/assets/tenten-icon.png";
 import { runWithViewTransition } from "@/lib/viewTransitions";
 
+const THINKING_NOTES = [
+  "Cross-checking branch signals before making bold claims.",
+  "Dusting off the trend lines and looking for the weird bits.",
+  "Comparing registrations against RTA to spot hidden drift.",
+  "Looking for anomalies that refuse to stay quiet.",
+  "Turning raw tables into something a human can actually use.",
+  "Checking whether the spike is real or just a reporting hiccup.",
+  "Following the breadcrumbs from summary to root cause.",
+  "Lining up month-on-month movement with branch-level context.",
+  "Separating seasonal patterns from actual operational issues.",
+  "Stress-testing the story before writing the conclusion.",
+  "Scanning for outliers with main-character energy.",
+  "Trying not to be impressed by suspiciously perfect numbers.",
+  "Looking for the one metric that explains the other three.",
+  "Checking if the trend bends before the business feels it.",
+  "Translating dashboard chaos into executive-grade signal.",
+  "Inspecting the data for plot twists and quiet warnings.",
+  "Matching branch performance with what the funnel is actually doing.",
+  "Hunting for the gap between activity and outcome.",
+  "Running a quick sanity check on the dramatic-looking dip.",
+  "Finding the pattern hiding behind the noise.",
+  "Looking for where registrations rise but conversion gets lazy.",
+  "Checking whether the anomaly is local, systemic, or just loud.",
+  "Building the report one suspicious metric at a time.",
+  "Watching the trendline like it owes us an explanation.",
+  "Preparing observations, anomalies, and recommendations with receipts.",
+];
+
+const getRandomThinkingNote = (currentNote?: string) => {
+  if (THINKING_NOTES.length === 1) return THINKING_NOTES[0];
+
+  let nextNote = THINKING_NOTES[Math.floor(Math.random() * THINKING_NOTES.length)];
+  while (nextNote === currentNote) {
+    nextNote = THINKING_NOTES[Math.floor(Math.random() * THINKING_NOTES.length)];
+  }
+
+  return nextNote;
+};
+
 const Chat = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
+  const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
@@ -66,12 +106,20 @@ const Chat = () => {
   useEffect(() => {
     if (!isLoading || streamingMessage) {
       setThinkingSeconds(0);
+      setThinkingNote(THINKING_NOTES[0]);
       return;
     }
 
     setThinkingSeconds(0);
+    setThinkingNote(getRandomThinkingNote());
     const timer = window.setInterval(() => {
-      setThinkingSeconds((current) => current + 1);
+      setThinkingSeconds((current) => {
+        const nextSeconds = current + 1;
+        if (nextSeconds % 4 === 0) {
+          setThinkingNote((currentNote) => getRandomThinkingNote(currentNote));
+        }
+        return nextSeconds;
+      });
     }, 1000);
 
     return () => window.clearInterval(timer);
@@ -270,13 +318,18 @@ const Chat = () => {
                     <div className="cta-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
                       <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
                     </div>
-                    <div className="surface-card flex items-center gap-2 rounded-[1.25rem] px-4 py-3 transition-colors duration-300">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">
-                        {thinkingSeconds <= 0
-                          ? "Thinking..."
-                          : `Thinking for ${thinkingSeconds} ${thinkingSeconds === 1 ? "sec" : "secs"}`}
-                      </span>
+                    <div className="surface-card flex max-w-[min(32rem,calc(100vw-7rem))] items-start gap-3 rounded-[1.25rem] px-4 py-3 transition-colors duration-300">
+                      <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+                      <div className="min-w-0 space-y-1">
+                        <span className="block text-sm text-muted-foreground">
+                          {thinkingSeconds <= 0
+                            ? "Thinking..."
+                            : `Thinking for ${thinkingSeconds} ${thinkingSeconds === 1 ? "sec" : "secs"}`}
+                        </span>
+                        <p className="text-xs leading-5 text-[hsl(var(--on-surface-variant))] sm:text-[0.8125rem]">
+                          {thinkingNote}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
