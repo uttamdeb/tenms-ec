@@ -190,13 +190,27 @@ export function useChat() {
         body.attachments = [{ file_url: attachmentUrl }];
       }
       const invokeController = new AbortController();
-      const invokeTimeout = window.setTimeout(() => invokeController.abort(), 180_000); // 180 s client-side guard
+      const invokeTimeout = window.setTimeout(() => invokeController.abort(), 120_000); // 120 s client-side guard
       let data: unknown, error: unknown;
       try {
-        ({ data, error } = await supabase.functions.invoke("chat-with-agent", {
-          body,
-          fetchOptions: { signal: invokeController.signal },
-        }));
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const session = (await supabase.auth.getSession()).data.session;
+        const res = await fetch(`${supabaseUrl}/functions/v1/chat-with-agent`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify(body),
+          signal: invokeController.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          error = new Error((errBody as Record<string, string>).error || `HTTP ${res.status}`);
+        } else {
+          data = await res.json();
+        }
       } finally {
         window.clearTimeout(invokeTimeout);
       }

@@ -52,7 +52,7 @@ serve(async (req) => {
     }
 
     const webhookController = new AbortController();
-    const webhookTimeout = setTimeout(() => webhookController.abort(), 175_000); // 175 s — just under Supabase's 180 s platform limit
+    const webhookTimeout = setTimeout(() => webhookController.abort(), 115_000); // 115 s — under client's 120 s guard
 
     let response: Response;
     try {
