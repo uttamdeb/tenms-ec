@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const STREAM_CHUNK_SIZE = 3;
-const STREAM_INTERVAL_MS = 18;
+const STREAM_INTERVAL_MS = 11;
+const POLL_INTERVAL_MS = 3_000;   // check for assistant reply every 3 s
+const POLL_TIMEOUT_MS = 180_000;  // give up after 180 s
 
 export interface ChatMessage {
   id: string;
@@ -181,7 +183,7 @@ export function useChat() {
       await supabase.from("chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
     }
 
-    // Call webhook
+    // Call webhook (fire-and-forget — the edge function writes the result to the DB)
     setIsLoading(true);
     setStreamingMessage("");
     try {
@@ -189,27 +191,51 @@ export function useChat() {
       if (attachmentUrl) {
         body.attachments = [{ file_url: attachmentUrl }];
       }
-      const invokeController = new AbortController();
-      const invokeTimeout = window.setTimeout(() => invokeController.abort(), 180_000); // 180 s client-side guard
-      let data: unknown, error: unknown;
-      try {
-        ({ data, error } = await supabase.functions.invoke("chat-with-agent", {
-          body,
-          fetchOptions: { signal: invokeController.signal },
-        }));
-      } finally {
-        window.clearTimeout(invokeTimeout);
-      }
 
-      if (error) throw error;
+      // Record the timestamp just before firing so we can detect the new assistant row
+      const fireTimestamp = new Date().toISOString();
 
-      // Handle array response from webhook
-      const responseData = Array.isArray(data) ? data[0] : data;
-      const assistantContent = responseData?.output || responseData?.message || responseData?.response || JSON.stringify(responseData);
+      // Fire the edge function — don't await the response (avoids Cloudflare 60 s timeout)
+      supabase.functions.invoke("chat-with-agent", { body }).catch((err) => {
+        console.warn("Edge function invoke returned an error (may be expected if Cloudflare closes early):", err);
+      });
 
+      // Poll chat_messages for the assistant's reply written by the edge function
+      const assistantRow = await new Promise<ChatMessage>((resolve, reject) => {
+        const deadline = Date.now() + POLL_TIMEOUT_MS;
+        const poll = async () => {
+          if (Date.now() > deadline) {
+            reject(new Error("Timed out waiting for agent response after 180 seconds."));
+            return;
+          }
+          const { data, error: pollErr } = await supabase
+            .from("chat_messages")
+            .select("*")
+            .eq("session_id", sessionId)
+            .eq("role", "assistant")
+            .gt("created_at", fireTimestamp)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          if (pollErr) {
+            console.error("Poll error:", pollErr);
+          }
+
+          if (data && data.length > 0) {
+            resolve(data[0] as ChatMessage);
+            return;
+          }
+
+          window.setTimeout(poll, POLL_INTERVAL_MS);
+        };
+        // Start first poll after a short delay (webhook takes at least a few seconds)
+        window.setTimeout(poll, POLL_INTERVAL_MS);
+      });
+
+      // Simulate streaming for the polled content
+      const assistantContent = assistantRow.content;
       await new Promise<void>((resolve) => {
         let currentIndex = 0;
-
         const streamTimer = window.setInterval(() => {
           currentIndex = Math.min(currentIndex + STREAM_CHUNK_SIZE, assistantContent.length);
           setStreamingMessage(assistantContent.slice(0, currentIndex));
@@ -221,35 +247,14 @@ export function useChat() {
         }, STREAM_INTERVAL_MS);
       });
 
-      // Save assistant message
-      const { data: assistantMsg, error: assistantErr } = await supabase
-        .from("chat_messages")
-        .insert({ session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent })
-        .select()
-        .single();
-
-      if (assistantErr) {
-        console.error("Failed to save assistant message:", assistantErr);
-      } else {
-        setStreamingMessage(null);
-        setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
-
-        // Save SQL run data if present
-        if (responseData?.executed_sql && responseData?.bq_result) {
-          const bqResultStr = typeof responseData.bq_result === 'string' 
-            ? responseData.bq_result 
-            : JSON.stringify(responseData.bq_result);
-          await supabase.from("agent_sql_runs").insert({
-            message_id: (assistantMsg as ChatMessage).id,
-            executed_sql: responseData.executed_sql,
-            bq_result: bqResultStr,
-          });
-        }
-      }
+      // The assistant message is already in the DB (written by the edge function).
+      // Chat.tsx's useEffect will automatically reload SQL run data when messages change.
+      setStreamingMessage(null);
+      setMessages((prev) => [...prev, assistantRow]);
     } catch (err) {
       console.error("Error calling agent:", err);
       setStreamingMessage(null);
-      toast.error("Failed to get response from agent");
+      toast.error("Failed to get response from agent. Please try again.");
     } finally {
       setIsLoading(false);
     }
