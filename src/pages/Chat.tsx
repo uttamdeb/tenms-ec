@@ -194,13 +194,11 @@ const Chat = () => {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {!isUnlimited && (
-            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-              <Zap className="h-3.5 w-3.5" />
-              <span>{tenergy}</span>
-              <span className="hidden text-xs font-normal opacity-70 sm:inline">Tenergy</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+            <Zap className="h-3.5 w-3.5" />
+            <span>{isUnlimited ? "Unlimited" : tenergy}</span>
+            <span className="hidden text-xs font-normal opacity-70 sm:inline">Tenergy</span>
+          </div>
           <Button 
             variant="default"
             size="sm"
