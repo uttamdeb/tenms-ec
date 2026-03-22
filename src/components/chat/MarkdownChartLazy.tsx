@@ -1,4 +1,5 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef, useCallback } from "react";
+import { toPng } from "html-to-image";
 import {
   ChartContainer,
   ChartLegend,
@@ -7,6 +8,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Download } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -79,6 +81,24 @@ const ChartHeader = memo(({ title, description }: { title: string; description: 
 ));
 
 export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleDownload = useCallback(async () => {
+    if (!chartRef.current) return;
+    try {
+      const dataUrl = await toPng(chartRef.current, {
+        backgroundColor: "#1a1a1a",
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `${spec.title.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to download chart:", err);
+    }
+  }, [spec.title]);
+
   // Hooks must be unconditional; compute both configs and use the one we need.
   const pieConfig = useMemo<ChartConfig | null>(() => {
     if (spec.type !== "pie") return null;
@@ -99,8 +119,17 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   if (spec.type === "pie") {
     return (
       <div className={CHART_CONTAINER_CLASS}>
-        <ChartHeader title={spec.title} description={spec.description} />
-        <div className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+        <div className="flex items-start justify-between gap-2">
+          <ChartHeader title={spec.title} description={spec.description} />
+          <button
+            onClick={handleDownload}
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Download chart as PNG"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
+        <div ref={chartRef} className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
           <ChartContainer config={pieConfig ?? {}} className="aspect-auto h-[280px] w-full min-w-[320px] sm:h-[340px]">
             <PieChart>
             {spec.options?.showTooltip && (
@@ -132,8 +161,17 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
 
   return (
     <div className={CHART_CONTAINER_CLASS}>
-      <ChartHeader title={spec.title} description={spec.description} />
-      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+      <div className="flex items-start justify-between gap-2">
+        <ChartHeader title={spec.title} description={spec.description} />
+        <button
+          onClick={handleDownload}
+          className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          title="Download chart as PNG"
+        >
+          <Download className="h-4 w-4" />
+        </button>
+      </div>
+      <div ref={chartRef} className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[300px] w-full min-w-[360px] sm:h-[380px]">
           {(spec.type === "bar" ? (
           <BarChart data={spec.data} width={Math.max(spec.data.length * 88, 360)} height={380} margin={{ top: 12, right: 12, left: 0, bottom: 12 }}>
