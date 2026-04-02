@@ -176,11 +176,11 @@ const Chat = () => {
   const handleDeleteSession = async (id: string) => {
     try {
       await deleteSession(id);
-    } catch {
-      return;
+      if (isMobile) setSidebarOpen(false);
+    } catch (err) {
+      console.error("Delete session failed:", err);
+      toast.error("Failed to delete chat session");
     }
-
-    if (isMobile) setSidebarOpen(false);
   };
 
   return (
