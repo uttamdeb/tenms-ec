@@ -10,10 +10,9 @@ interface ChatSidebarProps {
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession?: (id: string) => void;
-  canDeleteSessions?: boolean;
 }
 
-const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession, canDeleteSessions = false }: ChatSidebarProps) => {
+const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession }: ChatSidebarProps) => {
   return (
     <aside className="surface-recessed flex h-full flex-col rounded-[1.75rem] px-3 py-4 text-sidebar-foreground">
       <div className="px-2 pb-4">
@@ -49,21 +48,19 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
                 <MessageSquare className="h-4 w-4 shrink-0" />
                 <span className="truncate">{session.title}</span>
               </button>
-              {canDeleteSessions && onDeleteSession && (
-                <Button
+              {onDeleteSession && (
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon"
                   onClick={(event) => {
                     event.stopPropagation();
                     onDeleteSession(session.id);
                   }}
-                  className="h-8 w-8 shrink-0 text-muted-foreground opacity-70 transition-opacity hover:text-destructive group-hover:opacity-100"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
                   title="Delete session"
                   aria-label="Delete session"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
           ))}

@@ -253,8 +253,7 @@ const Chat = () => {
             currentSessionId={currentSessionId}
             onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
-            onDeleteSession={handleDeleteSession}
-            canDeleteSessions={isUnlimited}
+            onDeleteSession={isUnlimited ? handleDeleteSession : undefined}
           />
         </div>
 
