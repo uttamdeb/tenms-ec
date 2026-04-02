@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useChat } from "@/hooks/useChat";
 import { useTenergy } from "@/hooks/useTenergy";
@@ -176,11 +177,11 @@ const Chat = () => {
   const handleDeleteSession = async (id: string) => {
     try {
       await deleteSession(id);
-    } catch {
-      return;
+      if (isMobile) setSidebarOpen(false);
+    } catch (err) {
+      console.error("Delete session failed:", err);
+      toast.error("Failed to delete chat session");
     }
-
-    if (isMobile) setSidebarOpen(false);
   };
 
   return (
