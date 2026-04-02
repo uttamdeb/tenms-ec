@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useChat } from "@/hooks/useChat";
 import { useTenergy } from "@/hooks/useTenergy";
