@@ -254,7 +254,7 @@ const Chat = () => {
             currentSessionId={currentSessionId}
             onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
-            onDeleteSession={isUnlimited ? handleDeleteSession : undefined}
+            onDeleteSession={(isUnlimited || profile?.role === "BI") ? handleDeleteSession : undefined}
           />
         </div>
 
