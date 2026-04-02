@@ -36,7 +36,7 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
             <div
               key={session.id}
               className={cn(
-                "glass-hover flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition-all duration-200",
+                "glass-hover group flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition-all duration-200",
                 session.id === currentSessionId
                   ? "bg-white/10 text-foreground backdrop-blur-sm"
                   : "text-[hsl(var(--on-surface-variant))] hover:text-foreground"
@@ -58,7 +58,7 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
                     event.stopPropagation();
                     onDeleteSession(session.id);
                   }}
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                  className="h-8 w-8 shrink-0 text-muted-foreground opacity-70 transition-opacity hover:text-destructive group-hover:opacity-100"
                   title="Delete session"
                   aria-label="Delete session"
                 >
