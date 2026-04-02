@@ -35,7 +35,7 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
             <div
               key={session.id}
               className={cn(
-                "glass-hover group flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition-all duration-200",
+                "glass-hover group grid w-full grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition-all duration-200",
                 session.id === currentSessionId
                   ? "bg-white/10 text-foreground backdrop-blur-sm"
                   : "text-[hsl(var(--on-surface-variant))] hover:text-foreground"
@@ -43,7 +43,7 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
             >
               <button
                 onClick={() => onSelectSession(session.id)}
-                className="flex min-w-0 flex-1 items-center gap-3 py-1 text-left"
+                className="flex min-w-0 items-center gap-3 py-1 text-left"
               >
                 <MessageSquare className="h-4 w-4 shrink-0" />
                 <span className="truncate">{session.title}</span>
@@ -55,11 +55,11 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
                     event.stopPropagation();
                     onDeleteSession(session.id);
                   }}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex h-8 w-8 items-center justify-center justify-self-end rounded-lg border border-border/60 bg-background/40 text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
                   title="Delete session"
                   aria-label="Delete session"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               )}
             </div>
