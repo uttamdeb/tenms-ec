@@ -18,6 +18,7 @@ export interface ChatMessage {
 
 export interface ChatSession {
   id: string;
+  status: string;
   title: string;
   created_at: string;
   updated_at: string;
@@ -67,6 +68,7 @@ export function useChat(options: UseChatOptions = {}) {
       .from("chat_sessions")
       .select("*")
       .eq("user_id", userId)
+      .neq("status", "deleted")
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -290,6 +292,26 @@ export function useChat(options: UseChatOptions = {}) {
     setCurrentSessionId(sessionId);
   }, []);
 
+  const deleteSession = useCallback(async (sessionId: string) => {
+    const { error } = await supabase
+      .from("chat_sessions")
+      .update({ status: "deleted", updated_at: new Date().toISOString() })
+      .eq("id", sessionId);
+
+    if (error) {
+      console.error("Failed to delete session:", error);
+      throw error;
+    }
+
+    setSessions((prev) => prev.filter((session) => session.id !== sessionId));
+
+    if (currentSessionId === sessionId) {
+      setCurrentSessionId(null);
+      setMessages([]);
+      setStreamingMessage(null);
+    }
+  }, [currentSessionId]);
+
   const updateMessageFeedback = useCallback(async (
     messageId: string,
     feedback: "like" | "dislike" | null,
@@ -331,6 +353,7 @@ export function useChat(options: UseChatOptions = {}) {
     sendMessage,
     createSession,
     selectSession,
+    deleteSession,
     updateMessageFeedback,
   };
 }

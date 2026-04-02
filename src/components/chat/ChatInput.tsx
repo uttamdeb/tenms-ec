@@ -131,7 +131,9 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
           </Button>
         </div>
         <div className="mt-3 hidden items-center justify-between sm:flex">
-          <p className="label-tech">EC Data Agent RESEARCH PREVIEW v0.5</p>
+          <p className="label-tech">
+            EC Data Agent - <span className="font-semibold">RESEARCH PREVIEW v0.8</span>
+          </p>
           <p className="label-tech">EC Data Agent can make mistakes. Verify important information.</p>
         </div>
       </div>

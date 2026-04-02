@@ -78,6 +78,7 @@ const Chat = () => {
     sendMessage,
     createSession,
     selectSession,
+    deleteSession,
     updateMessageFeedback,
   } = useChat({ onCharactersUsed: addUsage, hasEnoughTenergy });
 
@@ -172,6 +173,16 @@ const Chat = () => {
     if (isMobile) setSidebarOpen(false);
   };
 
+  const handleDeleteSession = async (id: string) => {
+    try {
+      await deleteSession(id);
+    } catch {
+      return;
+    }
+
+    if (isMobile) setSidebarOpen(false);
+  };
+
   return (
     <div className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground">
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
@@ -242,6 +253,8 @@ const Chat = () => {
             currentSessionId={currentSessionId}
             onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
+            onDeleteSession={handleDeleteSession}
+            canDeleteSessions={profile?.role === "BI"}
           />
         </div>
 
