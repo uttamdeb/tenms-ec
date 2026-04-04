@@ -7,7 +7,6 @@ import os, sys, glob, json, urllib.request, urllib.error
 
 MIRROR_URL = "https://optizplehhuyixiuycxt.supabase.co"
 # Using the service-role / secret key so we bypass RLS
-MIRROR_KEY = "sb_secret_YXYMcTDmWD7-Awl5AO8MLQ_0YsATOqw"
 
 def run_sql(sql: str, label: str):
     url = f"{MIRROR_URL}/rest/v1/rpc/exec_sql"
