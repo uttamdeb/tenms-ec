@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { mirrorInsert, mirrorUpdate } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
 
 const STREAM_CHUNK_SIZE = 3;
@@ -118,6 +119,7 @@ export function useChat(options: UseChatOptions = {}) {
       return null;
     }
     const session = data as ChatSession;
+    mirrorInsert("chat_sessions", { id: session.id, user_id: userId, title: session.title, status: session.status, created_at: session.created_at, updated_at: session.updated_at });
     setSessions((prev) => [session, ...prev]);
     setCurrentSessionId(session.id);
     setMessages([]);
@@ -181,17 +183,20 @@ export function useChat(options: UseChatOptions = {}) {
       toast.error("Failed to save message");
       return;
     }
+    mirrorInsert("chat_messages", { id: (userMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "user", content: messageContent, created_at: (userMsg as ChatMessage).created_at });
     setMessages((prev) => [...prev, userMsg as ChatMessage]);
 
     // Update session title if first message
     if (messages.length === 0) {
       const title = input.trim().slice(0, 50) + (input.trim().length > 50 ? "..." : "");
       await supabase.from("chat_sessions").update({ title, updated_at: new Date().toISOString() }).eq("id", sessionId);
+      mirrorUpdate("chat_sessions", { title, updated_at: new Date().toISOString() }, "id", sessionId);
       setSessions((prev) =>
         prev.map((s) => (s.id === sessionId ? { ...s, title } : s))
       );
     } else {
       await supabase.from("chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
+      mirrorUpdate("chat_sessions", { updated_at: new Date().toISOString() }, "id", sessionId);
     }
 
     // Call webhook
@@ -258,6 +263,7 @@ export function useChat(options: UseChatOptions = {}) {
       if (assistantErr) {
         console.error("Failed to save assistant message:", assistantErr);
       } else {
+        mirrorInsert("chat_messages", { id: (assistantMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, created_at: (assistantMsg as ChatMessage).created_at });
         setStreamingMessage(null);
         setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
 
@@ -273,6 +279,11 @@ export function useChat(options: UseChatOptions = {}) {
             ? responseData.bq_result 
             : JSON.stringify(responseData.bq_result);
           await supabase.from("agent_sql_runs").insert({
+            message_id: (assistantMsg as ChatMessage).id,
+            executed_sql: responseData.executed_sql,
+            bq_result: bqResultStr,
+          });
+          mirrorInsert("agent_sql_runs", {
             message_id: (assistantMsg as ChatMessage).id,
             executed_sql: responseData.executed_sql,
             bq_result: bqResultStr,
@@ -302,6 +313,7 @@ export function useChat(options: UseChatOptions = {}) {
       console.error("Failed to delete session:", error);
       throw error;
     }
+    mirrorUpdate("chat_sessions", { status: "deleted", updated_at: new Date().toISOString() }, "id", sessionId);
 
     setSessions((prev) => prev.filter((session) => session.id !== sessionId));
 
@@ -331,6 +343,7 @@ export function useChat(options: UseChatOptions = {}) {
       console.error("Failed to update message feedback:", error);
       throw error;
     }
+    mirrorUpdate("chat_messages", updates, "id", messageId);
 
     setMessages((prev) => prev.map((message) => (
       message.id === messageId

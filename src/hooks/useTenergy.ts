@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { mirrorUpsert } from "@/integrations/supabase/dualWrite";
 
 const DAILY_CHAR_LIMIT = 100_000;
 
@@ -68,6 +69,7 @@ export function useTenergy() {
 
     if (!error) {
       setCharactersUsed(newTotal);
+      mirrorUpsert("daily_usage", { user_id: userId, usage_date: today, characters_used: newTotal }, "user_id,usage_date");
     }
   }, [userId, isUnlimited, charactersUsed]);
 

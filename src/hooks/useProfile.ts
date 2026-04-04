@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { mirrorUpdate, mirrorUpsert } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
 
 export interface Profile {
@@ -26,6 +27,7 @@ export function useProfile() {
 
     if (!error && data) {
       setProfile(data as Profile);
+      mirrorUpsert("profiles", { id: data.id, full_name: data.full_name, email: data.email, avatar_url: data.avatar_url, role: data.role, created_at: data.created_at }, "id");
     }
     setLoading(false);
   }, []);
@@ -45,6 +47,7 @@ export function useProfile() {
       toast.error("Failed to update profile");
       return false;
     }
+    mirrorUpdate("profiles", updates, "id", profile.id);
     setProfile({ ...profile, ...updates });
     toast.success("Profile updated");
     return true;

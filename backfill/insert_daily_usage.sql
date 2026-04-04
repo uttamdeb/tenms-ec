@@ -1,0 +1,9 @@
+INSERT INTO public.daily_usage (user_id,usage_date,characters_used) VALUES
+('26c1816d-da94-466d-b7a7-57ea6b46b6a6','2026-03-22',5430),
+('26c1816d-da94-466d-b7a7-57ea6b46b6a6','2026-03-23',1351),
+('2bb967c2-d452-4a11-ab6f-7baa3ab92f8c','2026-03-31',2058),
+('eb374c12-1fcd-45f5-8f93-de0716a40e1b','2026-03-31',7477),
+('dd75b956-474f-4a41-bb25-e3de30a74119','2026-03-31',2249),
+('06ab655c-63d6-4258-97e1-d0dc176b3cac','2026-03-31',20232),
+('6be9ac3f-4320-41ce-a71a-f097b163feb6','2026-04-02',33)
+ON CONFLICT (user_id,usage_date) DO NOTHING;
