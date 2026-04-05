@@ -85,12 +85,19 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
+  const getBgColor = useCallback(() => {
+    // Read the actual --background CSS variable from the document so we respect the current theme
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+    // CSS variable is in HSL format like "0 0% 9%" — convert to hsl()
+    return raw ? `hsl(${raw})` : (document.documentElement.classList.contains("dark") ? "#0e0e0e" : "#ffffff");
+  }, []);
+
   const handleCopy = useCallback(async () => {
     if (!chartRef.current) return;
     try {
       const btn = chartRef.current.querySelector(".chart-action-btns") as HTMLElement | null;
       if (btn) btn.style.display = "none";
-      const dataUrl = await toPng(chartRef.current, { backgroundColor: "#1a1a1a", pixelRatio: 2 });
+      const dataUrl = await toPng(chartRef.current, { backgroundColor: getBgColor(), pixelRatio: 2 });
       if (btn) btn.style.display = "";
       const res = await fetch(dataUrl);
       const blob = await res.blob();
@@ -102,7 +109,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       console.error("Failed to copy chart:", err);
       toast.error("Failed to copy chart");
     }
-  }, []);
+  }, [getBgColor]);
 
   const handleDownload = useCallback(async () => {
     if (!chartRef.current) return;
@@ -110,7 +117,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       const btns = chartRef.current.querySelector(".chart-action-btns") as HTMLElement | null;
       if (btns) btns.style.display = "none";
       const dataUrl = await toPng(chartRef.current, {
-        backgroundColor: "#1a1a1a",
+        backgroundColor: getBgColor(),
         pixelRatio: 2,
       });
       if (btns) btns.style.display = "";
@@ -121,7 +128,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     } catch (err) {
       console.error("Failed to download chart:", err);
     }
-  }, [spec.title]);
+  }, [spec.title, getBgColor]);
 
   // Hooks must be unconditional; compute both configs and use the one we need.
   const pieConfig = useMemo<ChartConfig | null>(() => {

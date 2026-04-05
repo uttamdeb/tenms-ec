@@ -231,7 +231,7 @@ const Chat = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="h-10 shrink-0 gap-1.5 px-2 text-muted-foreground hover:text-foreground sm:px-3"
+            className={`h-10 shrink-0 gap-1.5 px-2 sm:px-3 transition-colors duration-200 ${galleryOpen ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" : "text-muted-foreground hover:text-foreground"}`}
             onClick={() => { setGalleryOpen(!galleryOpen); if (!galleryOpen && isMobile) setSidebarOpen(false); }}
             title="Gallery"
           >
@@ -405,56 +405,76 @@ const Chat = () => {
           <ChatInput onSend={(msg, attachmentUrl) => sendMessage(msg, attachmentUrl)} disabled={isLoading} userId={profile?.id} />
         </div>
 
-        {/* Gallery panel (right side) */}
-        {galleryOpen && (
-          isMobile ? (
-            <div className="fixed inset-0 z-50 flex flex-col bg-background">
-              <div className="flex items-center justify-between px-4 py-3">
-                <p className="headline-agent text-xl">Gallery</p>
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setGalleryOpen(false)}>
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto overscroll-y-contain px-2 pb-2 [-webkit-overflow-scrolling:touch]">
-                <ChatGallery />
-              </div>
+        {/* Mobile gallery — fullscreen slide-up */}
+        <div
+          className={`fixed inset-0 z-50 flex flex-col bg-background transition-all duration-300 ease-out sm:hidden ${
+            galleryOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
+          }`}
+        >
+          <div className="flex items-center justify-between px-5 py-4">
+            <p className="headline-agent text-xl">Gallery</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 transition-transform duration-200 hover:rotate-90"
+              onClick={() => setGalleryOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto overscroll-y-contain px-2 pb-2 [-webkit-overflow-scrolling:touch]">
+            {galleryOpen && <ChatGallery />}
+          </div>
+        </div>
+
+        {/* Desktop gallery — slide in from right */}
+        <div
+          className={`relative hidden shrink-0 sm:flex transition-all duration-300 ease-out origin-right ${
+            galleryOpen ? "pl-3 opacity-100 scale-x-100" : "w-0 pl-0 opacity-0 pointer-events-none"
+          }`}
+          style={{ width: galleryOpen ? galleryWidth : 0 }}
+        >
+          {/* Resize handle */}
+          <div
+            className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize rounded-full transition-colors hover:bg-primary/20 active:bg-primary/30"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              galleryResizing.current = true;
+              const startX = e.clientX;
+              const startW = galleryWidth;
+              const onMove = (ev: MouseEvent) => {
+                if (!galleryResizing.current) return;
+                const delta = startX - ev.clientX;
+                setGalleryWidth(Math.max(320, Math.min(800, startW + delta)));
+              };
+              const onUp = () => {
+                galleryResizing.current = false;
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
+              };
+              window.addEventListener("mousemove", onMove);
+              window.addEventListener("mouseup", onUp);
+            }}
+          />
+          <aside
+            className={`surface-recessed flex h-full w-full flex-col rounded-[1.75rem] px-3 py-4 transition-all duration-300 ease-out ${
+              galleryOpen ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
+            }`}
+          >
+            <div className="flex items-center justify-between px-2 pb-3">
+              <p className="headline-agent text-xl">Gallery</p>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full text-muted-foreground transition-transform duration-200 hover:rotate-90 hover:text-foreground"
+                onClick={() => setGalleryOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          ) : (
-            <div className="relative flex shrink-0 pl-3" style={{ width: galleryWidth }}>
-              {/* Resize handle */}
-              <div
-                className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  galleryResizing.current = true;
-                  const startX = e.clientX;
-                  const startW = galleryWidth;
-                  const onMove = (ev: MouseEvent) => {
-                    if (!galleryResizing.current) return;
-                    const delta = startX - ev.clientX;
-                    setGalleryWidth(Math.max(320, Math.min(800, startW + delta)));
-                  };
-                  const onUp = () => {
-                    galleryResizing.current = false;
-                    window.removeEventListener("mousemove", onMove);
-                    window.removeEventListener("mouseup", onUp);
-                  };
-                  window.addEventListener("mousemove", onMove);
-                  window.addEventListener("mouseup", onUp);
-                }}
-              />
-              <aside className="surface-recessed flex h-full w-full flex-col rounded-[1.75rem] px-3 py-4">
-                <div className="flex items-center justify-between px-2 pb-3">
-                  <p className="headline-agent text-xl">Gallery</p>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground" onClick={() => setGalleryOpen(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <ChatGallery />
-              </aside>
-            </div>
-          )
-        )}
+            {galleryOpen && <ChatGallery />}
+          </aside>
+        </div>
       </div>
     </div>
   );
