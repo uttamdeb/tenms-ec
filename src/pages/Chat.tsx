@@ -64,7 +64,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryWidth, setGalleryWidth] = useState(384);
+  const [galleryWidth, setGalleryWidth] = useState(560);
   const galleryResizing = useRef(false);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
@@ -404,7 +404,7 @@ const Chat = () => {
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              <div className="flex-1 overflow-hidden px-2 pb-2">
+              <div className="flex-1 overflow-y-auto overscroll-y-contain px-2 pb-2 [-webkit-overflow-scrolling:touch]">
                 <ChatGallery />
               </div>
             </div>
@@ -421,7 +421,7 @@ const Chat = () => {
                   const onMove = (ev: MouseEvent) => {
                     if (!galleryResizing.current) return;
                     const delta = startX - ev.clientX;
-                    setGalleryWidth(Math.max(280, Math.min(640, startW + delta)));
+                    setGalleryWidth(Math.max(320, Math.min(800, startW + delta)));
                   };
                   const onUp = () => {
                     galleryResizing.current = false;
