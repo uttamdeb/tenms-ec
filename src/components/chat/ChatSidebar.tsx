@@ -100,7 +100,7 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 transition-colors hover:bg-white/10 hover:text-foreground group-hover:text-muted-foreground"
               onClick={(e) => e.stopPropagation()}
               aria-label="Session options"
             >

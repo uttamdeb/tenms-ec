@@ -1,6 +1,7 @@
 import { memo, lazy, Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy, Check, Download } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
 
@@ -57,34 +58,87 @@ function extractFromContent(messageId: string, created_at: string, content: stri
 }
 
 const TablePreview = memo(({ markdown }: { markdown: string }) => {
+  const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+
   const lines = markdown.split("\n").filter(Boolean);
   const headerCells = lines[0]?.split("|").filter((c) => c.trim()).map((c) => c.trim()) || [];
   const dataRows = lines.slice(2).map((line) => line.split("|").filter((c) => c.trim()).map((c) => c.trim()));
   const previewRows = dataRows.slice(0, 5);
+  const allRows = [headerCells, ...dataRows];
+
+  const handleCopy = async () => {
+    try {
+      const text = allRows.map((row) => row.join("\t")).join("\n");
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Table copied");
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Failed to copy table");
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const XLSX = await import("xlsx");
+      const worksheet = XLSX.utils.aoa_to_sheet(allRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Table");
+      XLSX.writeFile(workbook, `ec-data-agent-table-${Date.now()}.xlsx`);
+      setDownloaded(true);
+      toast.success("Table downloaded");
+      window.setTimeout(() => setDownloaded(false), 1500);
+    } catch {
+      toast.error("Failed to download table");
+    }
+  };
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border/60">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-border/40">
-            {headerCells.map((cell, i) => (
-              <th key={i} className="px-2 py-1.5 text-left font-semibold text-foreground">{cell}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {previewRows.map((row, ri) => (
-            <tr key={ri} className="border-b border-border/20 last:border-0">
-              {row.map((cell, ci) => (
-                <td key={ci} className="px-2 py-1 text-muted-foreground">{cell}</td>
+    <div className="w-full overflow-hidden rounded-lg border border-border/60">
+      <div className="flex items-center justify-end gap-1 border-b border-border/80 px-2 py-1.5">
+        <button
+          type="button"
+          onClick={handleCopy}
+          title={copied ? "Copied" : "Copy table"}
+          aria-label={copied ? "Copied" : "Copy table"}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={handleDownload}
+          title={downloaded ? "Downloaded" : "Download xlsx"}
+          aria-label={downloaded ? "Downloaded" : "Download xlsx"}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {downloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+      <div className="w-full overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border/40">
+              {headerCells.map((cell, i) => (
+                <th key={i} className="px-2 py-1.5 text-left font-semibold text-foreground">{cell}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {dataRows.length > 5 && (
-        <div className="px-2 py-1 text-[0.625rem] text-muted-foreground/60">+{dataRows.length - 5} more rows</div>
-      )}
+          </thead>
+          <tbody>
+            {previewRows.map((row, ri) => (
+              <tr key={ri} className="border-b border-border/20 last:border-0">
+                {row.map((cell, ci) => (
+                  <td key={ci} className="px-2 py-1 text-muted-foreground">{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {dataRows.length > 5 && (
+          <div className="px-2 py-1 text-[0.625rem] text-muted-foreground/60">+{dataRows.length - 5} more rows</div>
+        )}
+      </div>
     </div>
   );
 });
