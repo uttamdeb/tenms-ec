@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import { Children, isValidElement, useMemo, useState, type ReactNode, lazy, Suspense, memo } from "react";
+import { Children, isValidElement, useMemo, useRef, useState, type ReactNode, lazy, Suspense, memo } from "react";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,7 @@ const parseMarkdownTable = (children: ReactNode) => {
   };
 };
 
-const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
+const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: string }) => {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const { header, body, rows } = useMemo(() => parseMarkdownTable(children), [children]);
@@ -119,8 +119,12 @@ const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
 
   return (
     <div className="my-2 w-full min-w-0 overflow-hidden rounded-lg border border-border">
-      <div className="flex items-center justify-end gap-1 border-b border-border/80 px-2 py-1.5">
+      <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
+        {title && (
+          <span className="truncate text-xs font-semibold text-foreground/80">{title}</span>
+        )}
         <TooltipProvider delayDuration={150}>
+          <div className="flex items-center gap-0.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -151,6 +155,7 @@ const MarkdownTable = memo(({ children }: { children: ReactNode }) => {
             </TooltipTrigger>
             <TooltipContent>{downloaded ? "Downloaded table" : "Download xlsx"}</TooltipContent>
           </Tooltip>
+          </div>
         </TooltipProvider>
       </div>
       <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
@@ -233,6 +238,8 @@ const ChatMessageBubble = memo(({
   const isUser = role === "user";
   const normalizedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
   const isBIUser = userRole === "BI";
+  // Track the last heading rendered so tables can display it as their title
+  const lastHeadingRef = useRef<string>("");
   const [copied, setCopied] = useState(false);
   const [debugCopied, setDebugCopied] = useState(false);
   const [sqlCopied, setSqlCopied] = useState(false);
@@ -369,10 +376,10 @@ const ChatMessageBubble = memo(({
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
               components={{
-                h1: ({ children }) => <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-base sm:text-lg font-semibold tracking-tight">{children}</h3>,
-                h4: ({ children }) => <h4 className="text-sm sm:text-base font-semibold tracking-tight">{children}</h4>,
+                h1: ({ children }) => { lastHeadingRef.current = extractText(children as ReactNode); return <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{children}</h1>; },
+                h2: ({ children }) => { lastHeadingRef.current = extractText(children as ReactNode); return <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{children}</h2>; },
+                h3: ({ children }) => { lastHeadingRef.current = extractText(children as ReactNode); return <h3 className="text-base sm:text-lg font-semibold tracking-tight">{children}</h3>; },
+                h4: ({ children }) => { lastHeadingRef.current = extractText(children as ReactNode); return <h4 className="text-sm sm:text-base font-semibold tracking-tight">{children}</h4>; },
                 p: ({ children }) => <p className="whitespace-pre-wrap leading-7 my-4 sm:my-5 first:mt-0">{children}</p>,
                 ul: ({ children }) => <ul className="list-disc pl-6">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal pl-6">{children}</ol>,
@@ -432,11 +439,15 @@ const ChatMessageBubble = memo(({
                   );
                 },
                 pre: ({ children }) => <pre className="max-w-full overflow-x-auto">{children}</pre>,
-                table: ({ children }) => (
-                  <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
-                    <MarkdownTable>{children}</MarkdownTable>
-                  </div>
-                ),
+                table: ({ children }) => {
+                  const title = lastHeadingRef.current;
+                  lastHeadingRef.current = "";
+                  return (
+                    <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
+                      <MarkdownTable title={title || undefined}>{children}</MarkdownTable>
+                    </div>
+                  );
+                },
                 thead: ({ children }) => <TableHeader>{children}</TableHeader>,
                 tbody: ({ children }) => <TableBody>{children}</TableBody>,
                 tr: ({ children }) => <TableRow>{children}</TableRow>,
