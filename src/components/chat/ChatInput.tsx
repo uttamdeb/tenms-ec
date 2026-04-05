@@ -1,26 +1,63 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatInputProps {
-  onSend: (message: string, attachment?: File) => void;
+  onSend: (message: string, attachmentUrl?: string) => void;
   disabled?: boolean;
+  userId?: string | null;
 }
 
-const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
+const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
   const [input, setInput] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const uploadFile = useCallback(async (file: File) => {
+    if (!userId) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are supported");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    const localUrl = URL.createObjectURL(file);
+    setPreview(localUrl);
+    setIsUploading(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 15)}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    const { error } = await supabase.storage.from("chat-images").upload(filePath, file);
+
+    if (error) {
+      console.error("Failed to upload attachment:", error);
+      toast.error("Failed to upload image");
+      removeAttachment();
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("chat-images").getPublicUrl(filePath);
+    setUploadedUrl(urlData.publicUrl);
+    setIsUploading(false);
+  }, [userId]);
+
   const handleSend = () => {
-    if ((!input.trim() && !attachment) || disabled) return;
-    onSend(input.trim(), attachment || undefined);
+    if (!input.trim() || disabled || isUploading) return;
+    onSend(input.trim(), uploadedUrl || undefined);
     setInput("");
-    setAttachment(null);
-    setPreview(null);
+    removeAttachment();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -33,33 +70,43 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      return; // 5MB limit
-    }
-    setAttachment(file);
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    // Reset file input so same file can be re-selected
+    uploadFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeAttachment = () => {
-    setAttachment(null);
     if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
+    setUploadedUrl(null);
+    setIsUploading(false);
   };
 
-  // Cleanup object URL on unmount
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadFile(file);
+  }, [uploadFile]);
+
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -70,65 +117,73 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
   return (
     <div className="surface-panel px-3 pb-3 pt-2 sm:px-6 sm:pb-6 sm:pt-3 transition-all duration-300 ease-in-out">
       <div className="mx-auto max-w-5xl">
-        {/* Image preview */}
-        {preview && (
-          <div className="mb-3 inline-block rounded-[1.25rem] bg-card p-2 shadow-sm">
-            <div className="relative inline-block">
-            <img
-              src={preview}
-              alt="Attachment preview"
-              className="h-20 w-20 rounded-xl object-cover"
-            />
-            <button
-              onClick={removeAttachment}
-              type="button"
-              aria-label="Remove attachment"
-              title="Remove attachment"
-              className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground transition-transform hover:scale-110"
-            >
-              <X className="h-3 w-3" />
-            </button>
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`surface-recessed flex flex-col rounded-[1.75rem] px-3 py-3 shadow-[inset_0_0_0_1px_hsl(var(--outline-ghost)/0.15)] transition-all duration-300 focus-within:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] sm:px-4 ${isDragOver ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+        >
+          {/* Image preview inside input area */}
+          {preview && (
+            <div className="mb-2 inline-flex items-start">
+              <div className="relative inline-block rounded-xl bg-card p-1.5">
+                <img src={preview} alt="Attachment preview" className="h-16 w-16 rounded-lg object-cover" />
+                {isUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  </div>
+                )}
+                <button
+                  onClick={removeAttachment}
+                  type="button"
+                  aria-label="Remove attachment"
+                  title="Remove attachment"
+                  className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground transition-transform hover:scale-110"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             </div>
+          )}
+          <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              aria-label="Upload image attachment"
+              title="Upload image attachment"
+              onChange={handleFileSelect}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || !!preview}
+              className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
+            >
+              <ImagePlus className="h-5 w-5" />
+            </Button>
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={preview ? "Add a message to send with the image..." : "Ask about your data..."}
+              disabled={disabled}
+              className="min-h-[40px] max-h-[150px] resize-none border-0 bg-transparent px-0 text-sm text-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              rows={1}
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!input.trim() || disabled || isUploading}
+              size="icon"
+              className="shrink-0 h-11 w-11"
+            >
+              <Send className="h-4 w-4 transition-transform duration-200" />
+            </Button>
           </div>
-        )}
-        <div className="surface-recessed flex items-end gap-2 rounded-[1.75rem] px-3 py-3 shadow-[inset_0_0_0_1px_hsl(var(--outline-ghost)/0.15)] transition-all duration-300 focus-within:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] sm:px-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            aria-label="Upload image attachment"
-            title="Upload image attachment"
-            onChange={handleFileSelect}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || !!attachment}
-            className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
-          >
-            <ImagePlus className="h-5 w-5" />
-          </Button>
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your data..."
-            disabled={disabled}
-            className="min-h-[40px] max-h-[150px] resize-none border-0 bg-transparent px-0 text-sm text-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            rows={1}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={(!input.trim() && !attachment) || disabled}
-            size="icon"
-            className="shrink-0 h-11 w-11"
-          >
-            <Send className="h-4 w-4 transition-transform duration-200" />
-          </Button>
         </div>
         <div className="mt-3 hidden items-center justify-between sm:flex">
           <p className="label-tech">

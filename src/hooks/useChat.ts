@@ -150,8 +150,8 @@ export function useChat(options: UseChatOptions = {}) {
   }, [userId]);
 
   // Send message
-  const sendMessage = useCallback(async (input: string, attachment?: File) => {
-    if (!userId || (!input.trim() && !attachment)) return;
+  const sendMessage = useCallback(async (input: string, attachmentUrl?: string) => {
+    if (!userId || !input.trim()) return;
 
     if (!hasEnoughTenergy) {
       toast.error("You've used all your Tenergy for today. Come back tomorrow!");
@@ -164,15 +164,7 @@ export function useChat(options: UseChatOptions = {}) {
       if (!sessionId) return;
     }
 
-    // Upload attachment if present
-    let attachmentUrl: string | null = null;
-    if (attachment) {
-      attachmentUrl = await uploadAttachment(attachment);
-      if (!attachmentUrl) return; // upload failed
-    }
-
-    // Save user message (include image URL in content if attached)
-    const messageContent = input.trim() || (attachmentUrl ? "[Image]" : "");
+    const messageContent = input.trim();
     const { data: userMsg, error: userErr } = await supabase
       .from("chat_messages")
       .insert({ session_id: sessionId, user_id: userId, role: "user", content: messageContent })
@@ -297,7 +289,7 @@ export function useChat(options: UseChatOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, onCharactersUsed]);
+  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, onCharactersUsed, uploadAttachment]);
 
   const selectSession = useCallback((sessionId: string) => {
     setCurrentSessionId(sessionId);

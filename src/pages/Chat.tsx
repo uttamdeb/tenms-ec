@@ -13,7 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap } from "lucide-react";
+import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid } from "lucide-react";
+import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback } from "react";
 import tentenIcon from "@/assets/tenten-icon.png";
@@ -62,6 +63,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
@@ -211,6 +213,15 @@ const Chat = () => {
             <span>{isUnlimited ? "Unlimited" : tenergy}</span>
             <span className="hidden text-xs font-normal opacity-70 sm:inline">Tenergy</span>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={() => { setGalleryOpen(!galleryOpen); if (!galleryOpen && isMobile) setSidebarOpen(false); }}
+            title="Gallery"
+          >
+            <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
           <Button 
             variant="default"
             size="sm"
@@ -258,11 +269,17 @@ const Chat = () => {
           />
         </div>
 
-        {/* Overlay for mobile sidebar */}
+        {/* Overlay for mobile sidebar / gallery */}
         {sidebarOpen && isMobile && (
           <div 
             className="fixed inset-0 z-30 bg-background/72 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" 
             onClick={() => setSidebarOpen(false)} 
+          />
+        )}
+        {galleryOpen && isMobile && (
+          <div 
+            className="fixed inset-0 z-30 bg-background/72 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" 
+            onClick={() => setGalleryOpen(false)} 
           />
         )}
 
@@ -365,8 +382,24 @@ const Chat = () => {
             </ScrollArea>
           )}
 
-          <ChatInput onSend={(msg, attachment) => sendMessage(msg, attachment)} disabled={isLoading} />
+          <ChatInput onSend={(msg, attachmentUrl) => sendMessage(msg, attachmentUrl)} disabled={isLoading} userId={profile?.id} />
         </div>
+
+        {/* Gallery panel (right side) */}
+        {galleryOpen && (
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            isMobile
+              ? "absolute inset-y-12 right-0 z-40 w-72"
+              : "w-[20rem] shrink-0 pl-3"
+          }`}>
+            <aside className="surface-recessed flex h-full flex-col rounded-[1.75rem] px-3 py-4">
+              <div className="flex items-center justify-between px-2 pb-3">
+                <p className="headline-agent text-xl">Gallery</p>
+              </div>
+              <ChatGallery messages={messages} />
+            </aside>
+          </div>
+        )}
       </div>
     </div>
   );

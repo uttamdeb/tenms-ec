@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useCallback } from "react";
+import { memo, useMemo, useRef, useCallback, useState } from "react";
 import { toPng } from "html-to-image";
 import {
   ChartContainer,
@@ -8,7 +8,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Download } from "lucide-react";
+import { Download, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import {
   Bar,
   BarChart,
@@ -82,17 +83,37 @@ const ChartHeader = memo(({ title, description }: { title: string; description: 
 
 export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    if (!chartRef.current) return;
+    try {
+      const btn = chartRef.current.querySelector(".chart-action-btns") as HTMLElement | null;
+      if (btn) btn.style.display = "none";
+      const dataUrl = await toPng(chartRef.current, { backgroundColor: "#1a1a1a", pixelRatio: 2 });
+      if (btn) btn.style.display = "";
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      setCopied(true);
+      toast.success("Chart copied");
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("Failed to copy chart:", err);
+      toast.error("Failed to copy chart");
+    }
+  }, []);
 
   const handleDownload = useCallback(async () => {
     if (!chartRef.current) return;
     try {
-      const btn = chartRef.current.querySelector(".chart-download-btn") as HTMLElement | null;
-      if (btn) btn.style.display = "none";
+      const btns = chartRef.current.querySelector(".chart-action-btns") as HTMLElement | null;
+      if (btns) btns.style.display = "none";
       const dataUrl = await toPng(chartRef.current, {
         backgroundColor: "#1a1a1a",
         pixelRatio: 2,
       });
-      if (btn) btn.style.display = "";
+      if (btns) btns.style.display = "";
       const link = document.createElement("a");
       link.download = `${spec.title.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
       link.href = dataUrl;
@@ -124,13 +145,22 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       <div ref={chartRef} className={CHART_CONTAINER_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
-          <button
-            onClick={handleDownload}
-            className="chart-download-btn shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Download chart as PNG"
-          >
-            <Download className="h-4 w-4" />
-          </button>
+          <div className="chart-action-btns flex shrink-0 gap-1">
+            <button
+              onClick={handleCopy}
+              className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title={copied ? "Copied" : "Copy chart"}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Download chart as PNG"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
           <ChartContainer config={pieConfig ?? {}} className="aspect-auto h-[280px] w-full min-w-[320px] sm:h-[340px]">
@@ -166,13 +196,22 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     <div ref={chartRef} className={CHART_CONTAINER_CLASS}>
       <div className="flex items-start justify-between gap-2">
         <ChartHeader title={spec.title} description={spec.description} />
-        <button
-          onClick={handleDownload}
-          className="chart-download-btn shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          title="Download chart as PNG"
-        >
-          <Download className="h-4 w-4" />
-        </button>
+        <div className="chart-action-btns flex shrink-0 gap-1">
+          <button
+            onClick={handleCopy}
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title={copied ? "Copied" : "Copy chart"}
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={handleDownload}
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Download chart as PNG"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[300px] w-full min-w-[360px] sm:h-[380px]">
