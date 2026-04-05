@@ -354,7 +354,15 @@ const ChatMessageBubble = memo(({
             )}
           >
         {isUser ? (
-          <p className="whitespace-pre-wrap break-words">{content}</p>
+          <div className="whitespace-pre-wrap break-words">
+            {content.split(/(!\[.*?\]\(.*?\))/).map((part, i) => {
+              const imgMatch = /^!\[.*?\]\((.*?)\)$/.exec(part);
+              if (imgMatch) {
+                return <img key={i} src={imgMatch[1]} alt="attachment" className="mt-2 max-h-48 max-w-full rounded-xl object-contain" />;
+              }
+              return part ? <span key={i}>{part}</span> : null;
+            })}
+          </div>
         ) : (
           <div className="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 overflow-hidden break-words prose-headings:mb-2 prose-headings:mt-4 sm:prose-headings:mb-3 sm:prose-headings:mt-5 prose-p:my-4 sm:prose-p:my-5 prose-ul:my-2 sm:prose-ul:my-3 prose-ol:my-2 sm:prose-ol:my-3 prose-li:my-0.5 sm:prose-li:my-1 prose-blockquote:my-3 sm:prose-blockquote:my-4 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-3 sm:prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-hr:my-4 sm:prose-hr:my-5 prose-hr:border-border prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline [&_code]:rounded-[0.35rem] [&_code]:bg-background/70 [&_code]:px-1 sm:[&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.8em] sm:[&_code]:text-[0.85em] [&_pre]:my-3 sm:[&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg sm:[&_pre]:rounded-xl [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/80 [&_pre]:p-0 [&_pre]:[-webkit-overflow-scrolling:touch] [&>*:first-child]:mt-0 [&>*:first-child]:pt-0 [&>*:last-child]:mb-0">
             <ReactMarkdown

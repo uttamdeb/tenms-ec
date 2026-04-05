@@ -164,7 +164,9 @@ export function useChat(options: UseChatOptions = {}) {
       if (!sessionId) return;
     }
 
-    const messageContent = input.trim();
+    const messageContent = attachmentUrl
+      ? `${input.trim()}\n\n![attached image](${attachmentUrl})`
+      : input.trim();
     const { data: userMsg, error: userErr } = await supabase
       .from("chat_messages")
       .insert({ session_id: sessionId, user_id: userId, role: "user", content: messageContent })

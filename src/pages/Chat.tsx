@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid } from "lucide-react";
+import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X } from "lucide-react";
 import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback } from "react";
@@ -64,6 +64,8 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryWidth, setGalleryWidth] = useState(384);
+  const galleryResizing = useRef(false);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
@@ -215,12 +217,13 @@ const Chat = () => {
           </div>
           <Button
             variant="ghost"
-            size="icon"
-            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+            size="sm"
+            className="h-10 shrink-0 gap-1.5 px-2 text-muted-foreground hover:text-foreground sm:px-3"
             onClick={() => { setGalleryOpen(!galleryOpen); if (!galleryOpen && isMobile) setSidebarOpen(false); }}
             title="Gallery"
           >
             <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden text-sm sm:inline">Gallery</span>
           </Button>
           <Button 
             variant="default"
@@ -276,12 +279,7 @@ const Chat = () => {
             onClick={() => setSidebarOpen(false)} 
           />
         )}
-        {galleryOpen && isMobile && (
-          <div 
-            className="fixed inset-0 z-30 bg-background/72 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer" 
-            onClick={() => setGalleryOpen(false)} 
-          />
-        )}
+
 
         {/* Chat area */}
         <div className="surface-panel relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
@@ -387,18 +385,53 @@ const Chat = () => {
 
         {/* Gallery panel (right side) */}
         {galleryOpen && (
-          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            isMobile
-              ? "absolute inset-y-12 right-0 z-40 w-72"
-              : "w-[20rem] shrink-0 pl-3"
-          }`}>
-            <aside className="surface-recessed flex h-full flex-col rounded-[1.75rem] px-3 py-4">
-              <div className="flex items-center justify-between px-2 pb-3">
+          isMobile ? (
+            <div className="fixed inset-0 z-50 flex flex-col bg-background">
+              <div className="flex items-center justify-between px-4 py-3">
                 <p className="headline-agent text-xl">Gallery</p>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setGalleryOpen(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
-              <ChatGallery messages={messages} />
-            </aside>
-          </div>
+              <div className="flex-1 overflow-hidden px-2 pb-2">
+                <ChatGallery messages={messages} />
+              </div>
+            </div>
+          ) : (
+            <div className="relative flex shrink-0 pl-3" style={{ width: galleryWidth }}>
+              {/* Resize handle */}
+              <div
+                className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  galleryResizing.current = true;
+                  const startX = e.clientX;
+                  const startW = galleryWidth;
+                  const onMove = (ev: MouseEvent) => {
+                    if (!galleryResizing.current) return;
+                    const delta = startX - ev.clientX;
+                    setGalleryWidth(Math.max(280, Math.min(640, startW + delta)));
+                  };
+                  const onUp = () => {
+                    galleryResizing.current = false;
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                  };
+                  window.addEventListener("mousemove", onMove);
+                  window.addEventListener("mouseup", onUp);
+                }}
+              />
+              <aside className="surface-recessed flex h-full w-full flex-col rounded-[1.75rem] px-3 py-4">
+                <div className="flex items-center justify-between px-2 pb-3">
+                  <p className="headline-agent text-xl">Gallery</p>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground" onClick={() => setGalleryOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <ChatGallery messages={messages} />
+              </aside>
+            </div>
+          )
         )}
       </div>
     </div>
