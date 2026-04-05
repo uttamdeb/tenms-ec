@@ -16,7 +16,10 @@ import { useProfile } from "@/hooks/useProfile";
 import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X } from "lucide-react";
 import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, lazy, Suspense } from "react";
+
+const QueryGuide = lazy(() => import("@/components/chat/QueryGuide"));
+const ReleaseNotes = lazy(() => import("@/components/chat/ReleaseNotes"));
 import tentenIcon from "@/assets/tenten-icon.png";
 import { runWithViewTransition } from "@/lib/viewTransitions";
 
@@ -331,7 +334,15 @@ const Chat = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-5 w-full animate-in fade-in duration-700 delay-500 sm:mt-10">
+              <div className="mx-auto mt-5 w-full max-w-5xl animate-in fade-in duration-700 delay-300 sm:mt-8">
+                <Suspense fallback={null}>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <QueryGuide isBIUser={profile?.role === "BI"} />
+                    <ReleaseNotes isBIUser={profile?.role === "BI"} />
+                  </div>
+                </Suspense>
+              </div>
+              <div className="mt-4 w-full animate-in fade-in duration-700 delay-500 sm:mt-6">
                 <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
