@@ -61,7 +61,8 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
   return (
     <div
       className={cn(
-        "glass-hover group flex w-full items-center gap-1 rounded-2xl px-2 py-1.5 text-sm transition-all duration-200",
+        "glass-hover group grid w-full items-center gap-1 rounded-2xl px-2 py-1.5 text-sm transition-all duration-200",
+        renaming ? "grid-cols-1" : "grid-cols-[1fr_1.75rem]",
         isActive
           ? "bg-white/10 text-foreground backdrop-blur-sm"
           : "text-[hsl(var(--on-surface-variant))] hover:text-foreground"
@@ -96,16 +97,18 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
       )}
 
       {!renaming && (onDelete || onRename) && (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               type="button"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/15 hover:text-foreground"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 rounded-md"
               onClick={(e) => e.stopPropagation()}
               aria-label="Session options"
             >
               <MoreHorizontal className="h-4 w-4" />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             {onRename && (
