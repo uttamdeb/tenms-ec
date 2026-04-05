@@ -84,6 +84,7 @@ const Chat = () => {
     createSession,
     selectSession,
     deleteSession,
+    renameSession,
     updateMessageFeedback,
   } = useChat({ onCharactersUsed: addUsage, hasEnoughTenergy });
 
@@ -188,6 +189,15 @@ const Chat = () => {
     }
   };
 
+  const handleRenameSession = async (id: string, newTitle: string) => {
+    try {
+      await renameSession(id, newTitle);
+    } catch (err) {
+      console.error("Rename session failed:", err);
+      toast.error("Failed to rename chat session");
+    }
+  };
+
   return (
     <div className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground">
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
@@ -269,6 +279,7 @@ const Chat = () => {
             onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
             onDeleteSession={handleDeleteSession}
+            onRenameSession={handleRenameSession}
           />
         </div>
 
@@ -394,7 +405,7 @@ const Chat = () => {
                 </Button>
               </div>
               <div className="flex-1 overflow-hidden px-2 pb-2">
-                <ChatGallery messages={messages} />
+                <ChatGallery />
               </div>
             </div>
           ) : (
@@ -428,7 +439,7 @@ const Chat = () => {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <ChatGallery messages={messages} />
+                <ChatGallery />
               </aside>
             </div>
           )

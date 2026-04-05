@@ -350,6 +350,22 @@ export function useChat(options: UseChatOptions = {}) {
     )));
   }, []);
 
+  const renameSession = useCallback(async (sessionId: string, newTitle: string) => {
+    const title = newTitle.trim();
+    if (!title) return;
+    const { error } = await supabase
+      .from("chat_sessions")
+      .update({ title, updated_at: new Date().toISOString() })
+      .eq("id", sessionId);
+
+    if (error) {
+      console.error("Failed to rename session:", error);
+      throw error;
+    }
+    mirrorUpdate("chat_sessions", { title, updated_at: new Date().toISOString() }, "id", sessionId);
+    setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, title } : s)));
+  }, []);
+
   return {
     sessions,
     currentSessionId,
@@ -361,6 +377,7 @@ export function useChat(options: UseChatOptions = {}) {
     createSession,
     selectSession,
     deleteSession,
+    renameSession,
     updateMessageFeedback,
   };
 }

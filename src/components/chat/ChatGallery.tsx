@@ -1,7 +1,8 @@
-import { memo, useMemo, lazy, Suspense } from "react";
+import { memo, lazy, Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
-import type { ChatMessage } from "@/hooks/useChat";
 
 const MarkdownChartLazy = lazy(() =>
   import("@/components/chat/MarkdownChartLazy").then((m) => ({ default: m.MarkdownChart }))
@@ -17,6 +18,7 @@ interface GalleryItem {
 
 const CHART_BLOCK_RE = /```chart\s*\n([\s\S]*?)\n```/g;
 const TABLE_RE = /(?:^|\n)(\|.+\|(?:\n\|[-: |]+\|)(?:\n\|.+\|)+)/g;
+const PAGE_SIZE = 50;
 
 const isChartSpec = (value: unknown): value is ChartSpec => {
   if (!value || typeof value !== "object") return false;
@@ -28,59 +30,36 @@ const isChartSpec = (value: unknown): value is ChartSpec => {
   return false;
 };
 
-function extractGalleryItems(messages: ChatMessage[]): GalleryItem[] {
+function extractFromContent(messageId: string, created_at: string, content: string): GalleryItem[] {
   const items: GalleryItem[] = [];
+  const normalized = content
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\r\n/g, "\n")
+    .trimEnd();
 
-  for (const msg of messages) {
-    if (msg.role !== "assistant") continue;
-
-    const normalizedContent = msg.content
-      .replace(/\\r\\n/g, "\n")
-      .replace(/\\n/g, "\n")
-      .replace(/\\t/g, "\t")
-      .replace(/\r\n/g, "\n")
-      .trimEnd();
-
-    // Extract charts
-    let match: RegExpExecArray | null;
-    CHART_BLOCK_RE.lastIndex = 0;
-    while ((match = CHART_BLOCK_RE.exec(normalizedContent)) !== null) {
-      try {
-        const parsed = JSON.parse(match[1]);
-        if (isChartSpec(parsed)) {
-          items.push({
-            messageId: msg.id,
-            created_at: msg.created_at,
-            type: "chart",
-            chartSpec: parsed,
-          });
-        }
-      } catch {
-        // skip malformed
-      }
-    }
-
-    // Extract tables
-    TABLE_RE.lastIndex = 0;
-    while ((match = TABLE_RE.exec(normalizedContent)) !== null) {
-      items.push({
-        messageId: msg.id,
-        created_at: msg.created_at,
-        type: "table",
-        tableMarkdown: match[1].trim(),
-      });
-    }
+  let match: RegExpExecArray | null;
+  CHART_BLOCK_RE.lastIndex = 0;
+  while ((match = CHART_BLOCK_RE.exec(normalized)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (isChartSpec(parsed)) items.push({ messageId, created_at, type: "chart", chartSpec: parsed });
+    } catch { /* skip */ }
   }
 
-  // Chronological order (newest first)
-  return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  TABLE_RE.lastIndex = 0;
+  while ((match = TABLE_RE.exec(normalized)) !== null) {
+    items.push({ messageId, created_at, type: "table", tableMarkdown: match[1].trim() });
+  }
+
+  return items;
 }
 
 const TablePreview = memo(({ markdown }: { markdown: string }) => {
   const lines = markdown.split("\n").filter(Boolean);
   const headerCells = lines[0]?.split("|").filter((c) => c.trim()).map((c) => c.trim()) || [];
   const dataRows = lines.slice(2).map((line) => line.split("|").filter((c) => c.trim()).map((c) => c.trim()));
-  // Show only first 5 rows in preview
   const previewRows = dataRows.slice(0, 5);
 
   return (
@@ -112,15 +91,70 @@ const TablePreview = memo(({ markdown }: { markdown: string }) => {
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-interface ChatGalleryProps {
-  messages: ChatMessage[];
-}
+const ChatGallery = memo(() => {
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-const ChatGallery = memo(({ messages }: ChatGalleryProps) => {
-  const items = useMemo(() => extractGalleryItems(messages), [messages]);
+  const loadPage = useCallback(async (currentOffset: number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("id, content, created_at, role")
+      .eq("user_id", user.id)
+      .eq("role", "assistant")
+      .order("created_at", { ascending: false })
+      .range(currentOffset, currentOffset + PAGE_SIZE - 1);
+
+    if (error || !data) return;
+
+    const newItems: GalleryItem[] = [];
+    for (const msg of data) {
+      newItems.push(...extractFromContent(msg.id, msg.created_at, msg.content));
+    }
+
+    setItems((prev) => currentOffset === 0 ? newItems : [...prev, ...newItems]);
+    setHasMore(data.length === PAGE_SIZE);
+    setOffset(currentOffset + data.length);
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    setLoading(true);
+    loadPage(0).finally(() => setLoading(false));
+  }, [loadPage]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          setLoadingMore(true);
+          loadPage(offset).finally(() => setLoadingMore(false));
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadPage, offset]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -149,6 +183,13 @@ const ChatGallery = memo(({ messages }: ChatGalleryProps) => {
             )}
           </div>
         ))}
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-4" />
+        {loadingMore && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
       </div>
     </ScrollArea>
   );
