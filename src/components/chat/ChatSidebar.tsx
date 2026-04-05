@@ -157,7 +157,7 @@ const ChatSidebar = ({ sessions, currentSessionId, onSelectSession, onNewChat, o
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="space-y-0.5 px-1">
+        <div className="space-y-0.5 px-1 pr-2">
           {sessions.map((session) => (
             <SessionItem
               key={session.id}

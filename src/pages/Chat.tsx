@@ -268,10 +268,10 @@ const Chat = () => {
 
       <div className="relative z-10 flex flex-1 overflow-hidden px-2 pb-2 sm:px-4 sm:pb-4">
         {/* Sidebar */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        <div className={`transition-all duration-300 ease-in-out ${
           isMobile
-            ? `absolute inset-y-12 left-0 z-40 w-64 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
-            : sidebarOpen ? "w-[18rem] shrink-0 pr-3" : "w-0"
+            ? `absolute inset-y-12 left-0 z-40 w-64 overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
+            : sidebarOpen ? "w-[18rem] shrink-0 pr-3 overflow-visible" : "w-0 overflow-hidden"
         }`}>
           <ChatSidebar
             sessions={sessions}
