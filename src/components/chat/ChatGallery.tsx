@@ -15,6 +15,7 @@ interface GalleryItem {
   type: "chart" | "table";
   chartSpec?: ChartSpec;
   tableMarkdown?: string;
+  tableTitle?: string;
 }
 
 const CHART_BLOCK_RE = /```chart\s*\n([\s\S]*?)\n```/g;
@@ -49,15 +50,21 @@ function extractFromContent(messageId: string, created_at: string, content: stri
     } catch { /* skip */ }
   }
 
+  // For tables, find the nearest preceding heading (# / ## / ###)
+  const HEADING_RE = /^#{1,4}\s+(.+)$/m;
   TABLE_RE.lastIndex = 0;
   while ((match = TABLE_RE.exec(normalized)) !== null) {
-    items.push({ messageId, created_at, type: "table", tableMarkdown: match[1].trim() });
+    const before = normalized.slice(0, match.index);
+    const headingMatch = before.match(/#{1,4}\s+(.+)$/m);
+    const tableTitle = headingMatch ? headingMatch[1].replace(/\*\*/g, "").trim() : undefined;
+    items.push({ messageId, created_at, type: "table", tableMarkdown: match[1].trim(), tableTitle });
   }
+  void HEADING_RE;
 
   return items;
 }
 
-const TablePreview = memo(({ markdown }: { markdown: string }) => {
+const TablePreview = memo(({ markdown, title }: { markdown: string; title?: string }) => {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
 
@@ -96,8 +103,8 @@ const TablePreview = memo(({ markdown }: { markdown: string }) => {
 
   return (
     <div className="w-full overflow-hidden rounded-lg border border-border/60">
-      <div className="flex items-center justify-end gap-1 border-b border-border/80 px-2 py-1.5">
-        <button
+      <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
+        {title && <span className="truncate text-xs font-semibold text-foreground/80">{title}</span>}          <div className="flex shrink-0 items-center gap-0.5">        <button
           type="button"
           onClick={handleCopy}
           title={copied ? "Copied" : "Copy table"}
@@ -115,6 +122,7 @@ const TablePreview = memo(({ markdown }: { markdown: string }) => {
         >
           {downloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
         </button>
+        </div>
       </div>
       <div className="w-full overflow-x-auto">
         <table className="w-full text-xs">
@@ -233,7 +241,7 @@ const ChatGallery = memo(() => {
               </Suspense>
             )}
             {item.type === "table" && item.tableMarkdown && (
-              <TablePreview markdown={item.tableMarkdown} />
+              <TablePreview markdown={item.tableMarkdown} title={item.tableTitle} />
             )}
           </div>
         ))}
