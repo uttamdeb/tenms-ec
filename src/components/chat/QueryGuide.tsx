@@ -12,13 +12,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
+import { mirror } from "@/integrations/supabase/mirrorClient";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const STORAGE_BUCKET = "chat-images";
-const GUIDE_PATH = "system/query-guide.md";
+const DOC_KEY = "query-guide";
 
 const DEFAULT_GUIDE = `# How to Ask Questions Effectively
 
@@ -154,16 +153,10 @@ const QueryGuide = ({ isBIUser }: QueryGuideProps) => {
 
     const load = async () => {
       try {
-        const { data, error } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .download(GUIDE_PATH);
-        if (!error && data) {
-          const text = await data.text();
-          if (text.trim()) setGuide(text);
-        }
-      } catch {
-        // Use default
-      }
+        if (!mirror) return;
+        const { data } = await mirror.from("app_documents").select("content").eq("key", DOC_KEY).single();
+        if (data?.content) setGuide(data.content);
+      } catch { /* use default */ }
     };
     load();
   }, []);
@@ -176,11 +169,11 @@ const QueryGuide = ({ isBIUser }: QueryGuideProps) => {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const blob = new Blob([draft], { type: "text/markdown" });
-      const { error } = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .upload(GUIDE_PATH, blob, { upsert: true });
-
+      if (!mirror) throw new Error("Mirror not configured");
+      const { error } = await mirror.from("app_documents").upsert(
+        { key: DOC_KEY, content: draft, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
       if (error) throw error;
 
       setGuide(draft);

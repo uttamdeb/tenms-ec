@@ -12,13 +12,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
+import { mirror } from "@/integrations/supabase/mirrorClient";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const STORAGE_BUCKET = "chat-images";
-const NOTES_PATH = "system/release-notes.md";
+const DOC_KEY = "release-notes";
 
 const DEFAULT_NOTES = `# EC Data Agent — Release Notes
 
@@ -122,11 +121,9 @@ const ReleaseNotes = ({ isBIUser }: ReleaseNotesProps) => {
     loaded.current = true;
     const load = async () => {
       try {
-        const { data, error } = await supabase.storage.from(STORAGE_BUCKET).download(NOTES_PATH);
-        if (!error && data) {
-          const text = await data.text();
-          if (text.trim()) setNotes(text);
-        }
+        if (!mirror) return;
+        const { data } = await mirror.from("app_documents").select("content").eq("key", DOC_KEY).single();
+        if (data?.content) setNotes(data.content);
       } catch { /* use default */ }
     };
     load();
@@ -140,8 +137,11 @@ const ReleaseNotes = ({ isBIUser }: ReleaseNotesProps) => {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const blob = new Blob([draft], { type: "text/markdown" });
-      const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(NOTES_PATH, blob, { upsert: true });
+      if (!mirror) throw new Error("Mirror not configured");
+      const { error } = await mirror.from("app_documents").upsert(
+        { key: DOC_KEY, content: draft, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
       if (error) throw error;
       setNotes(draft);
       setEditing(false);
