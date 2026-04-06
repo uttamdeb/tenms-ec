@@ -335,22 +335,22 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
         </div>
       </div>
       <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-        <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[300px] w-full min-w-[360px] sm:h-[380px]">
+        <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
           {spec.type === "bar" ? (
-            <BarChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={380} margin={{ top: 12, right: 20, left: 8, bottom: 72 }}>
+            <BarChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={320} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
               {spec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis
                 dataKey={spec.xKey}
                 tickLine={false}
                 axisLine={false}
                 interval={0}
-                angle={-28}
+                angle={-30}
                 textAnchor="end"
-                height={84}
-                tickMargin={14}
-                minTickGap={12}
+                height={60}
+                tickMargin={8}
+                minTickGap={10}
               />
-              <YAxis tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} width={44} />
               {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
               {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
               {spec.series.map((item) => (
@@ -358,7 +358,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
               ))}
             </BarChart>
           ) : (
-            <AreaChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={380} margin={{ top: 16, right: 20, bottom: 84, left: 8 }}>
+            <AreaChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={320} margin={{ top: 16, right: 16, bottom: 4, left: 4 }}>
               <defs>
                 {spec.series.map((item) => (
                   <linearGradient key={item.key} id={`area-grad-${uid}-${item.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -373,13 +373,13 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 tickLine={false}
                 axisLine={false}
                 interval={0}
-                angle={-32}
+                angle={-30}
                 textAnchor="end"
-                minTickGap={12}
-                height={88}
-                tickMargin={14}
+                minTickGap={10}
+                height={60}
+                tickMargin={8}
               />
-              <YAxis tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} width={44} />
               {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
               {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
               {spec.series.map((item) => (
