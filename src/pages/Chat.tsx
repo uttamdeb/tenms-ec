@@ -10,7 +10,6 @@ import ChatInput from "@/components/chat/ChatInput";
 import SuggestedMessages from "@/components/chat/SuggestedMessages";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
 import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X } from "lucide-react";
@@ -249,7 +248,6 @@ const Chat = () => {
             <Plus className="h-4 w-4" />
             <span className="ml-1 hidden sm:inline">New Chat</span>
           </Button>
-          <ThemeToggle />
           <Button 
             variant="ghost"
             size="sm"
@@ -433,28 +431,6 @@ const Chat = () => {
           <ChatInput onSend={(msg, attachmentUrl) => sendMessage(msg, attachmentUrl)} disabled={isLoading} userId={profile?.id} />
         </div>
 
-        {/* Mobile gallery — fullscreen slide-up */}
-        <div
-          className={`fixed inset-0 z-50 flex flex-col bg-background transition-all duration-300 ease-out sm:hidden ${
-            galleryOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
-          }`}
-        >
-          <div className="flex items-center justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top,1rem))]">
-            <p className="headline-agent text-xl">Gallery</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 transition-transform duration-200 hover:rotate-90"
-              onClick={() => setGalleryOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto overscroll-y-contain px-2 pb-safe [-webkit-overflow-scrolling:touch]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0.5rem)" }}>
-            {galleryOpen && <ChatGallery />}
-          </div>
-        </div>
-
         {/* Desktop gallery — slide in from right */}
         <div
           className={`relative hidden shrink-0 sm:flex transition-all duration-300 ease-out origin-right ${
@@ -502,6 +478,28 @@ const Chat = () => {
             </div>
             {galleryOpen && <ChatGallery />}
           </aside>
+        </div>
+      </div>
+
+      {/* Mobile gallery — fullscreen, rendered outside overflow-hidden container */}
+      <div
+        className={`fixed inset-0 z-50 flex flex-col bg-background transition-all duration-300 ease-out sm:hidden ${
+          galleryOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
+        }`}
+      >
+        <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
+          <p className="headline-agent text-xl">Gallery</p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 transition-transform duration-200 hover:rotate-90"
+            onClick={() => setGalleryOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4 [-webkit-overflow-scrolling:touch]">
+          {galleryOpen && <ChatGallery />}
         </div>
       </div>
     </div>

@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Settings, LogOut } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
+import { Settings, LogOut, Palette, Sun, Moon, Check } from "lucide-react";
 import ProfileSettings from "./ProfileSettings";
 import type { Profile } from "@/hooks/useProfile";
+import { useAccentColor, ACCENT_OPTIONS } from "@/hooks/useAccentColor";
 import { runWithViewTransition } from "@/lib/viewTransitions";
+import { cn } from "@/lib/utils";
 
 interface ProfileDropdownProps {
   profile: Profile;
@@ -18,6 +21,8 @@ interface ProfileDropdownProps {
 const ProfileDropdown = ({ profile, onUpdateProfile, onUploadAvatar }: ProfileDropdownProps) => {
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const { accentId, setAccent } = useAccentColor();
 
   const initials = (profile.full_name || profile.email || "U")
     .split(" ")
@@ -52,14 +57,56 @@ const ProfileDropdown = ({ profile, onUpdateProfile, onUploadAvatar }: ProfileDr
             <p className="text-sm font-medium truncate">{profile.full_name || "User"}</p>
             <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
           </div>
-          <DropdownMenuSeparator className="transition-colors duration-300" />
-          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="transition-colors duration-200 hover:bg-accent/50 cursor-pointer">
-            <Settings className="h-4 w-4 mr-2 transition-transform duration-200" />
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="cursor-pointer">
+            <Settings className="h-4 w-4 mr-2" />
             Profile Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="transition-colors duration-300" />
-          <DropdownMenuItem onClick={handleLogout} className="transition-colors duration-200 hover:bg-destructive/10 cursor-pointer">
-            <LogOut className="h-4 w-4 mr-2 transition-transform duration-200" />
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer">
+              <Palette className="h-4 w-4 mr-2" />
+              Theme
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="glass-panel rounded-[1.25rem] p-2 w-52">
+              <p className="px-2 py-1 text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">Mode</p>
+              <DropdownMenuItem onClick={() => runWithViewTransition(() => setTheme("light"))} className="cursor-pointer">
+                <Sun className="h-4 w-4 mr-2" />
+                Light
+                {theme === "light" && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => runWithViewTransition(() => setTheme("dark"))} className="cursor-pointer">
+                <Moon className="h-4 w-4 mr-2" />
+                Dark
+                {theme === "dark" && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <p className="px-2 py-1 text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">Accent Color</p>
+              <div className="grid grid-cols-5 gap-1.5 px-2 py-1.5">
+                {ACCENT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setAccent(opt.id)}
+                    title={opt.name}
+                    aria-label={`${opt.name} accent`}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:scale-110",
+                      accentId === opt.id ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "ring-1 ring-border/40"
+                    )}
+                    style={{ backgroundColor: opt.swatch }}
+                  >
+                    {accentId === opt.id && <Check className="h-3.5 w-3.5 text-white drop-shadow-md" />}
+                  </button>
+                ))}
+              </div>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-destructive/10">
+            <LogOut className="h-4 w-4 mr-2" />
             Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>

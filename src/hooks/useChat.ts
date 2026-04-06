@@ -4,7 +4,7 @@ import { mirrorInsert, mirrorUpdate } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
 
 const STREAM_INTERVAL_MS = 16; // ~60fps tick
-const STREAM_TARGET_MS = 1200; // target total stream duration in ms
+const STREAM_TARGET_MS = 1700; // target total stream duration in ms
 
 export interface ChatMessage {
   id: string;
