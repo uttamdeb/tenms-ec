@@ -485,7 +485,7 @@ const ChatMessageBubble = memo(({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={cn("h-8 w-8 rounded-full", feedback === "like" && "text-foreground")}
+                    className={cn("h-8 w-8 rounded-full", feedback === "like" && "text-emerald-500")}
                     onClick={handleLike}
                     disabled={isSubmittingFeedback}
                     aria-label={feedback === "like" ? "Remove like" : "Like response"}
@@ -502,7 +502,7 @@ const ChatMessageBubble = memo(({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={cn("h-8 w-8 rounded-full", feedback === "dislike" && "text-foreground")}
+                    className={cn("h-8 w-8 rounded-full", feedback === "dislike" && "text-red-500")}
                     onClick={handleDislikeClick}
                     disabled={isSubmittingFeedback}
                     aria-label={feedback === "dislike" ? "Remove dislike" : "Dislike response"}

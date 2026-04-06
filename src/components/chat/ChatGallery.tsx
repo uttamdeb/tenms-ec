@@ -102,7 +102,7 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-border/60">
+    <div className="w-full rounded-lg border border-border/60">
       <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
         {title && <span className="min-w-0 truncate text-xs font-semibold text-foreground/80">{title}</span>}          <div className="flex shrink-0 items-center gap-0.5">        <button
           type="button"
