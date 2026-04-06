@@ -74,6 +74,10 @@ const Chat = () => {
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
+  const thinkingSecondsRef = useRef(0);
+  const capturedThinkingDuration = useRef(0);
+  const prevStreamingMessage = useRef<string | null>(null);
+  const [thoughtDurations, setThoughtDurations] = useState<Record<string, number>>({});
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
@@ -119,16 +123,24 @@ const Chat = () => {
 
   useEffect(() => {
     if (!isLoading || streamingMessage) {
+      // Capture duration at the moment thinking→streaming transition happens
+      if (streamingMessage && !prevStreamingMessage.current) {
+        capturedThinkingDuration.current = thinkingSecondsRef.current;
+      }
+      prevStreamingMessage.current = streamingMessage;
+      thinkingSecondsRef.current = 0;
       setThinkingSeconds(0);
       setThinkingNote(THINKING_NOTES[0]);
       return;
     }
-
+    prevStreamingMessage.current = streamingMessage;
+    thinkingSecondsRef.current = 0;
     setThinkingSeconds(0);
     setThinkingNote(getRandomThinkingNote());
     const timer = window.setInterval(() => {
       setThinkingSeconds((current) => {
         const nextSeconds = current + 1;
+        thinkingSecondsRef.current = nextSeconds;
         if (nextSeconds % 4 === 0) {
           setThinkingNote((currentNote) => getRandomThinkingNote(currentNote));
         }
@@ -138,6 +150,17 @@ const Chat = () => {
 
     return () => window.clearInterval(timer);
   }, [isLoading, streamingMessage]);
+
+  // Associate captured thinking duration with the newly arrived assistant message
+  useEffect(() => {
+    if (capturedThinkingDuration.current <= 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant") {
+      const dur = capturedThinkingDuration.current;
+      capturedThinkingDuration.current = 0;
+      setThoughtDurations(prev => prev[lastMsg.id] ? prev : { ...prev, [lastMsg.id]: dur });
+    }
+  }, [messages]);
 
   // Fetch SQL run data for assistant messages
   useEffect(() => {
@@ -406,6 +429,7 @@ const Chat = () => {
                       userRole={profile?.role}
                       executed_sql={sqlData?.executed_sql || null}
                       bq_result={sqlData?.bq_result || null}
+                      thinkingDuration={thoughtDurations[msg.id]}
                     />
                   );
                 })}

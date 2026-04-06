@@ -23,26 +23,42 @@ const DEFAULT_NOTES = `# EC Data Agent — Release Notes
 
 ---
 
-## v0.8 — April 5, 2026
+## v0.8 — April 6, 2026
 
 ### New Features
-- **Gallery Panel** — View all charts and tables generated across sessions in one place. Resizable on desktop, fullscreen on mobile.
+- **Gallery Panel** — View all charts and tables generated across sessions in one place. Resizable on desktop, fullscreen on mobile with fluid open/close animations.
 - **Drag & Drop Image Upload** — Drag images directly into the chat input. Images upload instantly in the background.
 - **Image Preview in Chat** — Attached images now display inline within user messages.
-- **Chart Copy** — Copy any chart as a PNG image to clipboard with one click.
+- **Chart Copy & Download** — Copy any chart as a PNG image to clipboard or download it. Respects current light/dark theme.
 - **Session Rename** — Rename chat sessions from the three-dot menu in the sidebar.
 - **Query Guide** — A built-in guide with tips on how to ask effective questions. Editable by BI users.
-- **Release Notes** — You're reading them! Also editable by BI users.
+- **Release Notes** — You're reading them. Editable by BI users.
+- **Theme Persistence** — Light/dark mode preference is saved across sessions.
+- **Accent Color Selection** — Choose from 5 accent colors (Amber, Blue, Emerald, Rose, Violet) from the profile menu. Persists across sessions.
+- **Resizable Sidebar** — Drag the sidebar edge to resize it on desktop.
+- **New Chart Types** — The agent can now render horizontal bar, stacked bar, area, stacked area, donut, and scatter charts in addition to bar, line, and pie.
+- **Table Headings** — When the agent precedes a table with a heading, the heading is shown as the table title in both chat and gallery.
+- **Dynamic Streaming** — AI response streaming speed adapts to response length for a more natural feel.
 
 ### Improvements
-- **Send requires text** — Messages with only an image can no longer be sent without accompanying text.
-- **Eager image upload** — Images are uploaded to storage immediately on selection, not when the message is sent — making send near-instant.
-- **Gallery loads all sessions** — The gallery panel now shows charts and tables from all sessions, not just the current one. Infinite scroll for lazy loading.
-- **Table actions in Gallery** — Tables in the gallery now have copy and download (xlsx) buttons.
+- **Redesigned Chart Cards** — All chart types now use a consistent editorial glass-surface card following the design system.
+- **Pie/Donut Charts** — Redesigned with a custom legend panel showing category name, share percentage, and formatted value.
+- **Line Charts** — Upgraded to area charts with a gradient fill for better visual weight on trend analysis.
+- **Bar Chart Labels** — X-axis labels are now angled and spaced to prevent cutoff with long programme names.
+- **Scatter Charts** — Numeric x/y axes with proper sizing for outlier analysis.
+- **Table Styling** — Chat tables now use tonal row separation without divider lines, matching the no-line design rule.
+- **Gallery loads all sessions** — The gallery panel shows charts and tables from all sessions with infinite scroll lazy loading.
+- **Table actions in Gallery** — Tables in the gallery have copy and download (xlsx) buttons.
+- **Sidebar animation** — Chat session sidebar now opens and closes with the same fluid animation as the gallery panel.
+- **Like/Dislike colors** — Active like turns green, active dislike turns red.
 
 ### Fixes
-- Fixed sidebar session list overflow clipping the three-dot menu button.
-- Fixed mobile gallery not supporting touch scrolling.
+- Fixed pie chart labels showing numeric values instead of category names.
+- Fixed excess whitespace below bar and line charts.
+- Fixed new chart types (scatter, horizontal\_bar, stacked\_bar, area, stacked\_area, donut) rendering as raw JSON instead of visualizations.
+- Fixed mobile gallery being clipped inside overflow-hidden container.
+- Fixed mobile gallery horizontal swipe for wide tables and charts.
+- Fixed theme submenu in profile dropdown not opening reliably on touch devices (replaced with dialog).
 
 ---
 

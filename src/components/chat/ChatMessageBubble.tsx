@@ -235,6 +235,7 @@ interface ChatMessageBubbleProps {
   userRole?: string | null;
   executed_sql?: string | null;
   bq_result?: string | null;
+  thinkingDuration?: number;
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
 }
 
@@ -251,6 +252,7 @@ const ChatMessageBubble = memo(({
   userRole,
   executed_sql,
   bq_result,
+  thinkingDuration,
   onFeedbackChange,
 }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
@@ -360,6 +362,11 @@ const ChatMessageBubble = memo(({
 
   return (
     <div className="fluent-enter w-full min-w-0">
+      {!isUser && thinkingDuration != null && thinkingDuration > 0 && (
+        <p className="mb-0.5 pl-[3.5rem] text-[0.65rem] tracking-wide text-muted-foreground/35">
+          Thought for {thinkingDuration} {thinkingDuration === 1 ? "sec" : "secs"}
+        </p>
+      )}
       <div className={cn("flex w-full min-w-0 gap-2 px-2 py-3 sm:gap-3 sm:px-4 sm:py-4", isUser ? "justify-end" : "justify-start")}>
         {!isUser && (
           <img src={tentenIcon} alt="EC Data Agent" className="mt-0.5 h-8 w-8 shrink-0 rounded-xl object-contain" />
