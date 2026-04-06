@@ -172,7 +172,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       percent?: number;
       value?: string | number;
     }) => {
-      if (!spec.options?.showLabels) return null;
+      if (!(spec.options as PieChartSpec['options'])?.showLabels) return null;
 
       if (typeof value !== "number" || !percent || percent < 0.12) {
         return null;
@@ -387,10 +387,12 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     );
   }
 
+  const cartSpec = spec as CartesianChartSpec;
+
   return (
     <div ref={chartRef} className={CHART_GLASS_CLASS}>
       <div className="flex items-start justify-between gap-2">
-        <ChartHeader title={spec.title} description={spec.description} />
+        <ChartHeader title={cartSpec.title} description={cartSpec.description} />
         <div className="chart-action-btns flex shrink-0 gap-1">
           <button
             onClick={handleCopy}
