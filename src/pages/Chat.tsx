@@ -10,6 +10,7 @@ import ChatInput from "@/components/chat/ChatInput";
 import SuggestedMessages from "@/components/chat/SuggestedMessages";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
 import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X } from "lucide-react";
@@ -248,6 +249,7 @@ const Chat = () => {
             <Plus className="h-4 w-4" />
             <span className="ml-1 hidden sm:inline">New Chat</span>
           </Button>
+          <ThemeToggle />
           <Button 
             variant="ghost"
             size="sm"

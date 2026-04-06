@@ -85,6 +85,14 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
+  const renderPieLabel = useCallback(
+    ({ name }: { name?: string | number }) => {
+      if (!spec.options?.showLabels) return null;
+      return typeof name === "string" || typeof name === "number" ? String(name) : null;
+    },
+    [spec]
+  );
+
   const getBgColor = useCallback(() => {
     // Read the actual --background CSS variable from the document so we respect the current theme
     const raw = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
@@ -183,7 +191,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
               cx="50%"
               cy="50%"
               outerRadius={80}
-              label={spec.options?.showLabels}
+              label={renderPieLabel}
             >
               {spec.data.map((entry, index) => (
                 <Cell

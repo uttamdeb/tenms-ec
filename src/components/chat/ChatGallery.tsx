@@ -1,5 +1,4 @@
 import { memo, lazy, Suspense, useState, useEffect, useCallback, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Copy, Check, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,9 +101,10 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
   };
 
   return (
-    <div className="w-full overflow-x-auto overscroll-x-contain rounded-lg border border-border/60 [-webkit-overflow-scrolling:touch]">
-      <div className="min-w-max">
-        <div className="sticky left-0 flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
+    <div className="overflow-hidden rounded-[1.1rem] border border-border/60 bg-background/40">
+      <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x">
+        <div className="min-w-[720px]">
+          <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-2">
           {title && <span className="min-w-0 truncate text-xs font-semibold text-foreground/80">{title}</span>}
           <div className="flex shrink-0 items-center gap-0.5">
             <button
@@ -126,28 +126,29 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
               {downloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
             </button>
           </div>
-        </div>
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-border/40">
-              {headerCells.map((cell, i) => (
-                <th key={i} className="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-foreground">{cell}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {previewRows.map((row, ri) => (
-              <tr key={ri} className="border-b border-border/20 last:border-0">
-                {row.map((cell, ci) => (
-                  <td key={ci} className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{cell}</td>
+          </div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border/40">
+                {headerCells.map((cell, i) => (
+                  <th key={i} className="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-foreground">{cell}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {dataRows.length > 5 && (
-          <div className="px-3 py-1 text-[0.625rem] text-muted-foreground/60">+{dataRows.length - 5} more rows</div>
-        )}
+            </thead>
+            <tbody>
+              {previewRows.map((row, ri) => (
+                <tr key={ri} className="border-b border-border/20 last:border-0">
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {dataRows.length > 5 && (
+            <div className="px-3 py-1 text-[0.625rem] text-muted-foreground/60">+{dataRows.length - 5} more rows</div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -232,15 +233,19 @@ const ChatGallery = memo(() => {
   }
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="space-y-4 px-2 py-3">
+    <div className="flex h-full flex-col overflow-y-auto overscroll-y-contain px-2 py-3 [-webkit-overflow-scrolling:touch]">
+      <div className="space-y-4">
         {items.map((item, idx) => (
           <div key={`${item.messageId}-${idx}`} className="space-y-1.5">
             <p className="label-tech px-1">{formatDate(item.created_at)}</p>
             {item.type === "chart" && item.chartSpec && (
-              <Suspense fallback={<div className="flex h-32 items-center justify-center rounded-xl border border-border/40 text-xs text-muted-foreground">Loading chart...</div>}>
-                <MarkdownChartLazy spec={item.chartSpec} />
-              </Suspense>
+              <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x">
+                <div className="min-w-[720px]">
+                  <Suspense fallback={<div className="flex h-32 items-center justify-center rounded-xl border border-border/40 text-xs text-muted-foreground">Loading chart...</div>}>
+                    <MarkdownChartLazy spec={item.chartSpec} />
+                  </Suspense>
+                </div>
+              </div>
             )}
             {item.type === "table" && item.tableMarkdown && (
               <TablePreview markdown={item.tableMarkdown} title={item.tableTitle} />
@@ -255,7 +260,7 @@ const ChatGallery = memo(() => {
           </div>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 });
 
