@@ -118,10 +118,10 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
   };
 
   return (
-    <div className="my-2 w-full min-w-0 overflow-hidden rounded-lg border border-border">
-      <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
+    <div className="my-3 w-full min-w-0 overflow-hidden rounded-[1.35rem] bg-[hsl(var(--surface-container-low))]/90 shadow-[0_24px_60px_rgba(255,255,255,0.04)] ring-1 ring-white/10 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
         {title && (
-          <span className="truncate text-xs font-semibold text-foreground/80">{title}</span>
+          <span className="label-tech truncate text-[0.72rem] text-foreground/75">{title}</span>
         )}
         <TooltipProvider delayDuration={150}>
           <div className="flex items-center gap-0.5">
@@ -131,7 +131,7 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-full"
+                className="h-8 w-8 rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
                 onClick={handleCopyTable}
                 aria-label={copied ? "Copied table" : "Copy table"}
               >
@@ -146,7 +146,7 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-full"
+                className="h-8 w-8 rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
                 onClick={handleDownloadTable}
                 aria-label={downloaded ? "Downloaded table" : "Download xlsx"}
               >
@@ -158,8 +158,12 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
           </div>
         </TooltipProvider>
       </div>
-      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-        <Table>{children}</Table>
+      <div className="px-2 pb-2">
+        <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-[1.1rem] bg-[hsl(var(--surface-container-lowest))]/80 px-2 py-2 [-webkit-overflow-scrolling:touch]">
+          <Table className="min-w-[640px] border-separate border-spacing-y-2 text-sm">
+            {children}
+          </Table>
+        </div>
       </div>
     </div>
   );
@@ -448,11 +452,23 @@ const ChatMessageBubble = memo(({
                     </div>
                   );
                 },
-                thead: ({ children }) => <TableHeader>{children}</TableHeader>,
-                tbody: ({ children }) => <TableBody>{children}</TableBody>,
-                tr: ({ children }) => <TableRow>{children}</TableRow>,
-                th: ({ children }) => <TableHead className="text-xs font-semibold">{children}</TableHead>,
-                td: ({ children }) => <TableCell className="text-xs">{children}</TableCell>,
+                thead: ({ children }) => <TableHeader className="[&_tr]:border-0">{children}</TableHeader>,
+                tbody: ({ children }) => <TableBody className="[&_tr:last-child]:border-0">{children}</TableBody>,
+                tr: ({ children }) => (
+                  <TableRow className="border-0 bg-[hsl(var(--surface-container-low))]/70 hover:bg-[hsl(var(--surface-container-high))]/80">
+                    {children}
+                  </TableRow>
+                ),
+                th: ({ children }) => (
+                  <TableHead className="h-auto border-0 px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]">
+                    {children}
+                  </TableHead>
+                ),
+                td: ({ children }) => (
+                  <TableCell className="border-0 px-4 py-3 text-[0.82rem] text-foreground/88 first:rounded-l-2xl last:rounded-r-2xl">
+                    {children}
+                  </TableCell>
+                ),
               }}
             >
               {normalizedContent}

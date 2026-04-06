@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useCallback, useState } from "react";
+import { memo, useMemo, useRef, useCallback, useState, useId } from "react";
 import { toPng } from "html-to-image";
 import {
   ChartContainer,
@@ -11,16 +11,17 @@ import {
 import { Download, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   XAxis,
   YAxis,
+  type LegendProps,
 } from "recharts";
 
 export type ChartSeries = {
@@ -61,8 +62,53 @@ export type PieChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec;
 
-const CHART_CONTAINER_CLASS = "my-3 sm:my-4 flex w-full max-w-full min-w-0 flex-col gap-3 sm:gap-4 overflow-hidden rounded-[1.25rem] border border-border/60 bg-transparent px-2 py-3 sm:px-3 sm:py-4";
+const CHART_GLASS_CLASS = "my-3 sm:my-4 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(180deg,hsl(var(--surface-container-high))/0.82,hsla(0,0%,0%,0.92))] p-3 shadow-[0_30px_80px_rgba(255,255,255,0.05)] ring-1 ring-white/10 backdrop-blur-xl sm:p-4";
 const CHART_HEADER_CLASS = "w-full space-y-2";
+const getCartesianChartWidth = (points: number) => Math.max(points * 132, 560);
+
+const formatCompactNumber = (value: number) => {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1)}K`;
+  return value.toLocaleString();
+};
+
+const compactPieLabel = (value: string) =>
+  value
+    .replace(/^Offline Centre\s+/i, "")
+    .replace(/^Online\s+/i, "")
+    .trim();
+
+const PIE_SWATCH_CLASSES = [
+  "bg-[#10b981]",
+  "bg-[#3b82f6]",
+  "bg-[#d946ef]",
+  "bg-[#f97316]",
+  "bg-[#64748b]",
+  "bg-[#14b8a6]",
+  "bg-[#8b5cf6]",
+  "bg-[#f43f5e]",
+  "bg-[#eab308]",
+  "bg-[#06b6d4]",
+];
+
+const PieLegend = memo(({ items }: { items: Array<{ label: string; fullLabel: string; value: number; percent: number }> }) => {
+  return (
+    <div className="grid gap-2.5 rounded-[1.25rem] bg-white/5 p-3 ring-1 ring-white/10 backdrop-blur-md">
+      {items.map((item, index) => (
+        <div key={item.fullLabel} className="flex items-start gap-3 rounded-[1rem] px-2 py-2 transition-colors hover:bg-white/5">
+          <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${PIE_SWATCH_CLASSES[index % PIE_SWATCH_CLASSES.length]}`} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium leading-5 text-foreground">{item.label}</p>
+              <span className="label-tech shrink-0 text-[0.68rem] text-foreground/70">{item.percent.toFixed(1)}%</span>
+            </div>
+            <p className="mt-1 text-xs text-[hsl(var(--on-surface-variant))]">{formatCompactNumber(item.value)}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
 
 const buildChartConfig = (series: ChartSeries[]): ChartConfig => {
   return series.reduce<ChartConfig>((config, item) => {
@@ -84,11 +130,23 @@ const ChartHeader = memo(({ title, description }: { title: string; description: 
 export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const uid = useId().replace(/:/g, "");
 
   const renderPieLabel = useCallback(
-    ({ name }: { name?: string | number }) => {
+    ({
+      percent,
+      value,
+    }: {
+      percent?: number;
+      value?: string | number;
+    }) => {
       if (!spec.options?.showLabels) return null;
-      return typeof name === "string" || typeof name === "number" ? String(name) : null;
+
+      if (typeof value !== "number" || !percent || percent < 0.12) {
+        return null;
+      }
+
+      return `${Math.round(percent * 100)}%`;
     },
     [spec]
   );
@@ -155,120 +213,189 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     return buildChartConfig(spec.series);
   }, [spec]);
 
+  const pieLegendItems = useMemo(() => {
+    if (spec.type !== "pie") return [];
+
+    const total = spec.data.reduce((sum, item) => {
+      const raw = item[spec.valueKey];
+      return sum + (typeof raw === "number" ? raw : Number(raw) || 0);
+    }, 0);
+
+    return spec.data.map((item, index) => {
+      const rawValue = item[spec.valueKey];
+      const numericValue = typeof rawValue === "number" ? rawValue : Number(rawValue) || 0;
+      const rawLabel = String(item[spec.labelKey] ?? `Item ${index + 1}`);
+      const label = compactPieLabel(rawLabel);
+      const percent = total > 0 ? (numericValue / total) * 100 : 0;
+      const color = typeof item.color === "string" ? item.color : `hsl(${index * 57} 70% 55%)`;
+
+      return {
+        label,
+        fullLabel: rawLabel,
+        value: numericValue,
+        percent,
+        color,
+      };
+    });
+  }, [spec]);
+
   if (spec.type === "pie") {
     return (
-      <div ref={chartRef} className={CHART_CONTAINER_CLASS}>
+      <div
+        ref={chartRef}
+        className="my-3 sm:my-4 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(180deg,hsl(var(--surface-container-high))/0.82,hsla(0,0%,0%,0.92))] p-3 shadow-[0_30px_80px_rgba(255,255,255,0.05)] ring-1 ring-white/10 backdrop-blur-xl sm:p-4"
+      >
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
           <div className="chart-action-btns flex shrink-0 gap-1">
             <button
               onClick={handleCopy}
-              className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
               title={copied ? "Copied" : "Copy chart"}
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </button>
             <button
               onClick={handleDownload}
-              className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
               title="Download chart as PNG"
             >
               <Download className="h-4 w-4" />
             </button>
           </div>
         </div>
-        <div className="w-full min-w-[320px] overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-          <ChartContainer config={pieConfig ?? {}} className="aspect-auto h-[280px] w-full min-w-[320px] sm:h-[340px]">
-            <PieChart>
-            {spec.options?.showTooltip && (
-              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-            )}
-            {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
-            <Pie
-              data={spec.data}
-              dataKey={spec.valueKey}
-              nameKey={spec.labelKey}
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              label={renderPieLabel}
-            >
-              {spec.data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={typeof entry.color === "string" ? entry.color : `hsl(${index * 57} 70% 55%)`}
-                />
-              ))}
-            </Pie>
-            </PieChart>
-          </ChartContainer>
+        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)] lg:items-center">
+          <div className="min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+            <ChartContainer config={pieConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[320px] sm:h-[360px]">
+              <PieChart>
+                {spec.options?.showTooltip && (
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        formatter={(itemValue, itemName) => (
+                          <div className="flex min-w-[11rem] items-center justify-between gap-3">
+                            <span className="text-[hsl(var(--on-surface-variant))]">{String(itemName)}</span>
+                            <span className="font-mono font-semibold text-foreground">{Number(itemValue).toLocaleString()}</span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                )}
+                <Pie
+                  data={spec.data}
+                  dataKey={spec.valueKey}
+                  nameKey={spec.labelKey}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={44}
+                  outerRadius={112}
+                  paddingAngle={2}
+                  stroke="transparent"
+                  labelLine={false}
+                  label={renderPieLabel}
+                >
+                  {spec.data.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={typeof entry.color === "string" ? entry.color : `hsl(${index * 57} 70% 55%)`}
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+          </div>
+
+          {spec.options?.showLegend && pieLegendItems.length > 0 && <PieLegend items={pieLegendItems} />}
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={chartRef} className={CHART_CONTAINER_CLASS}>
+    <div ref={chartRef} className={CHART_GLASS_CLASS}>
       <div className="flex items-start justify-between gap-2">
         <ChartHeader title={spec.title} description={spec.description} />
         <div className="chart-action-btns flex shrink-0 gap-1">
           <button
             onClick={handleCopy}
-            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
             title={copied ? "Copied" : "Copy chart"}
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </button>
           <button
             onClick={handleDownload}
-            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
             title="Download chart as PNG"
           >
             <Download className="h-4 w-4" />
           </button>
         </div>
       </div>
-      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+      <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[300px] w-full min-w-[360px] sm:h-[380px]">
-          {(spec.type === "bar" ? (
-          <BarChart data={spec.data} width={Math.max(spec.data.length * 88, 360)} height={380} margin={{ top: 12, right: 12, left: 0, bottom: 12 }}>
-            {spec.options?.showGrid && <CartesianGrid vertical={false} />}
-            <XAxis dataKey={spec.xKey} tickLine={false} axisLine={false} minTickGap={24} />
-            <YAxis tickLine={false} axisLine={false} />
-            {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
-            {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
-            {spec.series.map((item) => (
-              <Bar key={item.key} dataKey={item.key} fill={item.color} radius={[8, 8, 0, 0]} />
-            ))}
-          </BarChart>
-        ) : (
-          <LineChart data={spec.data} width={Math.max(spec.data.length * 88, 360)} height={380} margin={{ top: 16, right: 16, bottom: 28, left: 0 }}>
-            {spec.options?.showGrid && <CartesianGrid vertical={false} />}
-            <XAxis 
-              dataKey={spec.xKey} 
-              tickLine={false} 
-              axisLine={false}
-              angle={Number(-45)}
-              textAnchor="end"
-              minTickGap={24}
-              height={72}
-              tickMargin={10} />
-            <YAxis tickLine={false} axisLine={false} />
-            {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
-            {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
-            {spec.series.map((item) => (
-              <Line
-                key={item.key}
-                type="monotone"
-                dataKey={item.key}
-                stroke={item.color}
-                strokeWidth={3.5}
-                dot={{ fill: item.color, r: 5, strokeWidth: 0 }}
-                activeDot={{ r: 7 }}
+          {spec.type === "bar" ? (
+            <BarChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={380} margin={{ top: 12, right: 20, left: 8, bottom: 72 }}>
+              {spec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
+              <XAxis
+                dataKey={spec.xKey}
+                tickLine={false}
+                axisLine={false}
+                interval={0}
+                angle={-28}
+                textAnchor="end"
+                height={84}
+                tickMargin={14}
+                minTickGap={12}
               />
-            ))}
-          </LineChart>
-        ))}
+              <YAxis tickLine={false} axisLine={false} />
+              {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
+              {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
+              {spec.series.map((item) => (
+                <Bar key={item.key} dataKey={item.key} fill={item.color} radius={[6, 6, 0, 0]} />
+              ))}
+            </BarChart>
+          ) : (
+            <AreaChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={380} margin={{ top: 16, right: 20, bottom: 84, left: 8 }}>
+              <defs>
+                {spec.series.map((item) => (
+                  <linearGradient key={item.key} id={`area-grad-${uid}-${item.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={item.color} stopOpacity={0.28} />
+                    <stop offset="90%" stopColor={item.color} stopOpacity={0.02} />
+                  </linearGradient>
+                ))}
+              </defs>
+              {spec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
+              <XAxis
+                dataKey={spec.xKey}
+                tickLine={false}
+                axisLine={false}
+                interval={0}
+                angle={-32}
+                textAnchor="end"
+                minTickGap={12}
+                height={88}
+                tickMargin={14}
+              />
+              <YAxis tickLine={false} axisLine={false} />
+              {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
+              {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent />} />}
+              {spec.series.map((item) => (
+                <Area
+                  key={item.key}
+                  type="monotone"
+                  dataKey={item.key}
+                  stroke={item.color}
+                  strokeWidth={2.5}
+                  fill={`url(#area-grad-${uid}-${item.key})`}
+                  dot={false}
+                  activeDot={{ r: 5, strokeWidth: 0, fill: item.color }}
+                />
+              ))}
+            </AreaChart>
+          )}
         </ChartContainer>
       </div>
     </div>
