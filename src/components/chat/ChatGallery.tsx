@@ -21,13 +21,18 @@ const CHART_BLOCK_RE = /```chart\s*\n([\s\S]*?)\n```/g;
 const TABLE_RE = /(?:^|\n)(\|.+\|(?:\n\|[-: |]+\|)(?:\n\|.+\|)+)/g;
 const PAGE_SIZE = 50;
 
+const CARTESIAN_CHART_TYPES = new Set(["bar", "horizontal_bar", "stacked_bar", "line", "area", "stacked_area"]);
+const PIE_CHART_TYPES = new Set(["pie", "donut"]);
+
 const isChartSpec = (value: unknown): value is ChartSpec => {
   if (!value || typeof value !== "object") return false;
   const c = value as Partial<ChartSpec>;
-  if (c.type === "bar" || c.type === "line")
-    return Boolean(c.title && c.xKey && Array.isArray((c as any).series) && Array.isArray(c.data));
-  if (c.type === "pie")
+  if (CARTESIAN_CHART_TYPES.has(c.type as string))
+    return Boolean(c.title && (c as any).xKey && Array.isArray((c as any).series) && Array.isArray(c.data));
+  if (PIE_CHART_TYPES.has(c.type as string))
     return Boolean(c.title && (c as any).labelKey && (c as any).valueKey && Array.isArray(c.data));
+  if (c.type === "scatter")
+    return Boolean(c.title && (c as any).xKey && (c as any).yKey && Array.isArray((c as any).series) && Array.isArray(c.data));
   return false;
 };
 

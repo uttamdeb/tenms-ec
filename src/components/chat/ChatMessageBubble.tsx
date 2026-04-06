@@ -178,6 +178,9 @@ const normalizeMarkdownContent = (value: string) => {
     .trimEnd();
 };
 
+const CARTESIAN_TYPES = new Set(["bar", "horizontal_bar", "stacked_bar", "line", "area", "stacked_area"]);
+const PIE_TYPES = new Set(["pie", "donut"]);
+
 const isChartSpec = (value: unknown): value is ChartSpec => {
   if (!value || typeof value !== "object") {
     return false;
@@ -185,22 +188,33 @@ const isChartSpec = (value: unknown): value is ChartSpec => {
 
   const chart = value as Partial<ChartSpec>;
 
-  if (chart.type === "bar" || chart.type === "line") {
+  if (CARTESIAN_TYPES.has(chart.type as string)) {
     return Boolean(
       chart.title &&
       chart.description &&
-      chart.xKey &&
-      Array.isArray(chart.series) &&
+      (chart as { xKey?: unknown }).xKey &&
+      Array.isArray((chart as { series?: unknown }).series) &&
       Array.isArray(chart.data),
     );
   }
 
-  if (chart.type === "pie") {
+  if (PIE_TYPES.has(chart.type as string)) {
     return Boolean(
       chart.title &&
       chart.description &&
-      chart.labelKey &&
-      chart.valueKey &&
+      (chart as { labelKey?: unknown }).labelKey &&
+      (chart as { valueKey?: unknown }).valueKey &&
+      Array.isArray(chart.data),
+    );
+  }
+
+  if (chart.type === "scatter") {
+    return Boolean(
+      chart.title &&
+      chart.description &&
+      (chart as { xKey?: unknown }).xKey &&
+      (chart as { yKey?: unknown }).yKey &&
+      Array.isArray((chart as { series?: unknown }).series) &&
       Array.isArray(chart.data),
     );
   }
