@@ -102,34 +102,36 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
   };
 
   return (
-    <div className="w-full rounded-lg border border-border/60">
-      <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
-        {title && <span className="min-w-0 truncate text-xs font-semibold text-foreground/80">{title}</span>}          <div className="flex shrink-0 items-center gap-0.5">        <button
-          type="button"
-          onClick={handleCopy}
-          title={copied ? "Copied" : "Copy table"}
-          aria-label={copied ? "Copied" : "Copy table"}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-        <button
-          type="button"
-          onClick={handleDownload}
-          title={downloaded ? "Downloaded" : "Download xlsx"}
-          aria-label={downloaded ? "Downloaded" : "Download xlsx"}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {downloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
-        </button>
+    <div className="w-full overflow-x-auto overscroll-x-contain rounded-lg border border-border/60 [-webkit-overflow-scrolling:touch]">
+      <div className="min-w-max">
+        <div className="sticky left-0 flex items-center justify-between gap-2 border-b border-border/80 px-3 py-1.5">
+          {title && <span className="min-w-0 truncate text-xs font-semibold text-foreground/80">{title}</span>}
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              onClick={handleCopy}
+              title={copied ? "Copied" : "Copy table"}
+              aria-label={copied ? "Copied" : "Copy table"}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              title={downloaded ? "Downloaded" : "Download xlsx"}
+              aria-label={downloaded ? "Downloaded" : "Download xlsx"}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {downloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-        <table className="w-full min-w-max text-xs">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border/40">
               {headerCells.map((cell, i) => (
-                <th key={i} className="px-2 py-1.5 text-left font-semibold text-foreground">{cell}</th>
+                <th key={i} className="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-foreground">{cell}</th>
               ))}
             </tr>
           </thead>
@@ -137,14 +139,14 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
             {previewRows.map((row, ri) => (
               <tr key={ri} className="border-b border-border/20 last:border-0">
                 {row.map((cell, ci) => (
-                  <td key={ci} className="px-2 py-1 text-muted-foreground">{cell}</td>
+                  <td key={ci} className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">{cell}</td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
         {dataRows.length > 5 && (
-          <div className="px-2 py-1 text-[0.625rem] text-muted-foreground/60">+{dataRows.length - 5} more rows</div>
+          <div className="px-3 py-1 text-[0.625rem] text-muted-foreground/60">+{dataRows.length - 5} more rows</div>
         )}
       </div>
     </div>

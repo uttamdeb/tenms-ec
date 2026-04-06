@@ -61,6 +61,8 @@ function applyAccent(option: AccentOption, isDark: boolean) {
   root.style.setProperty("--sidebar-primary-foreground", vars.primaryForeground);
   root.style.setProperty("--sidebar-ring", vars.ring);
   root.style.setProperty("--chart-1", vars.primary);
+  // Make --primary-container match --primary so cta-gradient renders as solid for non-amber accents
+  root.style.setProperty("--primary-container", vars.primary);
 }
 
 export function useAccentColor() {
