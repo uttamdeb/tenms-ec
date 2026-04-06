@@ -412,7 +412,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       </div>
       <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
-          {isHorizontalBar(cartSpec) ? (
+          {cartSpec.type === "horizontal_bar" ? (
             <BarChart data={cartSpec.data} layout="vertical" width={getCartesianChartWidth(cartSpec.data.length)} height={Math.max(cartSpec.data.length * 56, 320)} margin={{ top: 12, right: 16, left: 24, bottom: 4 }}>
               {cartSpec.options?.showGrid && <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis type="number" tickLine={false} axisLine={false} />
@@ -423,7 +423,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 <Bar key={item.key} dataKey={item.key} fill={getSeriesColor(item.color, index)} radius={[0, 6, 6, 0]} />
               ))}
             </BarChart>
-          ) : cartSpec.type === "bar" || isStackedBar(cartSpec) ? (
+          ) : cartSpec.type === "bar" || cartSpec.type === "stacked_bar" ? (
             <BarChart data={cartSpec.data} width={getCartesianChartWidth(cartSpec.data.length)} height={320} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
               {cartSpec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis
@@ -441,7 +441,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
               {cartSpec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
               {cartSpec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
               {cartSpec.series.map((item, index) => (
-                <Bar key={item.key} dataKey={item.key} fill={getSeriesColor(item.color, index)} radius={[6, 6, 0, 0]} stackId={isStackedBar(cartSpec) ? "stack" : undefined} />
+                <Bar key={item.key} dataKey={item.key} fill={getSeriesColor(item.color, index)} radius={[6, 6, 0, 0]} stackId={cartSpec.type === "stacked_bar" ? "stack" : undefined} />
               ))}
             </BarChart>
           ) : (
@@ -480,9 +480,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                     type="monotone"
                     dataKey={item.key}
                     stroke={color}
-                    strokeWidth={isAreaLike(cartSpec) && cartSpec.type === "line" ? 2.5 : 2.2}
+                    strokeWidth={cartSpec.type === "line" ? 2.5 : 2.2}
                     fill={cartSpec.type === "line" ? "transparent" : `url(#area-grad-${uid}-${item.key})`}
-                    stackId={isStackedArea(cartSpec) ? "stack" : undefined}
+                    stackId={cartSpec.type === "stacked_area" ? "stack" : undefined}
                     dot={false}
                     activeDot={{ r: 5, strokeWidth: 0, fill: color }}
                   />
