@@ -412,22 +412,22 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       </div>
       <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
-          {isHorizontalBar(spec) ? (
-            <BarChart data={spec.data} layout="vertical" width={getCartesianChartWidth(spec.data.length)} height={Math.max(spec.data.length * 56, 320)} margin={{ top: 12, right: 16, left: 24, bottom: 4 }}>
-              {spec.options?.showGrid && <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
+          {isHorizontalBar(cartSpec) ? (
+            <BarChart data={cartSpec.data} layout="vertical" width={getCartesianChartWidth(cartSpec.data.length)} height={Math.max(cartSpec.data.length * 56, 320)} margin={{ top: 12, right: 16, left: 24, bottom: 4 }}>
+              {cartSpec.options?.showGrid && <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis type="number" tickLine={false} axisLine={false} />
-              <YAxis dataKey={spec.xKey} type="category" tickLine={false} axisLine={false} width={180} />
-              {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
-              {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
-              {spec.series.map((item, index) => (
+              <YAxis dataKey={cartSpec.xKey} type="category" tickLine={false} axisLine={false} width={180} />
+              {cartSpec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
+              {cartSpec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
+              {cartSpec.series.map((item, index) => (
                 <Bar key={item.key} dataKey={item.key} fill={getSeriesColor(item.color, index)} radius={[0, 6, 6, 0]} />
               ))}
             </BarChart>
-          ) : spec.type === "bar" || isStackedBar(spec) ? (
-            <BarChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={320} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
-              {spec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
+          ) : cartSpec.type === "bar" || isStackedBar(cartSpec) ? (
+            <BarChart data={cartSpec.data} width={getCartesianChartWidth(cartSpec.data.length)} height={320} margin={{ top: 12, right: 16, left: 4, bottom: 4 }}>
+              {cartSpec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis
-                dataKey={spec.xKey}
+                dataKey={cartSpec.xKey}
                 tickLine={false}
                 axisLine={false}
                 interval={0}
@@ -438,16 +438,16 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 minTickGap={10}
               />
               <YAxis tickLine={false} axisLine={false} width={44} />
-              {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
-              {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
-              {spec.series.map((item, index) => (
-                <Bar key={item.key} dataKey={item.key} fill={getSeriesColor(item.color, index)} radius={[6, 6, 0, 0]} stackId={isStackedBar(spec) ? "stack" : undefined} />
+              {cartSpec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
+              {cartSpec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
+              {cartSpec.series.map((item, index) => (
+                <Bar key={item.key} dataKey={item.key} fill={getSeriesColor(item.color, index)} radius={[6, 6, 0, 0]} stackId={isStackedBar(cartSpec) ? "stack" : undefined} />
               ))}
             </BarChart>
           ) : (
-            <AreaChart data={spec.data} width={getCartesianChartWidth(spec.data.length)} height={320} margin={{ top: 16, right: 16, bottom: 4, left: 4 }}>
+            <AreaChart data={cartSpec.data} width={getCartesianChartWidth(cartSpec.data.length)} height={320} margin={{ top: 16, right: 16, bottom: 4, left: 4 }}>
               <defs>
-                {spec.series.map((item, index) => {
+                {cartSpec.series.map((item, index) => {
                   const color = getSeriesColor(item.color, index);
                   return (
                     <linearGradient key={item.key} id={`area-grad-${uid}-${item.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -457,9 +457,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                   );
                 })}
               </defs>
-              {spec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
+              {cartSpec.options?.showGrid && <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis
-                dataKey={spec.xKey}
+                dataKey={cartSpec.xKey}
                 tickLine={false}
                 axisLine={false}
                 interval={0}
@@ -470,9 +470,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 tickMargin={8}
               />
               <YAxis tickLine={false} axisLine={false} width={44} />
-              {spec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
-              {spec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
-              {spec.series.map((item, index) => {
+              {cartSpec.options?.showTooltip && <ChartTooltip content={<ChartTooltipContent className="border-white/10 bg-[hsl(var(--surface-container-high))]/80 shadow-[0_24px_60px_rgba(255,255,255,0.05)] backdrop-blur-xl" />} />}
+              {cartSpec.options?.showLegend && <ChartLegend content={<ChartLegendContent className="pt-4 text-[0.72rem] uppercase tracking-[0.08em] text-[hsl(var(--on-surface-variant))]" />} />}
+              {cartSpec.series.map((item, index) => {
                 const color = getSeriesColor(item.color, index);
                 return (
                   <Area
@@ -480,9 +480,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                     type="monotone"
                     dataKey={item.key}
                     stroke={color}
-                    strokeWidth={isAreaLike(spec) && spec.type === "line" ? 2.5 : 2.2}
-                    fill={spec.type === "line" ? "transparent" : `url(#area-grad-${uid}-${item.key})`}
-                    stackId={isStackedArea(spec) ? "stack" : undefined}
+                    strokeWidth={isAreaLike(cartSpec) && cartSpec.type === "line" ? 2.5 : 2.2}
+                    fill={cartSpec.type === "line" ? "transparent" : `url(#area-grad-${uid}-${item.key})`}
+                    stackId={isStackedArea(cartSpec) ? "stack" : undefined}
                     dot={false}
                     activeDot={{ r: 5, strokeWidth: 0, fill: color }}
                   />
