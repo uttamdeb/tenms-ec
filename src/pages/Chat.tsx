@@ -232,7 +232,7 @@ const Chat = () => {
       className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground"
       style={{
         "--chat-sidebar-width": `${sidebarOpen ? sidebarWidth : 0}px`,
-        "--chat-gallery-width": `${galleryOpen ? (galleryFullscreen ? 9999 : galleryWidth) : 0}px`,
+        "--chat-gallery-width": `${galleryOpen && !galleryFullscreen ? galleryWidth : galleryOpen && galleryFullscreen ? 0 : 0}px`,
       } as CSSProperties}
     >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
@@ -305,6 +305,7 @@ const Chat = () => {
         {/* Sidebar */}
         <div
           className={`transition-[transform,opacity] duration-300 ease-in-out ${
+            galleryFullscreen ? "hidden" :
             isMobile
               ? `absolute inset-y-12 left-0 z-40 w-64 overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
               : `relative hidden w-[var(--chat-sidebar-width)] shrink-0 sm:flex origin-left transition-all duration-300 ease-out ${sidebarOpen ? "pr-3 opacity-100 scale-x-100" : "pr-0 opacity-0 scale-x-95 pointer-events-none"}`
@@ -359,7 +360,7 @@ const Chat = () => {
 
 
         {/* Chat area */}
-        <div className="surface-panel relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
+        <div className={`surface-panel relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] transition-all duration-300 ${galleryFullscreen ? "hidden" : ""}`}>
           {messages.length === 0 ? (
             <div className="flex flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-10 sm:py-12 animate-in fade-in duration-500">
               <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-10 lg:flex-row lg:items-start lg:justify-between">
@@ -471,8 +472,10 @@ const Chat = () => {
 
         {/* Desktop gallery — slide in from right */}
         <div
-          className={`relative hidden w-[var(--chat-gallery-width)] shrink-0 sm:flex transition-all duration-300 ease-out origin-right ${
-            galleryOpen ? "pl-3 opacity-100 scale-x-100" : "pl-0 opacity-0 pointer-events-none"
+          className={`relative hidden sm:flex transition-all duration-300 ease-out origin-right ${
+            galleryFullscreen
+              ? `min-w-0 flex-1 ${galleryOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`
+              : `w-[var(--chat-gallery-width)] shrink-0 ${galleryOpen ? "pl-3 opacity-100 scale-x-100" : "pl-0 opacity-0 pointer-events-none"}`
           }`}
         >
           {/* Resize handle — hidden in fullscreen */}
