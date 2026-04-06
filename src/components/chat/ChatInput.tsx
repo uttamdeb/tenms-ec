@@ -115,13 +115,19 @@ const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
   }, [input]);
 
   return (
-    <div className="surface-panel px-3 pb-3 pt-2 sm:px-6 sm:pb-6 sm:pt-3 transition-all duration-300 ease-in-out">
+    <div className="px-3 pb-3 pt-2 sm:px-6 sm:pb-6 sm:pt-3 transition-all duration-300 ease-in-out">
       <div className="mx-auto max-w-5xl">
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`surface-recessed flex flex-col rounded-[1.75rem] px-3 py-3 shadow-[inset_0_0_0_1px_hsl(var(--outline-ghost)/0.15)] transition-all duration-300 focus-within:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] sm:px-4 ${isDragOver ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+          className={`relative flex flex-col rounded-[1.75rem] px-3 py-3 sm:px-4
+            bg-[hsl(var(--surface-container-high))]/60
+            shadow-[0_40px_80px_rgba(255,255,255,0.06),inset_0_0_0_1px_rgba(255,255,255,0.10)]
+            backdrop-blur-2xl
+            transition-all duration-300
+            focus-within:shadow-[0_40px_80px_rgba(255,255,255,0.07),inset_0_0_0_1.5px_hsl(var(--primary)/0.45)]
+            ${isDragOver ? "bg-primary/10 shadow-[0_40px_80px_rgba(255,255,255,0.08),inset_0_0_0_1.5px_hsl(var(--primary)/0.6)]" : ""}`}
         >
           {/* Image preview inside input area */}
           {preview && (
@@ -179,17 +185,17 @@ const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
               onClick={handleSend}
               disabled={!input.trim() || disabled || isUploading}
               size="icon"
-              className="shrink-0 h-11 w-11"
+              className="shrink-0 h-11 w-11 rounded-full shadow-[0_8px_24px_rgba(251,191,36,0.25)] transition-shadow duration-200 hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)]"
             >
               <Send className="h-4 w-4 transition-transform duration-200" />
             </Button>
           </div>
         </div>
         <div className="mt-3 hidden items-center justify-between sm:flex">
-          <p className="label-tech">
-            EC Data Agent - <span className="font-semibold">Research Preview v0.8</span>
+          <p className="label-tech text-muted-foreground/40">
+            EC Data Agent — <span className="font-semibold tracking-widest">Research Preview v0.8</span>
           </p>
-          <p className="label-tech">EC Data Agent can make mistakes. Verify important information.</p>
+          <p className="label-tech text-muted-foreground/40">EC Data Agent can make mistakes. Verify important information.</p>
         </div>
       </div>
     </div>

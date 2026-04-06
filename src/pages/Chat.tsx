@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X } from "lucide-react";
+import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X, Maximize2, Minimize2 } from "lucide-react";
 import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback, lazy, Suspense } from "react";
@@ -67,6 +67,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryFullscreen, setGalleryFullscreen] = useState(false);
   const [galleryWidth, setGalleryWidth] = useState(560);
   const galleryResizing = useRef(false);
   const [sidebarWidth, setSidebarWidth] = useState(288); // 18rem default
@@ -231,7 +232,7 @@ const Chat = () => {
       className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground"
       style={{
         "--chat-sidebar-width": `${sidebarOpen ? sidebarWidth : 0}px`,
-        "--chat-gallery-width": `${galleryOpen ? galleryWidth : 0}px`,
+        "--chat-gallery-width": `${galleryOpen ? (galleryFullscreen ? 9999 : galleryWidth) : 0}px`,
       } as CSSProperties}
     >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
@@ -474,43 +475,56 @@ const Chat = () => {
             galleryOpen ? "pl-3 opacity-100 scale-x-100" : "pl-0 opacity-0 pointer-events-none"
           }`}
         >
-          {/* Resize handle */}
-          <div
-            className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize rounded-full transition-colors hover:bg-primary/20 active:bg-primary/30"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              galleryResizing.current = true;
-              const startX = e.clientX;
-              const startW = galleryWidth;
-              const onMove = (ev: MouseEvent) => {
-                if (!galleryResizing.current) return;
-                const delta = startX - ev.clientX;
-                setGalleryWidth(Math.max(320, Math.min(800, startW + delta)));
-              };
-              const onUp = () => {
-                galleryResizing.current = false;
-                window.removeEventListener("mousemove", onMove);
-                window.removeEventListener("mouseup", onUp);
-              };
-              window.addEventListener("mousemove", onMove);
-              window.addEventListener("mouseup", onUp);
-            }}
-          />
+          {/* Resize handle — hidden in fullscreen */}
+          {!galleryFullscreen && (
+            <div
+              className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize rounded-full transition-colors hover:bg-primary/20 active:bg-primary/30"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                galleryResizing.current = true;
+                const startX = e.clientX;
+                const startW = galleryWidth;
+                const onMove = (ev: MouseEvent) => {
+                  if (!galleryResizing.current) return;
+                  const delta = startX - ev.clientX;
+                  setGalleryWidth(Math.max(320, Math.min(800, startW + delta)));
+                };
+                const onUp = () => {
+                  galleryResizing.current = false;
+                  window.removeEventListener("mousemove", onMove);
+                  window.removeEventListener("mouseup", onUp);
+                };
+                window.addEventListener("mousemove", onMove);
+                window.addEventListener("mouseup", onUp);
+              }}
+            />
+          )}
           <aside
-            className={`surface-recessed flex h-full w-full flex-col rounded-[1.75rem] px-3 py-4 transition-all duration-300 ease-out ${
-              galleryOpen ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
-            }`}
+            className={`surface-recessed flex h-full w-full flex-col px-3 py-4 transition-all duration-300 ease-out ${
+              galleryFullscreen ? "rounded-[2rem]" : "rounded-[1.75rem]"
+            } ${galleryOpen ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
           >
             <div className="flex items-center justify-between px-2 pb-3">
               <p className="headline-agent text-xl">Gallery</p>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-full text-muted-foreground transition-transform duration-200 hover:rotate-90 hover:text-foreground"
-                onClick={() => setGalleryOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full text-muted-foreground transition-colors duration-200 hover:bg-white/10 hover:text-foreground"
+                  onClick={() => setGalleryFullscreen((fs) => !fs)}
+                  title={galleryFullscreen ? "Restore gallery" : "Expand to fullscreen"}
+                >
+                  {galleryFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full text-muted-foreground transition-transform duration-200 hover:rotate-90 hover:text-foreground"
+                  onClick={() => { setGalleryOpen(false); setGalleryFullscreen(false); }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             {galleryOpen && <ChatGallery />}
           </aside>
