@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { mirrorInsert, mirrorUpdate } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
 
-const STREAM_CHUNK_SIZE = 3;
-const STREAM_INTERVAL_MS = 8;
+const STREAM_INTERVAL_MS = 16; // ~60fps tick
+const STREAM_TARGET_MS = 1200; // target total stream duration in ms
 
 export interface ChatMessage {
   id: string;
@@ -235,9 +235,13 @@ export function useChat(options: UseChatOptions = {}) {
 
       await new Promise<void>((resolve) => {
         let currentIndex = 0;
+        // Dynamically scale chunk size so the stream always finishes in ~STREAM_TARGET_MS
+        // Minimum 2 chars/tick for very short messages, no upper cap so long ones stream fast
+        const totalTicks = STREAM_TARGET_MS / STREAM_INTERVAL_MS;
+        const chunkSize = Math.max(2, Math.ceil(assistantContent.length / totalTicks));
 
         const streamTimer = window.setInterval(() => {
-          currentIndex = Math.min(currentIndex + STREAM_CHUNK_SIZE, assistantContent.length);
+          currentIndex = Math.min(currentIndex + chunkSize, assistantContent.length);
           setStreamingMessage(assistantContent.slice(0, currentIndex));
 
           if (currentIndex >= assistantContent.length) {
@@ -258,16 +262,8 @@ export function useChat(options: UseChatOptions = {}) {
         console.error("Failed to save assistant message:", assistantErr);
       } else {
         mirrorInsert("chat_messages", { id: (assistantMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, created_at: (assistantMsg as ChatMessage).created_at });
-        setStreamingMessage(null);
-        setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
 
-        // Track character usage (user input + assistant response)
-        if (onCharactersUsed) {
-          const totalChars = messageContent.length + assistantContent.length;
-          onCharactersUsed(totalChars);
-        }
-
-        // Save SQL run data if present
+        // Save SQL run data BEFORE updating messages state so the fetch effect picks it up
         if (responseData?.executed_sql && responseData?.bq_result) {
           const bqResultStr = typeof responseData.bq_result === 'string' 
             ? responseData.bq_result 
@@ -282,6 +278,15 @@ export function useChat(options: UseChatOptions = {}) {
             executed_sql: responseData.executed_sql,
             bq_result: bqResultStr,
           });
+        }
+
+        setStreamingMessage(null);
+        setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
+
+        // Track character usage (user input + assistant response)
+        if (onCharactersUsed) {
+          const totalChars = messageContent.length + assistantContent.length;
+          onCharactersUsed(totalChars);
         }
       }
     } catch (err) {

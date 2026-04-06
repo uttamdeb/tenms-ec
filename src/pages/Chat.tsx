@@ -69,6 +69,8 @@ const Chat = () => {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryWidth, setGalleryWidth] = useState(560);
   const galleryResizing = useRef(false);
+  const [sidebarWidth, setSidebarWidth] = useState(288); // 18rem default
+  const sidebarResizing = useRef(false);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
@@ -271,11 +273,14 @@ const Chat = () => {
 
       <div className="relative z-10 flex flex-1 overflow-hidden px-2 pb-2 sm:px-4 sm:pb-4">
         {/* Sidebar */}
-        <div className={`transition-all duration-300 ease-in-out ${
-          isMobile
-            ? `absolute inset-y-12 left-0 z-40 w-64 overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
-            : sidebarOpen ? "w-[18rem] shrink-0 pr-3 overflow-visible" : "w-0 overflow-hidden"
-        }`}>
+        <div
+          className={`transition-[transform,opacity] duration-300 ease-in-out ${
+            isMobile
+              ? `absolute inset-y-12 left-0 z-40 w-64 overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
+              : sidebarOpen ? "relative shrink-0 pr-3 overflow-visible" : "w-0 overflow-hidden"
+          }`}
+          style={!isMobile && sidebarOpen ? { width: sidebarWidth } : undefined}
+        >
           <ChatSidebar
             sessions={sessions}
             currentSessionId={currentSessionId}
@@ -284,6 +289,29 @@ const Chat = () => {
             onDeleteSession={handleDeleteSession}
             onRenameSession={handleRenameSession}
           />
+          {/* Resize handle (desktop only) */}
+          {!isMobile && sidebarOpen && (
+            <div
+              className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize rounded-full transition-colors hover:bg-primary/20 active:bg-primary/30"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                sidebarResizing.current = true;
+                const startX = e.clientX;
+                const startW = sidebarWidth;
+                const onMove = (ev: MouseEvent) => {
+                  if (!sidebarResizing.current) return;
+                  setSidebarWidth(Math.max(200, Math.min(480, startW + ev.clientX - startX)));
+                };
+                const onUp = () => {
+                  sidebarResizing.current = false;
+                  window.removeEventListener("mousemove", onMove);
+                  window.removeEventListener("mouseup", onUp);
+                };
+                window.addEventListener("mousemove", onMove);
+                window.addEventListener("mouseup", onUp);
+              }}
+            />
+          )}
         </div>
 
         {/* Overlay for mobile sidebar / gallery */}
@@ -411,7 +439,7 @@ const Chat = () => {
             galleryOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
           }`}
         >
-          <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top,1rem))]">
             <p className="headline-agent text-xl">Gallery</p>
             <Button
               variant="ghost"
@@ -422,7 +450,7 @@ const Chat = () => {
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <div className="flex-1 overflow-y-auto overscroll-y-contain px-2 pb-2 [-webkit-overflow-scrolling:touch]">
+          <div className="flex-1 overflow-y-auto overscroll-y-contain px-2 pb-safe [-webkit-overflow-scrolling:touch]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0.5rem)" }}>
             {galleryOpen && <ChatGallery />}
           </div>
         </div>
