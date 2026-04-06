@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -204,7 +204,13 @@ const Chat = () => {
   };
 
   return (
-    <div className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground">
+    <div
+      className="surface-shell relative flex h-dvh flex-col overflow-hidden text-foreground"
+      style={{
+        "--chat-sidebar-width": `${sidebarOpen ? sidebarWidth : 0}px`,
+        "--chat-gallery-width": `${galleryOpen ? galleryWidth : 0}px`,
+      } as CSSProperties}
+    >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
       <header className="surface-shell relative z-20 flex h-16 shrink-0 items-center justify-between gap-2 px-3 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
@@ -277,18 +283,23 @@ const Chat = () => {
           className={`transition-[transform,opacity] duration-300 ease-in-out ${
             isMobile
               ? `absolute inset-y-12 left-0 z-40 w-64 overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
-              : sidebarOpen ? "relative shrink-0 pr-3 overflow-visible" : "w-0 overflow-hidden"
+              : `relative hidden w-[var(--chat-sidebar-width)] shrink-0 sm:flex origin-left transition-all duration-300 ease-out ${sidebarOpen ? "pr-3 opacity-100 scale-x-100" : "pr-0 opacity-0 scale-x-95 pointer-events-none"}`
           }`}
-          style={!isMobile && sidebarOpen ? { width: sidebarWidth } : undefined}
         >
-          <ChatSidebar
-            sessions={sessions}
-            currentSessionId={currentSessionId}
-            onSelectSession={handleSelectSession}
-            onNewChat={handleNewChat}
-            onDeleteSession={handleDeleteSession}
-            onRenameSession={handleRenameSession}
-          />
+          <div
+            className={`w-full transition-all duration-300 ease-out ${
+              !isMobile && sidebarOpen ? "translate-x-0 opacity-100" : !isMobile ? "-translate-x-6 opacity-0" : ""
+            }`}
+          >
+            <ChatSidebar
+              sessions={sessions}
+              currentSessionId={currentSessionId}
+              onSelectSession={handleSelectSession}
+              onNewChat={handleNewChat}
+              onDeleteSession={handleDeleteSession}
+              onRenameSession={handleRenameSession}
+            />
+          </div>
           {/* Resize handle (desktop only) */}
           {!isMobile && sidebarOpen && (
             <div
@@ -435,10 +446,9 @@ const Chat = () => {
 
         {/* Desktop gallery — slide in from right */}
         <div
-          className={`relative hidden shrink-0 sm:flex transition-all duration-300 ease-out origin-right ${
-            galleryOpen ? "pl-3 opacity-100 scale-x-100" : "w-0 pl-0 opacity-0 pointer-events-none"
+          className={`relative hidden w-[var(--chat-gallery-width)] shrink-0 sm:flex transition-all duration-300 ease-out origin-right ${
+            galleryOpen ? "pl-3 opacity-100 scale-x-100" : "pl-0 opacity-0 pointer-events-none"
           }`}
-          style={{ width: galleryOpen ? galleryWidth : 0 }}
         >
           {/* Resize handle */}
           <div
