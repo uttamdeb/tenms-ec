@@ -243,7 +243,7 @@ const Chat = ({ mode }: ChatProps) => {
     >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
       <header className="surface-shell relative z-20 flex h-16 shrink-0 items-center justify-between gap-2 px-3 sm:px-6">
-        <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -255,9 +255,13 @@ const Chat = ({ mode }: ChatProps) => {
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <img src={tentenIcon} alt="10MS Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
             <div className="min-w-0 flex-1">
-              <h1 className="headline-agent truncate text-[0.95rem] leading-[1.05] sm:text-[1.75rem]">10MS Data Agent</h1>
-              <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
-              <p className="label-tech mt-1 text-xs text-muted-foreground/70">Mode: {mode === "10ms" ? "10MS" : "EC"}</p>
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <h1 className="headline-agent truncate text-[1.05rem] leading-none sm:text-[1.75rem]">10MS Data Agent</h1>
+                <span className="label-tech shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] font-semibold text-primary sm:px-2.5 sm:text-[0.65rem]">
+                  {mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}
+                </span>
+              </div>
+              <p className="label-tech mt-1 hidden truncate sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             </div>
           </div>
         </div>
@@ -294,7 +298,7 @@ const Chat = ({ mode }: ChatProps) => {
             className="hidden sm:inline-flex"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="ml-1">Dashboard</span>
+            <span className="ml-1">Mode</span>
           </Button>
           {profile && (
             <div className="shrink-0">
