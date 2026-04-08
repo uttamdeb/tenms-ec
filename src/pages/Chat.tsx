@@ -256,7 +256,7 @@ const Chat = ({ mode }: ChatProps) => {
             <img src={tentenIcon} alt="10MS Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <h1 className="headline-agent truncate text-[1.05rem] leading-none sm:text-[1.75rem]">10MS Data Agent</h1>
+                <h1 className="headline-agent truncate text-[1.05rem] leading-[1.08] sm:text-[1.75rem] sm:leading-[1.02]">10MS Data Agent</h1>
                 <span className="label-tech shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] font-semibold text-primary sm:px-2.5 sm:text-[0.65rem]">
                   {mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}
                 </span>
