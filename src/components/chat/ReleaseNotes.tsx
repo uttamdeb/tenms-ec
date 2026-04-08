@@ -23,6 +23,28 @@ const DEFAULT_NOTES = `# 10MS Data Agent — Release Notes
 
 ---
 
+## v0.9 — April 9, 2026
+
+### New Features
+- **Mode Selection Homepage** — Users now land on a dedicated workspace selection page instead of the old embedded dashboard home.
+- **Dual Chat Modes** — Separate **EC** and **10MS** chat routes are now available at \`/ec-chat\` and \`/10ms-chat\`.
+- **Mode Switcher** — The chat header now includes a compact mode switcher for moving between EC and 10MS workspaces.
+
+### Improvements
+- **Mode-Aware History** — Chat sessions, messages, gallery history, and suggested prompts are now separated by mode.
+- **Mode-Aware Prompting** — Every webhook request now includes a \`mode\` field so downstream workflows can distinguish EC vs 10MS context.
+- **Homepage Redesign** — The landing page now follows the design system more closely with a cleaner editorial hero, floating logo, and consistent tonal cards.
+- **Branding Refresh** — User-facing platform branding has been updated to **10MS Data Agent**.
+- **Mobile Header Polish** — Chat header spacing and title rendering were refined for better mobile readability.
+- **10MS Context Expansion** — Homepage copy, query guidance, and suggested prompts now reflect the online academic segment, including OB, HSC, SSC, SMP, BPP, TenTen, Delivery, Traffic, renewal, and enrollment-season analysis.
+
+### Fixes
+- Fixed assistant responses not being saved correctly after webhook completion due to missing inserted-row selection on assistant message writes.
+- Fixed mode payload forwarding through the edge function.
+- Fixed homepage/header inconsistencies caused by stale dashboard-era labels.
+
+---
+
 ## v0.8 — April 6, 2026
 
 ### New Features

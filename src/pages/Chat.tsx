@@ -9,6 +9,7 @@ import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
 import ChatInput from "@/components/chat/ChatInput";
 import SuggestedMessages from "@/components/chat/SuggestedMessages";
 import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
@@ -242,7 +243,7 @@ const Chat = ({ mode }: ChatProps) => {
       } as CSSProperties}
     >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
-      <header className="surface-shell relative z-20 flex h-16 shrink-0 items-center justify-between gap-2 px-3 sm:px-6">
+      <header className="surface-shell relative z-20 flex min-h-[4.5rem] shrink-0 items-center justify-between gap-2 px-3 py-2 sm:min-h-[4.75rem] sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
           <Button 
             variant="ghost" 
@@ -257,9 +258,36 @@ const Chat = ({ mode }: ChatProps) => {
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <h1 className="headline-agent truncate text-[1.05rem] leading-[1.08] sm:text-[1.75rem] sm:leading-[1.02]">10MS Data Agent</h1>
-                <span className="label-tech shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] font-semibold text-primary sm:px-2.5 sm:text-[0.65rem]">
-                  {mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}
-                </span>
+                <HoverCard openDelay={80} closeDelay={120}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      className="label-tech shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] font-semibold text-primary transition-colors hover:bg-primary/15 sm:px-2.5 sm:text-[0.65rem]"
+                    >
+                      {mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent align="start" sideOffset={10} className="glass-panel w-44 rounded-2xl border-0 p-2">
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => mode !== "ec" && runWithViewTransition(() => navigate("/ec-chat"))}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "ec" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                      >
+                        <span>EC</span>
+                        <span className="label-tech text-[0.55rem]">Branch</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => mode !== "10ms" && runWithViewTransition(() => navigate("/10ms-chat"))}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "10ms" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                      >
+                        <span>10MS</span>
+                        <span className="label-tech text-[0.55rem]">Online</span>
+                      </button>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               </div>
               <p className="label-tech mt-1 hidden truncate sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             </div>
@@ -385,7 +413,7 @@ const Chat = ({ mode }: ChatProps) => {
                     </h2>
                     <p className="max-w-xl text-base leading-7 text-[hsl(var(--on-surface-variant))] sm:text-lg sm:leading-8">
                       {mode === "10ms"
-                        ? "Ask about OB, HSC, SSC, TenTen, Delivery, Traffic, and other online-segment metrics to begin the deep dive."
+                        ? "Ask about OB, HSC, SSC, SMP, BPP, TenTen, Delivery, Traffic, renewals, and enrollment-season performance to begin the deep dive."
                         : "Ask about branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, and other English Centre metrics to begin the deep dive."}
                     </p>
                   </div>
@@ -400,7 +428,7 @@ const Chat = ({ mode }: ChatProps) => {
                       <h3 className="headline-agent text-xl sm:text-2xl">{mode === "10ms" ? "Online segment performance" : "Branch Performance Overview"}</h3>
                       <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">
                         {mode === "10ms"
-                          ? "Review product-level engagement, revenue, and cohort health for the 10Minute School online business."
+                          ? "Review enrollment-season revenue, product-tier performance, renewal health, and cohort behavior across the 10 Minute School online academic segment."
                           : "Review RTA, admissions, and revenue trends across all branches."}
                       </p>
                     </div>
@@ -409,7 +437,7 @@ const Chat = ({ mode }: ChatProps) => {
                     <span className="label-tech">{mode === "10ms" ? "Online revenue" : "Revenue collection"}</span>
                     <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">
                       {mode === "10ms"
-                        ? "Track monthly revenue, registrations, and traffic for OB, HSC, SSC, and TenTen."
+                        ? "Track Dec-Jan enrollment season bookings, monthly recognition windows, and FY26 revenue across OB, HSC, SSC, and bundled products."
                         : "Track month-wise revenue collected amount since Jan 2026."}
                     </p>
                   </div>
@@ -417,7 +445,7 @@ const Chat = ({ mode }: ChatProps) => {
                     <span className="label-tech">Agent analysis</span>
                     <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">
                       {mode === "10ms"
-                        ? "Ask for product growth, campaign signal, and traffic-quality analysis."
+                        ? "Ask for renewal diagnosis, CAC questions, product-tier comparisons, and acquisition-funnel analysis."
                         : "Generate summaries, compare branches, and validate operational data quickly."}
                     </p>
                   </div>

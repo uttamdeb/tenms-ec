@@ -78,16 +78,16 @@ const Dashboard = () => {
                 onClick={() => runWithViewTransition(() => navigate("/ec-chat"))}
                 className="group glass-panel relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(180deg,hsl(var(--surface-highest)/0.82),hsl(var(--surface-high)/0.72))] p-6 text-left transition duration-300 hover:-translate-y-1 hover:bg-[linear-gradient(180deg,hsl(var(--surface-highest)/0.9),hsl(var(--surface-high)/0.78))]"
               >
-                <div className="pointer-events-none absolute inset-0 opacity-45 [background-image:linear-gradient(135deg,hsl(var(--foreground)/0.08),transparent_55%)]" />
+                <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(135deg,hsl(var(--primary)/0.12),transparent_55%)]" />
                 <div className="mb-4 flex items-center justify-between gap-4">
-                  <span className="relative z-10 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-foreground">EC</span>
+                  <span className="relative z-10 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">EC</span>
                   <span className="relative z-10 text-xs uppercase tracking-[0.3em] text-muted-foreground">Branch</span>
                 </div>
                 <h2 className="relative z-10 headline-agent text-2xl font-semibold text-foreground">EC Data Workspace</h2>
                 <p className="relative z-10 mt-3 text-sm leading-6 text-[hsl(var(--on-surface-variant))]">
                   Explore branch-level performance, admissions, attendance, and operational metrics in a dedicated EC chat history.
                 </p>
-                <div className="relative z-10 mt-6 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <div className="relative z-10 mt-6 flex items-center gap-2 text-sm font-semibold text-primary">
                   <span>Start EC chat</span>
                   <span aria-hidden="true">→</span>
                 </div>

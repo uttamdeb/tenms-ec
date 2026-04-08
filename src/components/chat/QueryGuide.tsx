@@ -21,116 +21,136 @@ const DOC_KEY = "query-guide";
 
 const DEFAULT_GUIDE = `# How to Ask Questions Effectively
 
-Getting the best results from 10MS Data Agent starts with asking the right questions. Follow these guidelines:
+10MS Data Agent supports two workspaces:
+
+- **EC mode** for English Centre branch operations
+- **10MS mode** for online products like OB, HSC, SSC, TenTen, Delivery, and Traffic
+
+Getting the best results starts with asking focused, explicit questions.
 
 ---
 
-## 1. Be Specific About What You Want
+## 1. Be Specific About the Metric
 
-**Good:** "Show branch-wise admissions for March 2026"
-**Bad:** "Show admissions"
+**Good:** "Show OB revenue this month"
+**Bad:** "Show revenue"
 
 Always include:
-- **Metric:** registrations, attendance, admissions, RTA, ATA, revenue, walk-ins, etc.
+- **Metric:** registrations, attendance, admissions, RTA, ATA, revenue, traffic, retention, refunds, etc.
 - **Time range:** today, yesterday, last 7 days, this month, March 2026, Jan 1 - Mar 30, etc.
-- **Scope:** all branches, Uttara branch, all programmes, IELTS only, etc.
+- **Scope:** all branches, Uttara branch, OB only, SSC campaigns, TenTen learners, etc.
 
 ---
 
-## 2. One Question at a Time
+## 2. Ask One Clear Question at a Time
 
-Ask for one data point per message. The agent works best with focused questions.
+The agent performs best when each message has one clear analytical goal.
 
 **Good:** "What is the ATA for Uttara branch this month?"
-**Not ideal:** "What is the ATA and RTA for all branches this month and compare with last month and also show revenue?"
+**Good:** "Compare OB vs HSC revenue this month"
+**Not ideal:** "Show ATA, RTA, revenue, and compare all branches with last month"
 
-If you need multiple metrics, ask them in separate messages within the same session.
-
----
-
-## 3. Specify the Date Clearly
-
-The agent understands natural language dates, but being explicit avoids confusion.
-
-- **"today"** and **"yesterday"** are understood in Dhaka time (BST).
-- Use **"this month"**, **"last 7 days"**, **"March 2026"**, or explicit ranges like **"Feb 1 - Feb 28, 2026"**.
-- Avoid vague terms like "recently" or "sometime back."
+If you need multiple cuts of the same topic, ask follow-up questions in the same session.
 
 ---
 
-## 4. Name People and Branches Correctly
+## 3. Be Explicit With Dates
 
-When asking about a specific person (ADO, BM, FDO), use their **full name** as it appears in the system.
+The agent understands natural language dates, but precision reduces ambiguity.
 
-**Good:** "Show admissions by Raheta Sadeka this month"
-**Bad:** "Show admissions by Raheta"
-
-For branches, use the full name: **Uttara Branch**, **Panthapath Branch**, **Mirpur Branch**, **Moghbazar Branch**, **Chawkbazar Branch**.
+- **"today"** and **"yesterday"** are interpreted in Dhaka time (BST)
+- Use **"this month"**, **"last 7 days"**, **"March 2026"**, or exact ranges like **"Feb 1 - Feb 28, 2026"**
+- Avoid vague phrases like **"recently"** or **"some time back"**
 
 ---
 
-## 5. Ask for Charts When You Need Visual Clarity
+## 4. Use Correct Names and Entities
 
-The agent can generate bar charts, line charts, and pie charts. Just ask:
+For EC mode:
+- Use full branch names like **Uttara Branch**, **Panthapath Branch**, **Mirpur Branch**
+- Use full staff names when asking about ADO, BM, or FDO performance
 
-- "Show branch-wise regs for today in a **bar chart**"
-- "Show RTA trend for last 7 days in a **line chart**"
-- "Show payment method distribution as a **pie chart**"
+For 10MS mode:
+- Use product or segment names like **OB**, **HSC**, **SSC**, **TenTen**, **Delivery**, **Traffic**
+- Use tier names like **SMP**, **BPP**, **Masterbook**, and **SuperPrep** when relevant
+- Mention campaign/source context when relevant, such as **paid**, **organic**, **Facebook**, or **app**
+- Remember that batch numbers refer to the **exam/target year**, not the enrollment year
+
+---
+
+## 5. Ask for Charts When Needed
+
+The agent can generate charts directly from the answer.
+
+- "Show branch-wise registrations today in a **bar chart**"
+- "Show RTA trend for the last 7 days in a **line chart**"
+- "Show OB vs HSC revenue share as a **pie chart**"
 
 ---
 
 ## 6. Use Follow-Up Questions
 
-The agent remembers the current conversation. You can build on previous answers:
+The agent remembers the current session context.
 
+Example flow:
 1. "Show today's admissions by branch"
 2. "Break that down by programme"
 3. "Which ADO contributed most in Uttara?"
+
+Or in 10MS mode:
+1. "Show OB revenue this month"
+2. "Compare that with HSC"
+3. "Which traffic source is driving the gap?"
 
 ---
 
 ## 7. Ask for Analysis, Not Just Numbers
 
-The agent can go beyond raw data:
+The agent can summarize, compare, and interpret patterns.
 
 - "Which branch improved most this week?"
 - "Do a deep analysis of Uttara branch performance in 2026"
 - "Which lead source gives the best ATA?"
-- "What should Uttara branch focus on today?"
+- "Which online product had the best retention this month?"
+- "Why is HSC renewal so low?"
+- "Is TenTen working as an acquisition or retention lever?"
+- "What should the team focus on today?"
 
 ---
 
-## 8. Validate Data When It Matters
+## 8. Validate Important Results
 
-If a number looks off, ask the agent to cross-check:
+If a number looks suspicious, ask the agent to verify it.
 
-- "Is this data right? Cross-check with the transactions table"
-- "Validate this against yesterday's Metabase dashboard"
+- "Cross-check this with the transactions table"
+- "Validate this against yesterday's dashboard"
+- "Recalculate this using only paid traffic"
 
 ---
 
 ## 9. What the Agent Cannot Do
 
-- It cannot modify any data — it is read-only.
-- It cannot access data outside the EC BigQuery datasets.
-- It cannot remember conversations from previous sessions.
-- It may occasionally return approximate numbers — always verify critical decisions.
+- It cannot modify data; it is read-only
+- It cannot remember conversations across separate sessions
+- It may occasionally return approximate or incomplete interpretations, so verify critical decisions
+- It may not resolve unresolved business logic automatically, such as unattributed demo-class CAC or missing guardian-phone capture, unless the underlying data exists
 
 ---
 
-## 10. Example Questions to Get Started
+## 10. Example Questions
 
-| Category | Example Question |
-|---|---|
-| Registrations | "Show today's registrations by branch" |
-| Attendance | "Show IELTS attendance this month" |
-| Admissions | "Top 5 ADOs by admissions this month" |
-| Revenue | "Payment method-wise collection this month" |
-| RTA/ATA | "Which branch has the best ATA trend?" |
-| Walk-ins | "Show walk-in count for February by branch" |
-| Comparison | "Compare today vs yesterday registrations" |
-| Deep Analysis | "Conduct a deep analysis of branch performance in 2026" |
-| Person-specific | "Do a deep dive on Raheta Sadeka's last 6 months" |
+| Mode | Category | Example Question |
+|---|---|---|
+| EC | Registrations | "Show today's registrations by branch" |
+| EC | Attendance | "Show IELTS attendance this month" |
+| EC | Admissions | "Top 5 ADOs by admissions this month" |
+| EC | Revenue | "Payment method-wise collection this month" |
+| 10MS | Revenue | "Compare OB vs HSC revenue this month" |
+| 10MS | Traffic | "Show traffic and registration sources for SSC campaigns" |
+| 10MS | Retention | "Which online product had the best retention this month?" |
+| 10MS | Renewal | "Why is HSC C1 to C2 renewal only 18%?" |
+| 10MS | Acquisition | "What is the likely CAC issue in the demo class channel?" |
+| 10MS | Summary | "Summarize online course performance for the past week" |
 `;
 
 interface QueryGuideProps {
