@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SuggestedMessagesProps {
+  mode: "ec" | "10ms";
   onSelect: (message: string) => void;
 }
 
-const SuggestedMessages = ({ onSelect }: SuggestedMessagesProps) => {
+const SuggestedMessages = ({ mode, onSelect }: SuggestedMessagesProps) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
       const { data, error } = await supabase
         .from("suggested_messages")
-        .select("message");
+        .select("message")
+        .eq("mode", mode);
 
       if (error || !data) return;
 

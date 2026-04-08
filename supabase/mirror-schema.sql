@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.chat_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   title TEXT NOT NULL DEFAULT 'New Chat',
+  mode TEXT NOT NULL DEFAULT 'ec',
   status TEXT NOT NULL DEFAULT 'active',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
   user_id UUID NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
+  mode TEXT NOT NULL DEFAULT 'ec',
   feedback TEXT,
   feedback_note TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),

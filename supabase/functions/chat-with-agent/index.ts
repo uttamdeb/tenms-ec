@@ -37,7 +37,7 @@ serve(async (req) => {
       );
     }
 
-    const { user, input, sessionId, attachments } = await req.json();
+    const { user, input, sessionId, attachments, mode } = await req.json();
 
     if (!user || !input || !sessionId) {
       return new Response(
@@ -47,6 +47,9 @@ serve(async (req) => {
     }
 
     const webhookBody: Record<string, unknown> = { user, input, sessionId };
+    if (mode) {
+      webhookBody.mode = mode;
+    }
     if (attachments && Array.isArray(attachments) && attachments.length > 0) {
       webhookBody.attachments = attachments;
     }

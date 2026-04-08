@@ -164,7 +164,7 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-const ChatGallery = memo(() => {
+const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -180,6 +180,7 @@ const ChatGallery = memo(() => {
       .from("chat_messages")
       .select("id, content, created_at, role")
       .eq("user_id", user.id)
+      .eq("mode", mode)
       .eq("role", "assistant")
       .order("created_at", { ascending: false })
       .range(currentOffset, currentOffset + PAGE_SIZE - 1);

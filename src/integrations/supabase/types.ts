@@ -53,6 +53,7 @@ export type Database = {
           feedback: string | null
           feedback_note: string | null
           id: string
+          mode: string
           role: string
           session_id: string
           user_id: string
@@ -63,6 +64,7 @@ export type Database = {
           feedback?: string | null
           feedback_note?: string | null
           id?: string
+          mode?: string
           role: string
           session_id: string
           user_id: string
@@ -73,6 +75,7 @@ export type Database = {
           feedback?: string | null
           feedback_note?: string | null
           id?: string
+          mode?: string
           role?: string
           session_id?: string
           user_id?: string
@@ -91,6 +94,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          mode: string
           status: string
           title: string
           updated_at: string
@@ -99,6 +103,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          mode?: string
           status?: string
           title?: string
           updated_at?: string
@@ -107,6 +112,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          mode?: string
           status?: string
           title?: string
           updated_at?: string
@@ -164,16 +170,19 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          mode: string
         }
         Insert: {
           created_at?: string
           id?: string
           message: string
+          mode?: string
         }
         Update: {
           created_at?: string
           id?: string
           message?: string
+          mode?: string
         }
         Relationships: []
       }

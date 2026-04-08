@@ -6,6 +6,8 @@ import { toast } from "sonner";
 const STREAM_INTERVAL_MS = 16; // ~60fps tick
 const STREAM_TARGET_MS = 1700; // target total stream duration in ms
 
+export type ChatMode = "ec" | "10ms";
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -13,6 +15,7 @@ export interface ChatMessage {
   created_at: string;
   session_id: string;
   user_id: string;
+  mode: ChatMode;
   feedback?: "like" | "dislike" | null;
   feedback_note?: string | null;
 }
@@ -21,6 +24,7 @@ export interface ChatSession {
   id: string;
   status: string;
   title: string;
+  mode: ChatMode;
   created_at: string;
   updated_at: string;
 }
@@ -30,7 +34,7 @@ interface UseChatOptions {
   hasEnoughTenergy?: boolean;
 }
 
-export function useChat(options: UseChatOptions = {}) {
+export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   const { onCharactersUsed, hasEnoughTenergy = true } = options;
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export function useChat(options: UseChatOptions = {}) {
       .from("chat_sessions")
       .select("*")
       .eq("user_id", userId)
+      .eq("mode", mode)
       .neq("status", "deleted")
       .order("updated_at", { ascending: false });
 
@@ -77,7 +82,7 @@ export function useChat(options: UseChatOptions = {}) {
       return;
     }
     setSessions((data || []) as ChatSession[]);
-  }, [userId]);
+  }, [userId, mode]);
 
   useEffect(() => {
     if (userId) loadSessions();
@@ -89,6 +94,7 @@ export function useChat(options: UseChatOptions = {}) {
       .from("chat_messages")
       .select("*")
       .eq("session_id", sessionId)
+      .eq("mode", mode)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -96,7 +102,7 @@ export function useChat(options: UseChatOptions = {}) {
       return;
     }
     setMessages((data || []) as ChatMessage[]);
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (currentSessionId) loadMessages(currentSessionId);
@@ -109,7 +115,7 @@ export function useChat(options: UseChatOptions = {}) {
     if (!userId) return null;
     const { data, error } = await supabase
       .from("chat_sessions")
-      .insert({ user_id: userId, title: "New Chat" })
+      .insert({ user_id: userId, title: "New Chat", mode })
       .select()
       .single();
 
@@ -119,12 +125,12 @@ export function useChat(options: UseChatOptions = {}) {
       return null;
     }
     const session = data as ChatSession;
-    mirrorInsert("chat_sessions", { id: session.id, user_id: userId, title: session.title, status: session.status, created_at: session.created_at, updated_at: session.updated_at });
+    mirrorInsert("chat_sessions", { id: session.id, user_id: userId, title: session.title, mode, status: session.status, created_at: session.created_at, updated_at: session.updated_at });
     setSessions((prev) => [session, ...prev]);
     setCurrentSessionId(session.id);
     setMessages([]);
     return session.id;
-  }, [userId]);
+  }, [userId, mode]);
 
   // Upload attachment to storage
   const uploadAttachment = useCallback(async (file: File): Promise<string | null> => {
@@ -169,7 +175,7 @@ export function useChat(options: UseChatOptions = {}) {
       : input.trim();
     const { data: userMsg, error: userErr } = await supabase
       .from("chat_messages")
-      .insert({ session_id: sessionId, user_id: userId, role: "user", content: messageContent })
+      .insert({ session_id: sessionId, user_id: userId, role: "user", content: messageContent, mode })
       .select()
       .single();
 
@@ -177,7 +183,7 @@ export function useChat(options: UseChatOptions = {}) {
       toast.error("Failed to save message");
       return;
     }
-    mirrorInsert("chat_messages", { id: (userMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "user", content: messageContent, created_at: (userMsg as ChatMessage).created_at });
+    mirrorInsert("chat_messages", { id: (userMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "user", content: messageContent, mode, created_at: (userMsg as ChatMessage).created_at });
     setMessages((prev) => [...prev, userMsg as ChatMessage]);
 
     // Update session title if first message
@@ -197,7 +203,7 @@ export function useChat(options: UseChatOptions = {}) {
     setIsLoading(true);
     setStreamingMessage("");
     try {
-      const body: Record<string, unknown> = { user: userName, input: messageContent, sessionId };
+      const body: Record<string, unknown> = { user: userName, input: messageContent, sessionId, mode };
       if (attachmentUrl) {
         body.attachments = [{ file_url: attachmentUrl }];
       }
@@ -254,14 +260,12 @@ export function useChat(options: UseChatOptions = {}) {
       // Save assistant message
       const { data: assistantMsg, error: assistantErr } = await supabase
         .from("chat_messages")
-        .insert({ session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent })
-        .select()
-        .single();
+          .insert({ session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, mode })
 
       if (assistantErr) {
         console.error("Failed to save assistant message:", assistantErr);
       } else {
-        mirrorInsert("chat_messages", { id: (assistantMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, created_at: (assistantMsg as ChatMessage).created_at });
+        mirrorInsert("chat_messages", { id: (assistantMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, mode, created_at: (assistantMsg as ChatMessage).created_at });
 
         // Save SQL run data BEFORE updating messages state so the fetch effect picks it up
         if (responseData?.executed_sql && responseData?.bq_result) {
@@ -296,7 +300,7 @@ export function useChat(options: UseChatOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, onCharactersUsed, uploadAttachment]);
+  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, mode, onCharactersUsed, uploadAttachment]);
 
   const selectSession = useCallback((sessionId: string) => {
     setCurrentSessionId(sessionId);

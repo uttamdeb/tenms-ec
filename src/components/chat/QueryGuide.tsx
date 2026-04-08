@@ -21,7 +21,7 @@ const DOC_KEY = "query-guide";
 
 const DEFAULT_GUIDE = `# How to Ask Questions Effectively
 
-Getting the best results from EC Data Agent starts with asking the right questions. Follow these guidelines:
+Getting the best results from 10MS Data Agent starts with asking the right questions. Follow these guidelines:
 
 ---
 
@@ -216,7 +216,7 @@ const QueryGuide = ({ isBIUser }: QueryGuideProps) => {
                 <p className="label-tech">DOCUMENTATION</p>
                 <DialogTitle className="headline-agent text-2xl sm:text-3xl">Query Guide</DialogTitle>
                 <DialogDescription className="text-sm leading-relaxed text-[hsl(var(--on-surface-variant))]">
-                  Best practices for getting accurate, useful answers from EC Data Agent.
+                  Best practices for getting accurate, useful answers from 10MS Data Agent.
                 </DialogDescription>
               </div>
               {isBIUser && !editing && (

@@ -369,7 +369,7 @@ const ChatMessageBubble = memo(({
       )}
       <div className={cn("flex w-full min-w-0 gap-2 px-2 py-3 sm:gap-3 sm:px-4 sm:py-4", isUser ? "justify-end" : "justify-start")}>
         {!isUser && (
-          <img src={tentenIcon} alt="EC Data Agent" className="mt-0.5 h-8 w-8 shrink-0 rounded-xl object-contain" />
+          <img src={tentenIcon} alt="10MS Data Agent" className="mt-0.5 h-8 w-8 shrink-0 rounded-xl object-contain" />
         )}
         <div
           className={cn(

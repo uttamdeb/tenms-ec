@@ -18,6 +18,12 @@ import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback, lazy, Suspense } from "react";
 
+type ChatMode = "ec" | "10ms";
+
+interface ChatProps {
+  mode: ChatMode;
+}
+
 const QueryGuide = lazy(() => import("@/components/chat/QueryGuide"));
 const ReleaseNotes = lazy(() => import("@/components/chat/ReleaseNotes"));
 import tentenIcon from "@/assets/tenten-icon.png";
@@ -62,7 +68,7 @@ const getRandomThinkingNote = (currentNote?: string) => {
   return nextNote;
 };
 
-const Chat = () => {
+const Chat = ({ mode }: ChatProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -96,7 +102,7 @@ const Chat = () => {
     deleteSession,
     renameSession,
     updateMessageFeedback,
-  } = useChat({ onCharactersUsed: addUsage, hasEnoughTenergy });
+  } = useChat(mode, { onCharactersUsed: addUsage, hasEnoughTenergy });
 
   useEffect(() => {
     if (isMobile) setSidebarOpen(false);
@@ -247,10 +253,11 @@ const Chat = () => {
             {sidebarOpen ? <PanelLeftClose className="h-4 w-4 sm:h-5 sm:w-5" /> : <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <img src={tentenIcon} alt="EC Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+            <img src={tentenIcon} alt="10MS Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
             <div className="min-w-0 flex-1">
-              <h1 className="headline-agent truncate text-[0.95rem] leading-[1.05] sm:text-[1.75rem]">EC Data Agent</h1>
+              <h1 className="headline-agent truncate text-[0.95rem] leading-[1.05] sm:text-[1.75rem]">10MS Data Agent</h1>
               <p className="label-tech mt-1 hidden sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
+              <p className="label-tech mt-1 text-xs text-muted-foreground/70">Mode: {mode === "10ms" ? "10MS" : "EC"}</p>
             </div>
           </div>
         </div>
@@ -365,36 +372,50 @@ const Chat = () => {
             <div className="flex flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-10 sm:py-12 animate-in fade-in duration-500">
               <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-10 lg:flex-row lg:items-start lg:justify-between">
                 <div className="max-w-2xl space-y-4 sm:space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-                  <p className="label-tech">EC data workspace</p>
+                  <p className="label-tech">{mode === "10ms" ? "10MS data workspace" : "EC data workspace"}</p>
                   <div className="space-y-3 sm:space-y-4">
                     <h2 className="headline-agent max-w-xl text-[2.65rem] leading-[0.92] sm:text-6xl">
                       Explore the <span className="text-primary">Dashboard</span>
                       <br />
-                      with EC Data Agent.
+                      with 10MS Data Agent.
                     </h2>
                     <p className="max-w-xl text-base leading-7 text-[hsl(var(--on-surface-variant))] sm:text-lg sm:leading-8">
-                      Ask about branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, and other English Centre metrics to begin the deep dive.
+                      {mode === "10ms"
+                        ? "Ask about OB, HSC, SSC, TenTen, Delivery, Traffic, and other online-segment metrics to begin the deep dive."
+                        : "Ask about branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, and other English Centre metrics to begin the deep dive."}
                     </p>
                   </div>
                 </div>
                 <div className="grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:col-span-2 sm:p-5">
                     <div className="mb-6 flex items-start justify-between gap-4 sm:mb-10">
-                      <img src={tentenIcon} alt="EC Data Agent" className="h-10 w-10 rounded-xl object-contain" />
-                      <span className="label-tech">EC Data Dashboard</span>
+                      <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
+                      <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
                     </div>
                     <div>
-                      <h3 className="headline-agent text-xl sm:text-2xl">Branch Performance Overview</h3>
-                      <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">Review RTA, admissions, and revenue trends across all branches.</p>
+                      <h3 className="headline-agent text-xl sm:text-2xl">{mode === "10ms" ? "Online segment performance" : "Branch Performance Overview"}</h3>
+                      <p className="mt-2 text-sm text-[hsl(var(--on-surface-variant))]">
+                        {mode === "10ms"
+                          ? "Review product-level engagement, revenue, and cohort health for the 10Minute School online business."
+                          : "Review RTA, admissions, and revenue trends across all branches."}
+                      </p>
                     </div>
                   </div>
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:p-5">
-                    <span className="label-tech">Revenue collection</span>
-                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">Track month-wise revenue collected amount since Jan 2026.</p>
+                    <span className="label-tech">{mode === "10ms" ? "Online revenue" : "Revenue collection"}</span>
+                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">
+                      {mode === "10ms"
+                        ? "Track monthly revenue, registrations, and traffic for OB, HSC, SSC, and TenTen."
+                        : "Track month-wise revenue collected amount since Jan 2026."}
+                    </p>
                   </div>
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:p-5">
                     <span className="label-tech">Agent analysis</span>
-                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">Generate summaries, compare branches, and validate operational data quickly.</p>
+                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">
+                      {mode === "10ms"
+                        ? "Ask for product growth, campaign signal, and traffic-quality analysis."
+                        : "Generate summaries, compare branches, and validate operational data quickly."}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -407,7 +428,7 @@ const Chat = () => {
                 </Suspense>
               </div>
               <div className="mt-4 w-full animate-in fade-in duration-700 delay-500 sm:mt-6">
-                <SuggestedMessages onSelect={(msg) => sendMessage(msg)} />
+                <SuggestedMessages mode={mode} onSelect={(msg) => sendMessage(msg)} />
               </div>
             </div>
           ) : (
@@ -438,7 +459,7 @@ const Chat = () => {
                 {isLoading && !streamingMessage && (
                   <div className="animate-in fade-in slide-in-from-bottom-2 flex gap-3 px-2 py-4 duration-300 sm:px-4">
                     <div className="cta-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
-                      <img src={tentenIcon} alt="EC Data Agent" className="h-4 w-4 object-contain" />
+                      <img src={tentenIcon} alt="10MS Data Agent" className="h-4 w-4 object-contain" />
                     </div>
                     <div className="surface-card flex max-w-[min(32rem,calc(100vw-7rem))] items-start gap-3 rounded-[1.25rem] px-4 py-3 transition-colors duration-300">
                       <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
@@ -529,7 +550,7 @@ const Chat = () => {
                 </Button>
               </div>
             </div>
-            {galleryOpen && <ChatGallery />}
+            {galleryOpen && <ChatGallery mode={mode} />}
           </aside>
         </div>
       </div>
@@ -552,7 +573,7 @@ const Chat = () => {
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4 [-webkit-overflow-scrolling:touch]">
-          {galleryOpen && <ChatGallery />}
+          {galleryOpen && <ChatGallery mode={mode} />}
         </div>
       </div>
     </div>

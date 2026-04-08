@@ -19,7 +19,7 @@ import remarkGfm from "remark-gfm";
 
 const DOC_KEY = "release-notes";
 
-const DEFAULT_NOTES = `# EC Data Agent — Release Notes
+const DEFAULT_NOTES = `# 10MS Data Agent — Release Notes
 
 ---
 
@@ -105,7 +105,7 @@ const DEFAULT_NOTES = `# EC Data Agent — Release Notes
 ## v0.3 — March 8, 2026
 
 ### Features
-- **Chat Interface** — Real-time chat with the EC Data Agent via n8n webhook proxy.
+- **Chat Interface** — Real-time chat with the 10MS Data Agent via n8n webhook proxy.
 - **Authentication** — Email/password login with Supabase Auth.
 - **Edge Function Proxy** — Secure webhook relay through Supabase Edge Functions.
 
@@ -114,7 +114,7 @@ const DEFAULT_NOTES = `# EC Data Agent — Release Notes
 ## v0.2 — March 5, 2026
 
 ### Initial Release
-- Basic chat with the EC Data Agent.
+- Basic chat with the 10MS Data Agent.
 - Profile creation on signup.
 - Session persistence in Supabase.
 `;
@@ -199,7 +199,7 @@ const ReleaseNotes = ({ isBIUser }: ReleaseNotesProps) => {
                 <p className="label-tech">CHANGELOG</p>
                 <DialogTitle className="headline-agent text-2xl sm:text-3xl">Release Notes</DialogTitle>
                 <DialogDescription className="text-sm leading-relaxed text-[hsl(var(--on-surface-variant))]">
-                  What's new, improved, and fixed in EC Data Agent.
+                  What's new, improved, and fixed in 10MS Data Agent.
                 </DialogDescription>
               </div>
               {isBIUser && !editing && (

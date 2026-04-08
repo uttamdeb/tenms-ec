@@ -1,7 +1,7 @@
-# Design System Document: EC Data Agent
+# Design System Document: 10MS Data Agent
 
 ## 1. Creative North Star: "The Kinetic Monolith"
-The design system for EC Data Agent is built upon the concept of **Kinetic Monolithism**. In a world of cluttered data, this system acts as a singular, sophisticated lens. It rejects the "standard dashboard" aesthetic in favor of a high-end editorial experience.
+The design system for 10MS Data Agent is built upon the concept of **Kinetic Monolithism**. In a world of cluttered data, this system acts as a singular, sophisticated lens. It rejects the "standard dashboard" aesthetic in favor of a high-end editorial experience.
 
 By utilizing heavy glassmorphism, we move away from static boxes to a UI that feels like light passing through polarized glass. The "Kinetic" aspect is achieved through intentional asymmetry and high-contrast typography, while "Monolithism" is represented by the deep, authoritative charcoal surfaces. This system is designed to feel like a premium tool for decision-makers—minimal, precise, and undeniably modern.
 

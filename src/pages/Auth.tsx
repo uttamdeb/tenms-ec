@@ -118,24 +118,24 @@ const Auth = () => {
           <section className="surface-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-12">
             <p className="label-tech">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             <div className="mt-6 flex items-center gap-3">
-              <img src={tentenIcon} alt="EC Data Agent" className="h-12 w-12 rounded-2xl object-contain" />
+              <img src={tentenIcon} alt="10MS Data Agent" className="h-12 w-12 rounded-2xl object-contain" />
               <div>
                 <h1 className="headline-agent text-4xl sm:text-6xl leading-[0.92]">
                   Access the
-                  <span className="text-primary"> EC Data Dashboard</span>
+                  <span className="text-primary"> 10MS Data Workspace</span>
                 </h1>
               </div>
             </div>
             <p className="mt-6 max-w-xl text-lg leading-8 text-[hsl(var(--on-surface-variant))]">
-              Sign in to review the EC Data Dashboard, explore operational metrics, and collaborate with EC Data Agent for branch, revenue, admissions, and classroom performance analysis.
+              Sign in to explore the 10MS Data Agent experience, review operational metrics, and collaborate across both EC and 10MS modes.
             </p>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
-                <p className="label-tech">EC Data Dashboard</p>
-                <p className="mt-8 text-xl font-semibold">Live branch, admissions, and revenue reporting</p>
+                <p className="label-tech">10MS Data Workspace</p>
+                <p className="mt-8 text-xl font-semibold">Live analytics for online and branch performance</p>
               </div>
               <div className="surface-card rounded-[1.5rem] p-5 shadow-sm">
-                <p className="label-tech">EC Data Agent</p>
+                <p className="label-tech">10MS Data Agent</p>
                 <p className="mt-8 text-xl font-semibold">Chat analysis, SQL traces, and executive summaries</p>
               </div>
             </div>
