@@ -260,7 +260,9 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       // Save assistant message
       const { data: assistantMsg, error: assistantErr } = await supabase
         .from("chat_messages")
-          .insert({ session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, mode })
+        .insert({ session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, mode })
+        .select()
+        .single();
 
       if (assistantErr) {
         console.error("Failed to save assistant message:", assistantErr);
