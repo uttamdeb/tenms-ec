@@ -20,6 +20,7 @@ interface GalleryItem {
 const CHART_BLOCK_RE = /```chart\s*\n([\s\S]*?)\n```/g;
 const TABLE_RE = /(?:^|\n)(\|.+\|(?:\n\|[-: |]+\|)(?:\n\|.+\|)+)/g;
 const PAGE_SIZE = 50;
+const RENDER_BATCH_SIZE = 6;
 
 const CARTESIAN_CHART_TYPES = new Set(["bar", "horizontal_bar", "stacked_bar", "line", "area", "stacked_area"]);
 const PIE_CHART_TYPES = new Set(["pie", "donut"]);
@@ -166,6 +167,7 @@ function formatDate(dateStr: string) {
 
 const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [visibleCount, setVisibleCount] = useState(RENDER_BATCH_SIZE);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -200,15 +202,25 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   // Initial load
   useEffect(() => {
     setLoading(true);
+    setVisibleCount(RENDER_BATCH_SIZE);
     loadPage(0).finally(() => setLoading(false));
-  }, [loadPage]);
+  }, [loadPage, mode]);
+
+  const hasMoreVisibleItems = visibleCount < items.length;
 
   // Intersection observer for infinite scroll
   useEffect(() => {
     if (!sentinelRef.current || !hasMore) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && hasMore) {
+        if (!entries[0].isIntersecting) return;
+
+        if (hasMoreVisibleItems) {
+          setVisibleCount((current) => Math.min(current + RENDER_BATCH_SIZE, items.length));
+          return;
+        }
+
+        if (!loadingMore && hasMore) {
           setLoadingMore(true);
           loadPage(offset).finally(() => setLoadingMore(false));
         }
@@ -217,7 +229,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadPage, offset]);
+  }, [hasMore, hasMoreVisibleItems, items.length, loadingMore, loadPage, offset]);
 
   if (loading) {
     return (
@@ -241,7 +253,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   return (
     <div className="flex h-full flex-col overflow-y-auto overscroll-y-contain px-2 py-3 [-webkit-overflow-scrolling:touch]">
       <div className="space-y-4">
-        {items.map((item, idx) => (
+        {items.slice(0, visibleCount).map((item, idx) => (
           <div key={`${item.messageId}-${idx}`} className="space-y-1.5">
             <p className="label-tech px-1">{formatDate(item.created_at)}</p>
             {item.type === "chart" && item.chartSpec && (
@@ -260,7 +272,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
         ))}
         {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} className="h-4" />
-        {loadingMore && (
+        {(hasMoreVisibleItems || loadingMore) && (
           <div className="flex justify-center py-2">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
