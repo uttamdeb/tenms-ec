@@ -84,8 +84,10 @@ export type ScatterChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec | ScatterChartSpec;
 
-const CHART_GLASS_CLASS = "my-3 sm:my-4 rounded-[1.6rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 p-3 backdrop-blur-xl transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:bg-[hsl(var(--surface-high))]/92 sm:p-4 dark:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.88,hsla(0,0%,0%,0.92))] dark:hover:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.92,hsla(0,0%,0%,0.94))]";
+const CHART_GLASS_CLASS = "my-3 sm:my-4 rounded-[1.6rem] bg-transparent p-3 transition-transform duration-200 ease-out hover:-translate-y-0.5 sm:p-4";
 const CHART_HEADER_CLASS = "w-full space-y-2";
+const CHART_VIEWPORT_CLASS = "mt-3 rounded-[1.45rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 px-3 py-3 backdrop-blur-xl dark:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.88,hsla(0,0%,0%,0.92))]";
+const CHART_VIEWPORT_TALL_CLASS = "mt-4 rounded-[1.45rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 px-3 py-3 backdrop-blur-xl dark:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.88,hsla(0,0%,0%,0.92))]";
 const getCartesianChartWidth = (points: number) => Math.max(points * 132, 560);
 const getScatterChartWidth = (points: number) => Math.max(points * 72, 520);
 const EC_CHART_PALETTE = ["#FBBF24", "#EFC930", "#D9A406", "#F59E0B", "#FCD34D", "#B45309", "#FDE68A", "#CA8A04"];
@@ -312,8 +314,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
           <ChartHeader title={spec.title} description={spec.description} />
           <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
         </div>
-        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)] lg:items-center">
-          <div className="min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+        <div className={CHART_VIEWPORT_TALL_CLASS}>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)] lg:items-center">
+            <div className="min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
             <ChartContainer config={pieConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[320px] sm:h-[360px]">
               <PieChart>
                 {spec.options?.showTooltip && (
@@ -354,9 +357,10 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 </Pie>
               </PieChart>
             </ChartContainer>
-          </div>
+            </div>
 
-          {spec.options?.showLegend && pieLegendItems.length > 0 && <PieLegend items={pieLegendItems} />}
+            {spec.options?.showLegend && pieLegendItems.length > 0 && <PieLegend items={pieLegendItems} />}
+          </div>
         </div>
       </div>
     );
@@ -369,8 +373,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
           <ChartHeader title={spec.title} description={spec.description} />
           <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
         </div>
-        <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-          <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
+        <div className={CHART_VIEWPORT_CLASS}>
+          <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+            <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
             <ScatterChart width={getScatterChartWidth(spec.data.length)} height={320} margin={{ top: 16, right: 16, bottom: 8, left: 4 }}>
               {spec.options?.showGrid && <CartesianGrid stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
               <XAxis dataKey={spec.xKey} type="number" tickLine={false} axisLine={false} height={36} tickMargin={8} />
@@ -382,7 +387,8 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
                 <Scatter key={item.key} name={item.label} data={spec.data} fill={getSeriesColor(item.color, index)} />
               ))}
             </ScatterChart>
-          </ChartContainer>
+            </ChartContainer>
+          </div>
         </div>
       </div>
     );
@@ -396,8 +402,9 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
         <ChartHeader title={cartSpec.title} description={cartSpec.description} />
         <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
       </div>
-      <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-        <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
+      <div className={CHART_VIEWPORT_CLASS}>
+        <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+          <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
           {cartSpec.type === "horizontal_bar" ? (
             <BarChart data={cartSpec.data} layout="vertical" width={getCartesianChartWidth(cartSpec.data.length)} height={Math.max(cartSpec.data.length * 56, 320)} margin={{ top: 12, right: 16, left: 24, bottom: 4 }}>
               {cartSpec.options?.showGrid && <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />}
@@ -476,7 +483,8 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
               })}
             </AreaChart>
           )}
-        </ChartContainer>
+          </ChartContainer>
+        </div>
       </div>
     </div>
   );
