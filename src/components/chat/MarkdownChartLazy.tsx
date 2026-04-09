@@ -8,6 +8,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Download, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -83,7 +84,7 @@ export type ScatterChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec | ScatterChartSpec;
 
-const CHART_GLASS_CLASS = "my-3 sm:my-4 rounded-[1.6rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 p-3 shadow-[0_24px_60px_hsl(var(--ambient-glow))] backdrop-blur-xl sm:p-4 dark:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.88,hsla(0,0%,0%,0.92))]";
+const CHART_GLASS_CLASS = "my-3 sm:my-4 rounded-[1.6rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 p-3 backdrop-blur-xl transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:bg-[hsl(var(--surface-high))]/92 sm:p-4 dark:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.88,hsla(0,0%,0%,0.92))] dark:hover:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.92,hsla(0,0%,0%,0.94))]";
 const CHART_HEADER_CLASS = "w-full space-y-2";
 const getCartesianChartWidth = (points: number) => Math.max(points * 132, 560);
 const getScatterChartWidth = (points: number) => Math.max(points * 72, 520);
@@ -118,7 +119,7 @@ const PIE_SWATCH_CLASSES = [
 
 const PieLegend = memo(({ items }: { items: Array<{ label: string; fullLabel: string; value: number; percent: number }> }) => {
   return (
-    <div className="grid gap-2.5 rounded-[1.25rem] border border-[hsl(var(--outline-ghost)/0.16)] bg-[hsl(var(--surface-high))]/62 p-3 shadow-[0_18px_40px_hsl(var(--ambient-glow))] backdrop-blur-md">
+    <div className="grid gap-2.5 rounded-[1.25rem] border border-[hsl(var(--outline-ghost)/0.16)] bg-[hsl(var(--surface-high))]/62 p-3 backdrop-blur-md">
       {items.map((item, index) => (
         <div key={item.fullLabel} className="flex items-start gap-3 rounded-[1rem] px-2 py-2 transition-colors hover:bg-white/10 hover:backdrop-blur-sm">
           <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${PIE_SWATCH_CLASSES[index % PIE_SWATCH_CLASSES.length]}`} />
@@ -134,6 +135,39 @@ const PieLegend = memo(({ items }: { items: Array<{ label: string; fullLabel: st
     </div>
   );
 });
+
+const ChartActionButtons = memo(
+  ({ copied, onCopy, onDownload }: { copied: boolean; onCopy: () => void; onDownload: () => void }) => (
+    <TooltipProvider delayDuration={150}>
+      <div className="chart-action-btns flex shrink-0 gap-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onCopy}
+              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+              aria-label={copied ? "Copied chart" : "Copy chart"}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{copied ? "Copied chart" : "Copy chart"}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onDownload}
+              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+              aria-label="Download chart"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Download chart</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
+  )
+);
 
 const buildChartConfig = (series: ChartSeries[]): ChartConfig => {
   return series.reduce<ChartConfig>((config, item) => {
@@ -276,22 +310,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       <div ref={chartRef} className={CHART_GLASS_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
-          <div className="chart-action-btns flex shrink-0 gap-1">
-            <button
-              onClick={handleCopy}
-              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-              title={copied ? "Copied" : "Copy chart"}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={handleDownload}
-              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-              title="Download chart as PNG"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-          </div>
+          <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
         </div>
         <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)] lg:items-center">
           <div className="min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
@@ -348,22 +367,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       <div ref={chartRef} className={CHART_GLASS_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
-          <div className="chart-action-btns flex shrink-0 gap-1">
-            <button
-              onClick={handleCopy}
-              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-              title={copied ? "Copied" : "Copy chart"}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={handleDownload}
-              className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-              title="Download chart as PNG"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-          </div>
+          <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
         </div>
         <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
           <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">
@@ -390,22 +394,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     <div ref={chartRef} className={CHART_GLASS_CLASS}>
       <div className="flex items-start justify-between gap-2">
         <ChartHeader title={cartSpec.title} description={cartSpec.description} />
-        <div className="chart-action-btns flex shrink-0 gap-1">
-          <button
-            onClick={handleCopy}
-            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-            title={copied ? "Copied" : "Copy chart"}
-          >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={handleDownload}
-            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-            title="Download chart as PNG"
-          >
-            <Download className="h-4 w-4" />
-          </button>
-        </div>
+        <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
       </div>
       <div className="mt-3 w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <ChartContainer config={chartConfig ?? {}} className="aspect-auto h-[320px] w-full min-w-[360px]">

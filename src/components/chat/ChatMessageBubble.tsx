@@ -118,7 +118,7 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
   };
 
   return (
-    <div className="my-3 w-full min-w-0 rounded-[1.35rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 shadow-[0_24px_60px_hsl(var(--ambient-glow))] backdrop-blur-xl dark:bg-[hsl(var(--surface-high))]/72">
+    <div className="my-3 w-full min-w-0 rounded-[1.35rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 backdrop-blur-xl transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:bg-[hsl(var(--surface-high))]/92 dark:bg-[hsl(var(--surface-high))]/72 dark:hover:bg-[hsl(var(--surface-high))]/78">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         {title && (
           <span className="label-tech truncate text-[0.72rem] text-foreground/75">{title}</span>

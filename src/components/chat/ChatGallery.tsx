@@ -107,7 +107,7 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
   };
 
   return (
-    <div className="rounded-[1.1rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/82 shadow-[0_18px_40px_hsl(var(--ambient-glow))] dark:bg-[hsl(var(--surface-high))]/70">
+    <div className="rounded-[1.1rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/82 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:bg-[hsl(var(--surface-high))]/88 dark:bg-[hsl(var(--surface-high))]/70 dark:hover:bg-[hsl(var(--surface-high))]/76">
       <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x">
         <div className="min-w-[720px]">
           <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--outline-ghost)/0.18)] px-3 py-2">
@@ -257,13 +257,9 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
           <div key={`${item.messageId}-${idx}`} className="space-y-1.5">
             <p className="label-tech px-1">{formatDate(item.created_at)}</p>
             {item.type === "chart" && item.chartSpec && (
-              <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x">
-                <div className="min-w-[720px] w-full">
-                  <Suspense fallback={<div className="flex h-32 items-center justify-center rounded-xl border border-border/40 text-xs text-muted-foreground">Loading chart...</div>}>
-                    <MarkdownChartLazy spec={item.chartSpec} />
-                  </Suspense>
-                </div>
-              </div>
+              <Suspense fallback={<div className="flex h-32 items-center justify-center rounded-xl border border-border/40 text-xs text-muted-foreground">Loading chart...</div>}>
+                <MarkdownChartLazy spec={item.chartSpec} />
+              </Suspense>
             )}
             {item.type === "table" && item.tableMarkdown && (
               <TablePreview markdown={item.tableMarkdown} title={item.tableTitle} />
