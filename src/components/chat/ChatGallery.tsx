@@ -106,10 +106,10 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
   };
 
   return (
-    <div className="overflow-hidden rounded-[1.1rem] border border-border/60 bg-background/40">
+    <div className="rounded-[1.1rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/82 shadow-[0_18px_40px_hsl(var(--ambient-glow))] dark:bg-[hsl(var(--surface-high))]/70">
       <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x">
         <div className="min-w-[720px]">
-          <div className="flex items-center justify-between gap-2 border-b border-border/80 px-3 py-2">
+          <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--outline-ghost)/0.18)] px-3 py-2">
           {title && <span className="min-w-0 truncate text-xs font-semibold text-foreground/80">{title}</span>}
           <div className="flex shrink-0 items-center gap-0.5">
             <button

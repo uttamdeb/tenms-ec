@@ -122,12 +122,13 @@ const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`relative flex flex-col rounded-[1.75rem] px-3 py-3 sm:px-4
-            bg-[hsl(var(--surface-container-high))]/60
-            shadow-[0_40px_80px_rgba(255,255,255,0.06),inset_0_0_0_1px_rgba(255,255,255,0.10)]
+            bg-[hsl(var(--surface-high))]/78
+            shadow-[0_24px_60px_hsl(var(--ambient-glow)),inset_0_0_0_1px_hsl(var(--outline-ghost)/0.18)]
             backdrop-blur-2xl
             transition-all duration-300
-            focus-within:shadow-[0_40px_80px_rgba(255,255,255,0.07),inset_0_0_0_1.5px_hsl(var(--primary)/0.45)]
-            ${isDragOver ? "bg-primary/10 shadow-[0_40px_80px_rgba(255,255,255,0.08),inset_0_0_0_1.5px_hsl(var(--primary)/0.6)]" : ""}`}
+            focus-within:bg-[hsl(var(--surface-high))]/88
+            focus-within:shadow-[0_28px_72px_hsl(var(--ambient-glow)),inset_0_0_0_1.5px_hsl(var(--primary)/0.45)]
+            ${isDragOver ? "bg-primary/10 shadow-[0_28px_72px_hsl(var(--ambient-glow)),inset_0_0_0_1.5px_hsl(var(--primary)/0.6)]" : ""}`}
         >
           {/* Image preview inside input area */}
           {preview && (

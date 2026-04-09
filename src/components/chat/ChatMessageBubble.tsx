@@ -118,7 +118,7 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
   };
 
   return (
-    <div className="my-3 w-full min-w-0 overflow-hidden rounded-[1.35rem] bg-[hsl(var(--surface-container-low))]/90 shadow-[0_24px_60px_rgba(255,255,255,0.04)] ring-1 ring-white/10 backdrop-blur-xl">
+    <div className="my-3 w-full min-w-0 rounded-[1.35rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 shadow-[0_24px_60px_hsl(var(--ambient-glow))] backdrop-blur-xl dark:bg-[hsl(var(--surface-high))]/72">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         {title && (
           <span className="label-tech truncate text-[0.72rem] text-foreground/75">{title}</span>
@@ -159,7 +159,7 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
         </TooltipProvider>
       </div>
       <div className="px-2 pb-2">
-        <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-[1.1rem] bg-[hsl(var(--surface-container-lowest))]/80 px-2 py-2 [-webkit-overflow-scrolling:touch]">
+        <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-[1.1rem] bg-[hsl(var(--surface-lowest))]/88 px-2 py-2 [-webkit-overflow-scrolling:touch]">
           <Table className="min-w-[640px] border-separate border-spacing-y-2 text-sm">
             {children}
           </Table>

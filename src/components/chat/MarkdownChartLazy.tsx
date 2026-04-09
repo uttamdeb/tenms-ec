@@ -83,7 +83,7 @@ export type ScatterChartSpec = {
 
 export type ChartSpec = CartesianChartSpec | PieChartSpec | ScatterChartSpec;
 
-const CHART_GLASS_CLASS = "my-3 sm:my-4 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(180deg,hsl(var(--surface-container-high))/0.82,hsla(0,0%,0%,0.92))] p-3 shadow-[0_30px_80px_rgba(255,255,255,0.05)] ring-1 ring-white/10 backdrop-blur-xl sm:p-4";
+const CHART_GLASS_CLASS = "my-3 sm:my-4 rounded-[1.6rem] border border-[hsl(var(--outline-ghost)/0.22)] bg-[hsl(var(--surface-high))]/88 p-3 shadow-[0_24px_60px_hsl(var(--ambient-glow))] backdrop-blur-xl sm:p-4 dark:bg-[linear-gradient(180deg,hsl(var(--surface-high))/0.88,hsla(0,0%,0%,0.92))]";
 const CHART_HEADER_CLASS = "w-full space-y-2";
 const getCartesianChartWidth = (points: number) => Math.max(points * 132, 560);
 const getScatterChartWidth = (points: number) => Math.max(points * 72, 520);
@@ -118,7 +118,7 @@ const PIE_SWATCH_CLASSES = [
 
 const PieLegend = memo(({ items }: { items: Array<{ label: string; fullLabel: string; value: number; percent: number }> }) => {
   return (
-    <div className="grid gap-2.5 rounded-[1.25rem] bg-[hsl(var(--surface-container-high))]/55 p-3 shadow-[0_24px_60px_rgba(255,255,255,0.04)] ring-1 ring-white/10 backdrop-blur-md">
+    <div className="grid gap-2.5 rounded-[1.25rem] border border-[hsl(var(--outline-ghost)/0.16)] bg-[hsl(var(--surface-high))]/62 p-3 shadow-[0_18px_40px_hsl(var(--ambient-glow))] backdrop-blur-md">
       {items.map((item, index) => (
         <div key={item.fullLabel} className="flex items-start gap-3 rounded-[1rem] px-2 py-2 transition-colors hover:bg-white/10 hover:backdrop-blur-sm">
           <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${PIE_SWATCH_CLASSES[index % PIE_SWATCH_CLASSES.length]}`} />
@@ -273,10 +273,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
 
   if (isPieLike(spec)) {
     return (
-      <div
-        ref={chartRef}
-        className="my-3 sm:my-4 overflow-hidden rounded-[1.6rem] bg-[linear-gradient(180deg,hsl(var(--surface-container-high))/0.82,hsla(0,0%,0%,0.92))] p-3 shadow-[0_30px_80px_rgba(255,255,255,0.05)] ring-1 ring-white/10 backdrop-blur-xl sm:p-4"
-      >
+      <div ref={chartRef} className={CHART_GLASS_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
           <div className="chart-action-btns flex shrink-0 gap-1">
