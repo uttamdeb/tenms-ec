@@ -262,10 +262,10 @@ const Chat = ({ mode }: ChatProps) => {
                   <HoverCardTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                      className="label-tech inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] font-semibold text-primary transition-colors hover:bg-primary/15 sm:px-2.5 sm:text-[0.65rem]"
                     >
                       <span>{mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}</span>
-                      <ChevronDown className="h-3 w-3 shrink-0" />
+                      <ChevronDown className="h-2.5 w-2.5 shrink-0" />
                     </button>
                   </HoverCardTrigger>
                   <HoverCardContent align="start" className="w-48 rounded-2xl border-border/60 bg-background/95 p-2 backdrop-blur-xl">
