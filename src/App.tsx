@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/ec-chat" element={<Chat mode="ec" />} />
               <Route path="/10ms-chat" element={<Chat mode="10ms" />} />
               <Route path="/chat" element={<Navigate replace to="/ec-chat" />} />
