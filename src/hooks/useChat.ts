@@ -53,17 +53,20 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     }
 
     const totalLength = normalizedContent.length;
-    const chunkSize = totalLength > 2400 ? 28 : totalLength > 1200 ? 20 : totalLength > 400 ? 12 : 6;
-    const frameDelay = totalLength > 2400 ? 28 : totalLength > 1200 ? 34 : totalLength > 400 ? 42 : 50;
+    const chunkSize = totalLength > 2400 ? 18 : totalLength > 1200 ? 14 : totalLength > 400 ? 9 : 4;
+    const frameDelay = totalLength > 2400 ? 42 : totalLength > 1200 ? 52 : totalLength > 400 ? 64 : 78;
+    const jitterRange = totalLength > 2400 ? 10 : totalLength > 1200 ? 14 : totalLength > 400 ? 18 : 22;
 
     setStreamingMessage("");
 
     for (let index = chunkSize; index < totalLength; index += chunkSize) {
       await new Promise<void>((resolve) => {
+        const jitter = Math.floor(Math.random() * (jitterRange * 2 + 1)) - jitterRange;
+        const nextDelay = Math.max(24, frameDelay + jitter);
         window.setTimeout(() => {
           setStreamingMessage(normalizedContent.slice(0, index));
           resolve();
-        }, frameDelay);
+        }, nextDelay);
       });
     }
 
