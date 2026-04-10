@@ -53,8 +53,8 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     }
 
     const totalLength = normalizedContent.length;
-    const chunkSize = totalLength > 2400 ? 48 : totalLength > 1200 ? 32 : totalLength > 400 ? 18 : 8;
-    const frameDelay = totalLength > 2400 ? 12 : totalLength > 1200 ? 16 : 20;
+    const chunkSize = totalLength > 2400 ? 28 : totalLength > 1200 ? 20 : totalLength > 400 ? 12 : 6;
+    const frameDelay = totalLength > 2400 ? 28 : totalLength > 1200 ? 34 : totalLength > 400 ? 42 : 50;
 
     setStreamingMessage("");
 
