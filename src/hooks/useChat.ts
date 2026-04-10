@@ -42,6 +42,31 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   const [userName, setUserName] = useState("user");
   const [userId, setUserId] = useState<string | null>(null);
 
+  const animateAssistantMessage = useCallback(async (content: string) => {
+    const normalizedContent = content ?? "";
+    if (!normalizedContent) {
+      setStreamingMessage(null);
+      return;
+    }
+
+    const totalLength = normalizedContent.length;
+    const chunkSize = totalLength > 2400 ? 48 : totalLength > 1200 ? 32 : totalLength > 400 ? 18 : 8;
+    const frameDelay = totalLength > 2400 ? 12 : totalLength > 1200 ? 16 : 20;
+
+    setStreamingMessage("");
+
+    for (let index = chunkSize; index < totalLength; index += chunkSize) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(() => {
+          setStreamingMessage(normalizedContent.slice(0, index));
+          resolve();
+        }, frameDelay);
+      });
+    }
+
+    setStreamingMessage(normalizedContent);
+  }, []);
+
   // Get user info
   useEffect(() => {
     const getUser = async () => {
@@ -131,23 +156,31 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
 
       if (isCompleted) {
         setPendingJobId(null);
-        setIsLoading(false);
-        setStreamingMessage(null);
-        await loadMessages(currentSessionId);
+        let assistantContent: string | null = null;
 
-        if (onCharactersUsed && job.assistant_message_id) {
+        if (job.assistant_message_id) {
           const { data: assistantMessage } = await supabase
             .from("chat_messages")
             .select("content")
             .eq("id", job.assistant_message_id)
             .single();
 
-          if (assistantMessage?.content) {
+          assistantContent = assistantMessage?.content ?? null;
+
+          if (onCharactersUsed && assistantMessage?.content) {
             const userMessage = messages.find((message) => message.id === job.user_message_id);
             const totalChars = (userMessage?.content.length || 0) + assistantMessage.content.length;
             onCharactersUsed(totalChars);
           }
         }
+
+        if (assistantContent) {
+          await animateAssistantMessage(assistantContent);
+        }
+
+        setIsLoading(false);
+        setStreamingMessage(null);
+        await loadMessages(currentSessionId);
         return;
       }
 
@@ -165,7 +198,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [currentSessionId, loadMessages, pendingJobId]);
+  }, [animateAssistantMessage, currentSessionId, loadMessages, messages, onCharactersUsed, pendingJobId]);
 
   // Create new session
   const createSession = useCallback(async () => {
@@ -258,7 +291,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
 
     // Enqueue async agent job
     setIsLoading(true);
-    setStreamingMessage("");
+    setStreamingMessage(null);
     try {
       const body: Record<string, unknown> = {
         user: userName,

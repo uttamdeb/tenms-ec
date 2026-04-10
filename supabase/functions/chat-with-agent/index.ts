@@ -48,6 +48,42 @@ const updateJobStatus = async (
   }
 };
 
+const markJobCompleted = async (
+  supabase: ReturnType<typeof buildServiceClient>,
+  jobId: string,
+  assistantMessageId: string,
+  responsePayload: Record<string, unknown>,
+) => {
+  const completedAt = new Date().toISOString();
+  const payload = {
+    status: 'completed' as const,
+    assistant_message_id: assistantMessageId,
+    error: null,
+    response_payload: responsePayload,
+    updated_at: completedAt,
+    completed_at: completedAt,
+  };
+
+  const { data, error } = await supabase
+    .from('agent_jobs')
+    .update(payload)
+    .eq('id', jobId)
+    .select('id, status, assistant_message_id, updated_at, completed_at')
+    .single();
+
+  if (error) {
+    console.error('Failed to mark agent job completed:', { jobId, error });
+    throw error;
+  }
+
+  if (!data || data.status !== 'completed') {
+    console.error('Agent job completion verification failed:', { jobId, data });
+    throw new Error('Agent job status did not persist as completed');
+  }
+
+  return data;
+};
+
 const handleCallback = async (req: Request) => {
   const callbackSecret = Deno.env.get('AGENT_CALLBACK_SECRET');
   const providedSecret = req.headers.get('x-agent-callback-secret');
@@ -118,24 +154,32 @@ const handleCallback = async (req: Request) => {
     assistantMessageId = assistantMsg.id;
   }
 
+  const finalResponsePayload = responsePayload ?? {
+    output: assistantContent,
+    executed_sql: executed_sql ?? null,
+    bq_result: bq_result ?? null,
+  };
+
   if (executed_sql && bq_result) {
     const bqResultStr = typeof bq_result === 'string' ? bq_result : JSON.stringify(bq_result);
-    await supabase.from('agent_sql_runs').insert({
+    const { error: sqlRunError } = await supabase.from('agent_sql_runs').insert({
       message_id: assistantMessageId,
       executed_sql,
       bq_result: bqResultStr,
     });
+
+    if (sqlRunError) {
+      console.error('Failed to save agent SQL run:', { jobId, assistantMessageId, sqlRunError });
+      throw sqlRunError;
+    }
   }
 
-  await updateJobStatus(supabase, jobId, 'completed', {
-    assistant_message_id: assistantMessageId,
-    error: null,
-    response_payload: responsePayload ?? {
-      output: assistantContent,
-      executed_sql: executed_sql ?? null,
-      bq_result: bq_result ?? null,
-    },
-  });
+  await markJobCompleted(
+    supabase,
+    jobId,
+    assistantMessageId,
+    finalResponsePayload,
+  );
 
   return jsonResponse({ ok: true, assistantMessageId });
 };
