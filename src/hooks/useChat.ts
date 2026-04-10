@@ -127,7 +127,9 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
         return;
       }
 
-      if (job.status === "completed") {
+      const isCompleted = job.status === "completed" || Boolean(job.assistant_message_id) || Boolean(job.completed_at);
+
+      if (isCompleted) {
         setPendingJobId(null);
         setIsLoading(false);
         setStreamingMessage(null);
