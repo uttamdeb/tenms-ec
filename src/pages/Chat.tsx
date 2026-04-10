@@ -80,11 +80,7 @@ const Chat = ({ mode }: ChatProps) => {
   const [sidebarWidth, setSidebarWidth] = useState(288); // 18rem default
   const sidebarResizing = useRef(false);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
-  const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
-  const thinkingSecondsRef = useRef(0);
-  const capturedThinkingDuration = useRef(0);
-  const prevStreamingMessage = useRef<string | null>(null);
   const [thoughtDurations, setThoughtDurations] = useState<Record<string, number>>({});
   const [streamingPreviewMeta, setStreamingPreviewMeta] = useState<{ messageId: string | null; thinkingDuration: number | null }>({
     messageId: null,
@@ -102,6 +98,7 @@ const Chat = ({ mode }: ChatProps) => {
     isLoading,
     streamingMessage,
     pendingJobId,
+    thinkingDurationSeconds,
     sendMessage,
     createSession,
     selectSession,
@@ -111,10 +108,10 @@ const Chat = ({ mode }: ChatProps) => {
   } = useChat(mode, {
     onCharactersUsed: addUsage,
     hasEnoughTenergy,
-    onAssistantMessageReady: ({ messageId }) => {
+    onAssistantMessageReady: ({ messageId, thinkingDuration }) => {
       setStreamingPreviewMeta({
         messageId,
-        thinkingDuration: capturedThinkingDuration.current > 0 ? capturedThinkingDuration.current : null,
+        thinkingDuration,
       });
     },
   });
@@ -144,44 +141,27 @@ const Chat = ({ mode }: ChatProps) => {
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    if (!isLoading || streamingMessage) {
-      // Capture duration at the moment thinking→streaming transition happens
-      if (streamingMessage && !prevStreamingMessage.current) {
-        capturedThinkingDuration.current = thinkingSecondsRef.current;
-      }
-      prevStreamingMessage.current = streamingMessage;
-      thinkingSecondsRef.current = 0;
-      setThinkingSeconds(0);
+    if (!isLoading) {
       setThinkingNote(THINKING_NOTES[0]);
       return;
     }
-    prevStreamingMessage.current = streamingMessage;
-    thinkingSecondsRef.current = 0;
-    setThinkingSeconds(0);
+
+    if (streamingMessage) {
+      return;
+    }
+
     setThinkingNote(getRandomThinkingNote());
     const timer = window.setInterval(() => {
-      setThinkingSeconds((current) => {
-        const nextSeconds = current + 1;
-        thinkingSecondsRef.current = nextSeconds;
-        if (nextSeconds % 4 === 0) {
-          setThinkingNote((currentNote) => getRandomThinkingNote(currentNote));
-        }
-        return nextSeconds;
-      });
+      setThinkingNote((currentNote) => getRandomThinkingNote(currentNote));
     }, 1000);
 
     return () => window.clearInterval(timer);
   }, [isLoading, streamingMessage]);
 
-  // Associate captured thinking duration with the newly arrived assistant message
   useEffect(() => {
-    if (capturedThinkingDuration.current <= 0) return;
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.role === "assistant") {
-      const dur = streamingPreviewMeta.messageId === lastMsg.id && streamingPreviewMeta.thinkingDuration != null
-        ? streamingPreviewMeta.thinkingDuration
-        : capturedThinkingDuration.current;
-      capturedThinkingDuration.current = 0;
+    if (lastMsg?.role === "assistant" && streamingPreviewMeta.messageId === lastMsg.id && streamingPreviewMeta.thinkingDuration != null) {
+      const dur = streamingPreviewMeta.thinkingDuration;
       setThoughtDurations(prev => prev[lastMsg.id] ? prev : { ...prev, [lastMsg.id]: dur });
       setStreamingPreviewMeta({ messageId: null, thinkingDuration: null });
     }
@@ -515,9 +495,9 @@ const Chat = ({ mode }: ChatProps) => {
                       <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
                       <div className="min-w-0 space-y-1">
                         <span className="block text-sm text-muted-foreground">
-                          {thinkingSeconds <= 0
+                          {!thinkingDurationSeconds || thinkingDurationSeconds <= 0
                             ? (pendingJobId ? "Queued and thinking..." : "Thinking...")
-                            : `Thinking for ${thinkingSeconds} ${thinkingSeconds === 1 ? "sec" : "secs"}`}
+                            : `Thinking for ${thinkingDurationSeconds} ${thinkingDurationSeconds === 1 ? "sec" : "secs"}`}
                         </span>
                         <p className="text-xs leading-5 text-[hsl(var(--on-surface-variant))] sm:text-[0.8125rem]">
                           {thinkingNote}
@@ -531,7 +511,7 @@ const Chat = ({ mode }: ChatProps) => {
                     id="streaming-preview"
                     role="assistant"
                     content={streamingMessage}
-                    thinkingDuration={streamingPreviewMeta.thinkingDuration ?? (capturedThinkingDuration.current > 0 ? capturedThinkingDuration.current : undefined)}
+                    thinkingDuration={streamingPreviewMeta.thinkingDuration ?? undefined}
                   />
                 )}
                 <div ref={messagesEndRef} />

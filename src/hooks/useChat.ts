@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { mirrorInsert, mirrorUpdate } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ export interface ChatSession {
 interface UseChatOptions {
   onCharactersUsed?: (chars: number) => void;
   hasEnoughTenergy?: boolean;
-  onAssistantMessageReady?: (payload: { messageId: string; content: string }) => void;
+  onAssistantMessageReady?: (payload: { messageId: string; content: string; thinkingDuration: number }) => void;
 }
 
 export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
@@ -40,6 +40,8 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string | null>(null);
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [thinkingDurationSeconds, setThinkingDurationSeconds] = useState<number | null>(null);
+  const thinkingDurationRef = useRef(0);
   const [userName, setUserName] = useState("user");
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -133,7 +135,25 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     else setMessages([]);
     setPendingJobId(null);
     setStreamingMessage(null);
+    setThinkingDurationSeconds(null);
+    thinkingDurationRef.current = 0;
   }, [currentSessionId, loadMessages]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    setThinkingDurationSeconds(0);
+    thinkingDurationRef.current = 0;
+    const timer = window.setInterval(() => {
+      setThinkingDurationSeconds((current) => {
+        const next = (current ?? 0) + 1;
+        thinkingDurationRef.current = next;
+        return next;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isLoading]);
 
   useEffect(() => {
     if (!pendingJobId || !currentSessionId) return;
@@ -157,6 +177,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
 
       if (isCompleted) {
         setPendingJobId(null);
+        const completedThinkingDuration = thinkingDurationRef.current;
         let assistantContent: string | null = null;
 
         if (job.assistant_message_id) {
@@ -183,10 +204,13 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
           onAssistantMessageReady?.({
             messageId: job.assistant_message_id,
             content: assistantContent,
+            thinkingDuration: completedThinkingDuration,
           });
         }
 
         setIsLoading(false);
+        setThinkingDurationSeconds(null);
+        thinkingDurationRef.current = 0;
         await loadMessages(currentSessionId);
         setStreamingMessage(null);
         return;
@@ -196,6 +220,8 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
         setPendingJobId(null);
         setIsLoading(false);
         setStreamingMessage(null);
+        setThinkingDurationSeconds(null);
+        thinkingDurationRef.current = 0;
         toast.error(job.error || "Failed to get response from agent");
       }
     };
@@ -357,6 +383,8 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       console.error("Error calling agent:", err);
       setStreamingMessage(null);
       setIsLoading(false);
+      setThinkingDurationSeconds(null);
+      thinkingDurationRef.current = 0;
       toast.error(err instanceof Error ? err.message : "Failed to get response from agent");
     }
   }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, mode]);
@@ -384,6 +412,8 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       setMessages([]);
       setPendingJobId(null);
       setStreamingMessage(null);
+      setThinkingDurationSeconds(null);
+      thinkingDurationRef.current = 0;
     }
   }, [currentSessionId]);
 
@@ -442,6 +472,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     isLoading,
     streamingMessage,
     pendingJobId,
+    thinkingDurationSeconds,
     userName,
     sendMessage,
     createSession,
