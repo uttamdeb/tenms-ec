@@ -239,27 +239,32 @@ interface ChatMessageBubbleProps {
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
 }
 
-const ChatMessageBubble = memo(({
+interface AssistantActionBarProps {
+  id: string;
+  sessionId?: string;
+  userId?: string;
+  normalizedContent: string;
+  feedback?: "like" | "dislike" | null;
+  feedbackNote?: string | null;
+  userRole?: string | null;
+  executed_sql?: string | null;
+  bq_result?: string | null;
+  onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
+}
+
+const AssistantActionBar = memo(({
   id,
-  role,
-  content,
   sessionId,
   userId,
+  normalizedContent,
   feedback,
   feedbackNote,
-  userAvatarUrl,
-  userInitials = "U",
   userRole,
   executed_sql,
   bq_result,
-  thinkingDuration,
   onFeedbackChange,
-}: ChatMessageBubbleProps) => {
-  const isUser = role === "user";
-  const normalizedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
+}: AssistantActionBarProps) => {
   const isBIUser = userRole === "BI";
-  // Track the last heading rendered so tables can display it as their title
-  const lastHeadingRef = useRef<string>("");
   const [copied, setCopied] = useState(false);
   const [debugCopied, setDebugCopied] = useState(false);
   const [sqlCopied, setSqlCopied] = useState(false);
@@ -359,6 +364,163 @@ const ChatMessageBubble = memo(({
 
     setDislikeOpen(true);
   };
+
+  return (
+    <>
+      <TooltipProvider delayDuration={150}>
+        <div className="mt-3 flex flex-wrap items-center gap-0.5 px-1 text-muted-foreground">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                onClick={handleCopyMessage}
+                aria-label={copied ? "Copied" : "Copy text"}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{copied ? "Copied" : "Copy text"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn("h-8 w-8 rounded-full", feedback === "like" && "text-emerald-500")}
+                onClick={handleLike}
+                disabled={isSubmittingFeedback}
+                aria-label={feedback === "like" ? "Remove like" : "Like response"}
+              >
+                <ThumbsUp className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{feedback === "like" ? "Remove like" : "Like"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn("h-8 w-8 rounded-full", feedback === "dislike" && "text-red-500")}
+                onClick={handleDislikeClick}
+                disabled={isSubmittingFeedback}
+                aria-label={feedback === "dislike" ? "Remove dislike" : "Dislike response"}
+              >
+                <ThumbsDown className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{feedback === "dislike" ? "Remove dislike" : "Dislike"}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={handleCopyDebugInfo}
+                aria-label={debugCopied ? "Copied debug info" : "Copy debug info"}
+              >
+                {debugCopied ? <Check className="h-4 w-4" /> : <Bug className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{debugCopied ? "Copied debug info" : "Copy debug info"}</TooltipContent>
+          </Tooltip>
+
+          {isBIUser && executed_sql && bq_result && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={handleCopySql}
+                    aria-label={sqlCopied ? "Copied code" : "Copy code"}
+                  >
+                    {sqlCopied ? <Check className="h-4 w-4" /> : <Code className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{sqlCopied ? "Copied code" : "Copy code"}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={handleCopyBqResult}
+                    aria-label={bqCopied ? "Copied results" : "Copy results"}
+                  >
+                    {bqCopied ? <Check className="h-4 w-4" /> : <Database className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{bqCopied ? "Copied results" : "Copy results"}</TooltipContent>
+              </Tooltip>
+            </>
+          )}
+        </div>
+      </TooltipProvider>
+
+      <Dialog open={dislikeOpen} onOpenChange={setDislikeOpen}>
+        <DialogContent className="glass-panel border-0 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="headline-agent text-2xl">Why was this response not helpful?</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Share what went wrong so the team can improve future responses.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Add a short note"
+            className="min-h-28"
+          />
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setDislikeOpen(false)} disabled={isSubmittingFeedback}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleDislikeSubmit} disabled={isSubmittingFeedback}>
+              Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+});
+
+const ChatMessageBubble = memo(({
+  id,
+  role,
+  content,
+  sessionId,
+  userId,
+  feedback,
+  feedbackNote,
+  userAvatarUrl,
+  userInitials = "U",
+  userRole,
+  executed_sql,
+  bq_result,
+  thinkingDuration,
+  onFeedbackChange,
+}: ChatMessageBubbleProps) => {
+  const isUser = role === "user";
+  const normalizedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
+  // Track the last heading rendered so tables can display it as their title
+  const lastHeadingRef = useRef<string>("");
 
   return (
     <div className="fluent-enter w-full min-w-0">
@@ -498,111 +660,18 @@ const ChatMessageBubble = memo(({
         )}
 
         {!isUser && (
-          <TooltipProvider delayDuration={150}>
-            <div className="mt-3 flex flex-wrap items-center gap-0.5 px-1 text-muted-foreground">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
-                    onClick={handleCopyMessage}
-                    aria-label={copied ? "Copied" : "Copy text"}
-                  >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{copied ? "Copied" : "Copy text"}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-8 w-8 rounded-full", feedback === "like" && "text-emerald-500")}
-                    onClick={handleLike}
-                    disabled={isSubmittingFeedback}
-                    aria-label={feedback === "like" ? "Remove like" : "Like response"}
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{feedback === "like" ? "Remove like" : "Like"}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-8 w-8 rounded-full", feedback === "dislike" && "text-red-500")}
-                    onClick={handleDislikeClick}
-                    disabled={isSubmittingFeedback}
-                    aria-label={feedback === "dislike" ? "Remove dislike" : "Dislike response"}
-                  >
-                    <ThumbsDown className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{feedback === "dislike" ? "Remove dislike" : "Dislike"}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    onClick={handleCopyDebugInfo}
-                    aria-label={debugCopied ? "Copied debug info" : "Copy debug info"}
-                  >
-                    {debugCopied ? <Check className="h-4 w-4" /> : <Bug className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{debugCopied ? "Copied debug info" : "Copy debug info"}</TooltipContent>
-              </Tooltip>
-
-              {isBIUser && executed_sql && bq_result && (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={handleCopySql}
-                        aria-label={sqlCopied ? "Copied code" : "Copy code"}
-                      >
-                        {sqlCopied ? <Check className="h-4 w-4" /> : <Code className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{sqlCopied ? "Copied code" : "Copy code"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={handleCopyBqResult}
-                        aria-label={bqCopied ? "Copied results" : "Copy results"}
-                      >
-                        {bqCopied ? <Check className="h-4 w-4" /> : <Database className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{bqCopied ? "Copied results" : "Copy results"}</TooltipContent>
-                  </Tooltip>
-                </>
-              )}
-            </div>
-          </TooltipProvider>
+          <AssistantActionBar
+            id={id}
+            sessionId={sessionId}
+            userId={userId}
+            normalizedContent={normalizedContent}
+            feedback={feedback}
+            feedbackNote={feedbackNote}
+            userRole={userRole}
+            executed_sql={executed_sql}
+            bq_result={bq_result}
+            onFeedbackChange={onFeedbackChange}
+          />
         )}
           </div>
         </div>
@@ -613,33 +682,22 @@ const ChatMessageBubble = memo(({
           </Avatar>
         )}
       </div>
-
-      <Dialog open={dislikeOpen} onOpenChange={setDislikeOpen}>
-        <DialogContent className="glass-panel border-0 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="headline-agent text-2xl">Why was this response not helpful?</DialogTitle>
-            <DialogDescription>
-              Your note will be stored with the message feedback so the team can review it.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="Add a short note about what was wrong or missing"
-            className="min-h-28"
-          />
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDislikeOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleDislikeSubmit} disabled={isSubmittingFeedback}>
-              Save feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
+}, (prevProps, nextProps) => {
+  return prevProps.id === nextProps.id
+    && prevProps.role === nextProps.role
+    && prevProps.content === nextProps.content
+    && prevProps.sessionId === nextProps.sessionId
+    && prevProps.userId === nextProps.userId
+    && prevProps.feedback === nextProps.feedback
+    && prevProps.feedbackNote === nextProps.feedbackNote
+    && prevProps.userAvatarUrl === nextProps.userAvatarUrl
+    && prevProps.userInitials === nextProps.userInitials
+    && prevProps.userRole === nextProps.userRole
+    && prevProps.executed_sql === nextProps.executed_sql
+    && prevProps.bq_result === nextProps.bq_result
+    && prevProps.thinkingDuration === nextProps.thinkingDuration;
 });
 
 export default ChatMessageBubble;

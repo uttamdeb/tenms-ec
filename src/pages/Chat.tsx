@@ -31,9 +31,7 @@ import tentenIcon from "@/assets/tenten-icon.png";
 import { runWithViewTransition } from "@/lib/viewTransitions";
 
 const THINKING_NOTES = [
-  "Cross-checking branch signals before making bold claims.",
   "Dusting off the trend lines and looking for the weird bits.",
-  "Comparing registrations against RTA to spot hidden drift.",
   "Looking for anomalies that refuse to stay quiet.",
   "Turning raw tables into something a human can actually use.",
   "Checking whether the spike is real or just a reporting hiccup.",
@@ -47,15 +45,34 @@ const THINKING_NOTES = [
   "Checking if the trend bends before the business feels it.",
   "Translating dashboard chaos into executive-grade signal.",
   "Inspecting the data for plot twists and quiet warnings.",
-  "Matching branch performance with what the funnel is actually doing.",
   "Hunting for the gap between activity and outcome.",
   "Running a quick sanity check on the dramatic-looking dip.",
   "Finding the pattern hiding behind the noise.",
-  "Looking for where registrations rise but conversion gets lazy.",
   "Checking whether the anomaly is local, systemic, or just loud.",
   "Building the report one suspicious metric at a time.",
   "Watching the trendline like it owes us an explanation.",
   "Preparing observations, anomalies, and recommendations with receipts.",
+  "Reconciling source tables before trusting the headline number.",
+  "Checking whether today is quiet or the pipeline is just late.",
+  "Comparing operational movement with what the admissions sheet claims.",
+  "Testing whether the drop is real, delayed, or mislabeled.",
+  "Tracing the metric from raw rows to executive summary.",
+  "Checking if the funnel is healthy or just cosmetically stable.",
+  "Looking for the segment where the pattern first starts to wobble.",
+  "Verifying the count before turning it into a conclusion.",
+  "Checking whether the branch mix changed before the totals did.",
+  "Pulling signal out of the spreadsheet noise.",
+  "Looking for the operational reason hiding behind the aggregate.",
+  "Checking if the trend is broad-based or driven by one outlier branch.",
+  "Reviewing the numbers like they just said something suspicious.",
+  "Cross-checking the pattern before calling it a pattern.",
+  "Looking for the detail that changes the whole read.",
+  "Sorting the useful signal from the decorative noise.",
+  "Checking whether the summary still holds at a closer look.",
+  "Following the numbers until they start making sense.",
+  "Testing the obvious explanation before trusting it.",
+  "Looking for what changed, what stayed stable, and what is pretending.",
+  "Reading between the rows before writing the takeaway.",
 ];
 
 const getRandomThinkingNote = (currentNote?: string) => {
@@ -153,7 +170,7 @@ const Chat = ({ mode }: ChatProps) => {
     setThinkingNote(getRandomThinkingNote());
     const timer = window.setInterval(() => {
       setThinkingNote((currentNote) => getRandomThinkingNote(currentNote));
-    }, 1000);
+    }, 4000);
 
     return () => window.clearInterval(timer);
   }, [isLoading, streamingMessage]);
