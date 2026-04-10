@@ -22,6 +22,30 @@ const buildServiceClient = () => {
   return createClient(supabaseUrl, serviceRoleKey);
 };
 
+const buildMirrorClient = () => {
+  const mirrorUrl = Deno.env.get('MIRROR_SUPABASE_URL');
+  const mirrorKey = Deno.env.get('MIRROR_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('MIRROR_SUPABASE_KEY');
+
+  if (!mirrorUrl || !mirrorKey) {
+    return null;
+  }
+
+  return createClient(mirrorUrl, mirrorKey);
+};
+
+const mirrorInsert = async (
+  mirror: ReturnType<typeof buildMirrorClient>,
+  table: string,
+  payload: Record<string, unknown>,
+) => {
+  if (!mirror) return;
+
+  const { error } = await mirror.from(table).insert(payload);
+  if (error) {
+    console.warn(`[mirror] insert ${table} failed:`, error.message);
+  }
+};
+
 const updateJobStatus = async (
   supabase: ReturnType<typeof buildServiceClient>,
   jobId: string,
@@ -109,6 +133,7 @@ const handleCallback = async (req: Request) => {
   }
 
   const supabase = buildServiceClient();
+  const mirror = buildMirrorClient();
   const { data: job, error: jobError } = await supabase
     .from('agent_jobs')
     .select('id, session_id, user_id, mode, assistant_message_id')
@@ -152,6 +177,16 @@ const handleCallback = async (req: Request) => {
     }
 
     assistantMessageId = assistantMsg.id;
+
+    await mirrorInsert(mirror, 'chat_messages', {
+      id: assistantMsg.id,
+      session_id: job.session_id,
+      user_id: job.user_id,
+      role: 'assistant',
+      content: assistantContent,
+      mode: job.mode,
+      created_at: new Date().toISOString(),
+    });
   }
 
   const finalResponsePayload = responsePayload ?? {
@@ -172,6 +207,12 @@ const handleCallback = async (req: Request) => {
       console.error('Failed to save agent SQL run:', { jobId, assistantMessageId, sqlRunError });
       throw sqlRunError;
     }
+
+    await mirrorInsert(mirror, 'agent_sql_runs', {
+      message_id: assistantMessageId,
+      executed_sql,
+      bq_result: bqResultStr,
+    });
   }
 
   await markJobCompleted(
