@@ -53,9 +53,9 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     }
 
     const totalLength = normalizedContent.length;
-    const chunkSize = totalLength > 2400 ? 15 : totalLength > 1200 ? 11 : totalLength > 400 ? 8 : totalLength > 120 ? 6 : 13;
-    const frameDelay = totalLength > 2400 ? 56 : totalLength > 1200 ? 68 : totalLength > 400 ? 78 : totalLength > 120 ? 70 : 24;
-    const jitterRange = totalLength > 2400 ? 11 : totalLength > 1200 ? 15 : totalLength > 400 ? 16 : totalLength > 120 ? 12 : 6;
+    const chunkSize = totalLength > 2400 ? 18 : totalLength > 1200 ? 13 : totalLength > 400 ? 10 : totalLength > 120 ? 8 : 16;
+    const frameDelay = totalLength > 2400 ? 44 : totalLength > 1200 ? 54 : totalLength > 400 ? 62 : totalLength > 120 ? 54 : 16;
+    const jitterRange = totalLength > 2400 ? 9 : totalLength > 1200 ? 12 : totalLength > 400 ? 13 : totalLength > 120 ? 10 : 4;
 
     setStreamingMessage("");
 
