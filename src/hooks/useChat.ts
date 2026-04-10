@@ -29,10 +29,11 @@ export interface ChatSession {
 interface UseChatOptions {
   onCharactersUsed?: (chars: number) => void;
   hasEnoughTenergy?: boolean;
+  onAssistantMessageReady?: (payload: { messageId: string; content: string }) => void;
 }
 
 export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
-  const { onCharactersUsed, hasEnoughTenergy = true } = options;
+  const { onCharactersUsed, hasEnoughTenergy = true, onAssistantMessageReady } = options;
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -178,9 +179,16 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
           await animateAssistantMessage(assistantContent);
         }
 
+        if (job.assistant_message_id && assistantContent) {
+          onAssistantMessageReady?.({
+            messageId: job.assistant_message_id,
+            content: assistantContent,
+          });
+        }
+
         setIsLoading(false);
-        setStreamingMessage(null);
         await loadMessages(currentSessionId);
+        setStreamingMessage(null);
         return;
       }
 
@@ -198,7 +206,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [animateAssistantMessage, currentSessionId, loadMessages, messages, onCharactersUsed, pendingJobId]);
+  }, [animateAssistantMessage, currentSessionId, loadMessages, messages, onAssistantMessageReady, onCharactersUsed, pendingJobId]);
 
   // Create new session
   const createSession = useCallback(async () => {

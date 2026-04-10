@@ -86,6 +86,10 @@ const Chat = ({ mode }: ChatProps) => {
   const capturedThinkingDuration = useRef(0);
   const prevStreamingMessage = useRef<string | null>(null);
   const [thoughtDurations, setThoughtDurations] = useState<Record<string, number>>({});
+  const [streamingPreviewMeta, setStreamingPreviewMeta] = useState<{ messageId: string | null; thinkingDuration: number | null }>({
+    messageId: null,
+    thinkingDuration: null,
+  });
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
@@ -104,7 +108,16 @@ const Chat = ({ mode }: ChatProps) => {
     deleteSession,
     renameSession,
     updateMessageFeedback,
-  } = useChat(mode, { onCharactersUsed: addUsage, hasEnoughTenergy });
+  } = useChat(mode, {
+    onCharactersUsed: addUsage,
+    hasEnoughTenergy,
+    onAssistantMessageReady: ({ messageId }) => {
+      setStreamingPreviewMeta({
+        messageId,
+        thinkingDuration: capturedThinkingDuration.current > 0 ? capturedThinkingDuration.current : null,
+      });
+    },
+  });
 
   useEffect(() => {
     if (isMobile) setSidebarOpen(false);
@@ -165,11 +178,14 @@ const Chat = ({ mode }: ChatProps) => {
     if (capturedThinkingDuration.current <= 0) return;
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.role === "assistant") {
-      const dur = capturedThinkingDuration.current;
+      const dur = streamingPreviewMeta.messageId === lastMsg.id && streamingPreviewMeta.thinkingDuration != null
+        ? streamingPreviewMeta.thinkingDuration
+        : capturedThinkingDuration.current;
       capturedThinkingDuration.current = 0;
       setThoughtDurations(prev => prev[lastMsg.id] ? prev : { ...prev, [lastMsg.id]: dur });
+      setStreamingPreviewMeta({ messageId: null, thinkingDuration: null });
     }
-  }, [messages]);
+  }, [messages, streamingPreviewMeta]);
 
   // Fetch SQL run data for assistant messages
   useEffect(() => {
@@ -515,6 +531,7 @@ const Chat = ({ mode }: ChatProps) => {
                     id="streaming-preview"
                     role="assistant"
                     content={streamingMessage}
+                    thinkingDuration={streamingPreviewMeta.thinkingDuration ?? (capturedThinkingDuration.current > 0 ? capturedThinkingDuration.current : undefined)}
                   />
                 )}
                 <div ref={messagesEndRef} />
