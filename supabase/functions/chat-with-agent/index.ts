@@ -72,6 +72,29 @@ const updateJobStatus = async (
   }
 };
 
+const markJobRunningIfQueued = async (
+  supabase: ReturnType<typeof buildServiceClient>,
+  jobId: string,
+) => {
+  const updatedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('agent_jobs')
+    .update({
+      status: 'running',
+      updated_at: updatedAt,
+    })
+    .eq('id', jobId)
+    .eq('status', 'queued')
+    .select('id, status, updated_at')
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
 const markJobCompleted = async (
   supabase: ReturnType<typeof buildServiceClient>,
   jobId: string,
@@ -334,7 +357,7 @@ serve(async (req) => {
       clearTimeout(webhookTimeout);
     }
 
-    await updateJobStatus(serviceSupabase, job.id, 'running');
+    await markJobRunningIfQueued(serviceSupabase, job.id);
 
     return jsonResponse({
       jobId: job.id,
