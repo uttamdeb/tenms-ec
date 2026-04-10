@@ -97,6 +97,7 @@ const Chat = ({ mode }: ChatProps) => {
     messages,
     isLoading,
     streamingMessage,
+    pendingJobId,
     sendMessage,
     createSession,
     selectSession,
@@ -499,7 +500,7 @@ const Chat = ({ mode }: ChatProps) => {
                       <div className="min-w-0 space-y-1">
                         <span className="block text-sm text-muted-foreground">
                           {thinkingSeconds <= 0
-                            ? "Thinking..."
+                            ? (pendingJobId ? "Queued and thinking..." : "Thinking...")
                             : `Thinking for ${thinkingSeconds} ${thinkingSeconds === 1 ? "sec" : "secs"}`}
                         </span>
                         <p className="text-xs leading-5 text-[hsl(var(--on-surface-variant))] sm:text-[0.8125rem]">

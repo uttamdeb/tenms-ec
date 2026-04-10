@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_jobs: {
+        Row: {
+          assistant_message_id: string | null
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          mode: string
+          request_payload: Json
+          response_payload: Json | null
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          user_message_id: string
+        }
+        Insert: {
+          assistant_message_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          mode?: string
+          request_payload?: Json
+          response_payload?: Json | null
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_message_id: string
+        }
+        Update: {
+          assistant_message_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          mode?: string
+          request_payload?: Json
+          response_payload?: Json | null
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_jobs_assistant_message_id_fkey"
+            columns: ["assistant_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_jobs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_jobs_user_message_id_fkey"
+            columns: ["user_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_sql_runs: {
         Row: {
           bq_result: string

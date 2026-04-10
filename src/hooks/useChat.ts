@@ -3,9 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { mirrorInsert, mirrorUpdate } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
 
-const STREAM_INTERVAL_MS = 16; // ~60fps tick
-const STREAM_TARGET_MS = 1700; // target total stream duration in ms
-
 export type ChatMode = "ec" | "10ms";
 
 export interface ChatMessage {
@@ -41,6 +38,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string | null>(null);
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [userName, setUserName] = useState("user");
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -107,8 +105,65 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   useEffect(() => {
     if (currentSessionId) loadMessages(currentSessionId);
     else setMessages([]);
+    setPendingJobId(null);
     setStreamingMessage(null);
   }, [currentSessionId, loadMessages]);
+
+  useEffect(() => {
+    if (!pendingJobId || !currentSessionId) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      const { data: job, error } = await supabase
+        .from("agent_jobs")
+        .select("id, session_id, user_message_id, assistant_message_id, status, error, created_at, updated_at, completed_at")
+        .eq("id", pendingJobId)
+        .single();
+
+      if (cancelled) return;
+
+      if (error || !job) {
+        console.error("Failed to poll agent job:", error);
+        return;
+      }
+
+      if (job.status === "completed") {
+        setPendingJobId(null);
+        setIsLoading(false);
+        setStreamingMessage(null);
+        await loadMessages(currentSessionId);
+
+        if (onCharactersUsed && job.assistant_message_id) {
+          const { data: assistantMessage } = await supabase
+            .from("chat_messages")
+            .select("content")
+            .eq("id", job.assistant_message_id)
+            .single();
+
+          if (assistantMessage?.content) {
+            const userMessage = messages.find((message) => message.id === job.user_message_id);
+            const totalChars = (userMessage?.content.length || 0) + assistantMessage.content.length;
+            onCharactersUsed(totalChars);
+          }
+        }
+        return;
+      }
+
+      if (job.status === "failed") {
+        setPendingJobId(null);
+        setIsLoading(false);
+        setStreamingMessage(null);
+        toast.error(job.error || "Failed to get response from agent");
+      }
+    };
+
+    poll();
+    const interval = window.setInterval(poll, 2500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [currentSessionId, loadMessages, pendingJobId]);
 
   // Create new session
   const createSession = useCallback(async () => {
@@ -199,16 +254,22 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       mirrorUpdate("chat_sessions", { updated_at: new Date().toISOString() }, "id", sessionId);
     }
 
-    // Call webhook
+    // Enqueue async agent job
     setIsLoading(true);
     setStreamingMessage("");
     try {
-      const body: Record<string, unknown> = { user: userName, input: messageContent, sessionId, mode };
+      const body: Record<string, unknown> = {
+        user: userName,
+        input: messageContent,
+        sessionId,
+        userMessageId: (userMsg as ChatMessage).id,
+        mode,
+      };
       if (attachmentUrl) {
         body.attachments = [{ file_url: attachmentUrl }];
       }
       const invokeController = new AbortController();
-      const invokeTimeout = window.setTimeout(() => invokeController.abort(), 120_000); // 120 s client-side guard
+      const invokeTimeout = window.setTimeout(() => invokeController.abort(), 20_000);
       let data: unknown, error: unknown;
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -224,8 +285,17 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
           signal: invokeController.signal,
         });
         if (!res.ok) {
-          const errBody = await res.json().catch(() => ({}));
-          error = new Error((errBody as Record<string, string>).error || `HTTP ${res.status}`);
+          const responseText = await res.text();
+          let errMessage = `HTTP ${res.status}`;
+          try {
+            const errBody = JSON.parse(responseText) as Record<string, string>;
+            errMessage = errBody.error || errMessage;
+          } catch {
+            errMessage = responseText.includes("504")
+              ? "The analysis is taking too long on the upstream host. Please try again later."
+              : errMessage;
+          }
+          error = new Error(errMessage);
         } else {
           data = await res.json();
         }
@@ -234,75 +304,19 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       }
 
       if (error) throw error;
-
-      // Handle array response from webhook
       const responseData = Array.isArray(data) ? data[0] : data;
-      const assistantContent = responseData?.output || responseData?.message || responseData?.response || JSON.stringify(responseData);
-
-      await new Promise<void>((resolve) => {
-        let currentIndex = 0;
-        // Dynamically scale chunk size so the stream always finishes in ~STREAM_TARGET_MS
-        // Minimum 2 chars/tick for very short messages, no upper cap so long ones stream fast
-        const totalTicks = STREAM_TARGET_MS / STREAM_INTERVAL_MS;
-        const chunkSize = Math.max(2, Math.ceil(assistantContent.length / totalTicks));
-
-        const streamTimer = window.setInterval(() => {
-          currentIndex = Math.min(currentIndex + chunkSize, assistantContent.length);
-          setStreamingMessage(assistantContent.slice(0, currentIndex));
-
-          if (currentIndex >= assistantContent.length) {
-            window.clearInterval(streamTimer);
-            resolve();
-          }
-        }, STREAM_INTERVAL_MS);
-      });
-
-      // Save assistant message
-      const { data: assistantMsg, error: assistantErr } = await supabase
-        .from("chat_messages")
-        .insert({ session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, mode })
-        .select()
-        .single();
-
-      if (assistantErr) {
-        console.error("Failed to save assistant message:", assistantErr);
-      } else {
-        mirrorInsert("chat_messages", { id: (assistantMsg as ChatMessage).id, session_id: sessionId, user_id: userId, role: "assistant", content: assistantContent, mode, created_at: (assistantMsg as ChatMessage).created_at });
-
-        // Save SQL run data BEFORE updating messages state so the fetch effect picks it up
-        if (responseData?.executed_sql && responseData?.bq_result) {
-          const bqResultStr = typeof responseData.bq_result === 'string' 
-            ? responseData.bq_result 
-            : JSON.stringify(responseData.bq_result);
-          await supabase.from("agent_sql_runs").insert({
-            message_id: (assistantMsg as ChatMessage).id,
-            executed_sql: responseData.executed_sql,
-            bq_result: bqResultStr,
-          });
-          mirrorInsert("agent_sql_runs", {
-            message_id: (assistantMsg as ChatMessage).id,
-            executed_sql: responseData.executed_sql,
-            bq_result: bqResultStr,
-          });
-        }
-
-        setStreamingMessage(null);
-        setMessages((prev) => [...prev, assistantMsg as ChatMessage]);
-
-        // Track character usage (user input + assistant response)
-        if (onCharactersUsed) {
-          const totalChars = messageContent.length + assistantContent.length;
-          onCharactersUsed(totalChars);
-        }
+      if (!responseData?.jobId) {
+        throw new Error("Agent job was not created");
       }
+
+      setPendingJobId(responseData.jobId as string);
     } catch (err) {
       console.error("Error calling agent:", err);
       setStreamingMessage(null);
-      toast.error("Failed to get response from agent");
-    } finally {
       setIsLoading(false);
+      toast.error(err instanceof Error ? err.message : "Failed to get response from agent");
     }
-  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, mode, onCharactersUsed, uploadAttachment]);
+  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, mode]);
 
   const selectSession = useCallback((sessionId: string) => {
     setCurrentSessionId(sessionId);
@@ -325,6 +339,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     if (currentSessionId === sessionId) {
       setCurrentSessionId(null);
       setMessages([]);
+      setPendingJobId(null);
       setStreamingMessage(null);
     }
   }, [currentSessionId]);
@@ -383,6 +398,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     messages,
     isLoading,
     streamingMessage,
+    pendingJobId,
     userName,
     sendMessage,
     createSession,
