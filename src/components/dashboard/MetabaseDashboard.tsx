@@ -4,6 +4,7 @@ import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import tentenGlasses from "@/assets/tenten-glasses.png";
 
 const MetabaseDashboard = () => {
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
@@ -83,7 +84,7 @@ const MetabaseDashboard = () => {
     return (
       <div className="surface-panel flex h-full min-h-[60vh] flex-1 items-center justify-center p-4">
         <div className="glass-panel flex max-w-md flex-col items-center gap-4 rounded-[1.75rem] p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-destructive" />
+          <img src={tentenGlasses} alt="Dashboard error" className="h-16 w-16 object-contain opacity-95" />
           <h2 className="headline-agent text-3xl text-foreground">Failed to Load Dashboard</h2>
           <p className="text-muted-foreground">{error}</p>
           <Button onClick={fetchEmbedUrl} className="gap-2">

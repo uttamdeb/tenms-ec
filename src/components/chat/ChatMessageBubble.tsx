@@ -26,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import tentenIcon from "@/assets/tenten-icon.png";
+import tentenGlasses from "@/assets/tenten-glasses.png";
 import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -588,7 +589,7 @@ const ChatMessageBubble = memo(({
                       if (isChartSpec(parsed)) {
                         return (
                           <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-                            <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>}>
+                            <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground"><img src={tentenGlasses} alt="Loading chart" className="h-12 w-12 object-contain opacity-90" /><span>Loading chart...</span></div>}>
                               <MarkdownChartLazy spec={parsed} />
                             </Suspense>
                           </div>
@@ -597,7 +598,12 @@ const ChatMessageBubble = memo(({
                     } catch (error) {
                       // Chart block detected but JSON is incomplete or invalid - show loading instead of code
                       console.error("Failed to parse chart block:", error);
-                      return <div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">Loading chart...</div>;
+                      return (
+                        <div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+                          <img src={tentenGlasses} alt="Chart issue" className="h-12 w-12 object-contain opacity-90" />
+                          <span>Loading chart...</span>
+                        </div>
+                      );
                     }
                   }
 

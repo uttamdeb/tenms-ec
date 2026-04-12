@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
+import { useTheme } from "next-themes";
 import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X, Maximize2, Minimize2, ChevronDown } from "lucide-react";
 import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,7 +29,9 @@ interface ChatProps {
 const QueryGuide = lazy(() => import("@/components/chat/QueryGuide"));
 const ReleaseNotes = lazy(() => import("@/components/chat/ReleaseNotes"));
 import tentenIcon from "@/assets/tenten-icon.png";
+import tentenLove from "@/assets/tenten-love.png";
 import { runWithViewTransition } from "@/lib/viewTransitions";
+import { getUserBranding } from "@/lib/userBranding";
 
 const THINKING_NOTES = [
   "Dusting off the trend lines and looking for the weird bits.",
@@ -104,9 +107,11 @@ const Chat = ({ mode }: ChatProps) => {
     thinkingDuration: null,
   });
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
   const { tenergy, isUnlimited, hasEnoughTenergy, addUsage } = useTenergy();
+  const userBranding = getUserBranding(profile?.email, theme);
 
   const {
     sessions,
@@ -543,7 +548,16 @@ const Chat = ({ mode }: ChatProps) => {
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:col-span-2 sm:p-5">
                     <div className="mb-6 flex items-start justify-between gap-4 sm:mb-10">
                       <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
-                      <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
+                      <div className="flex items-center gap-3">
+                        {userBranding && (
+                          <img
+                            src={userBranding.src}
+                            alt={userBranding.alt}
+                            className="h-9 w-auto max-w-[6.5rem] object-contain sm:h-10 sm:max-w-[7rem]"
+                          />
+                        )}
+                        <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
+                      </div>
                     </div>
                     <div>
                       <h3 className="headline-agent text-xl sm:text-2xl">{mode === "10ms" ? "Online segment performance" : "Branch Performance Overview"}</h3>
@@ -559,6 +573,13 @@ const Chat = ({ mode }: ChatProps) => {
                     <ReleaseNotes isBIUser={profile?.role === "BI"} />
                   </Suspense>
                 </div>
+              </div>
+              <div className="pointer-events-none mx-auto mt-4 flex w-full max-w-5xl justify-end animate-in fade-in duration-700 delay-300 sm:mt-6">
+                <img
+                  src={tentenLove}
+                  alt="10MS love"
+                  className="h-16 w-auto object-contain opacity-80 sm:h-20"
+                />
               </div>
               <div className="mt-4 w-full animate-in fade-in duration-700 delay-500 sm:mt-6">
                 <SuggestedMessages mode={mode} onSelect={(msg) => sendMessage(msg)} />
