@@ -117,12 +117,19 @@ const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
 
   return (
     <div className="px-3 pb-3 pt-2 sm:px-6 sm:pb-6 sm:pt-3 transition-all duration-300 ease-in-out">
-      <div className="mx-auto max-w-5xl">
+      <div className="relative mx-auto max-w-5xl">
+        <div className="pointer-events-none absolute right-2 top-0 z-0 hidden sm:block">
+          <img
+            src={tentenLove}
+            alt="10MS love"
+            className="h-14 w-auto object-contain opacity-80"
+          />
+        </div>
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative flex flex-col rounded-[1.75rem] px-3 py-3 sm:px-4
+          className={`relative z-10 flex flex-col rounded-[1.75rem] px-3 py-3 sm:px-4
             bg-[hsl(var(--surface-high))]/78
             shadow-[0_24px_60px_hsl(var(--ambient-glow)),inset_0_0_0_1px_hsl(var(--outline-ghost)/0.18)]
             backdrop-blur-2xl
@@ -131,13 +138,6 @@ const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
             focus-within:shadow-[0_28px_72px_hsl(var(--ambient-glow)),inset_0_0_0_1.5px_hsl(var(--primary)/0.45)]
             ${isDragOver ? "bg-primary/10 shadow-[0_28px_72px_hsl(var(--ambient-glow)),inset_0_0_0_1.5px_hsl(var(--primary)/0.6)]" : ""}`}
         >
-          <div className="pointer-events-none absolute -right-2 -top-9 hidden sm:block">
-            <img
-              src={tentenLove}
-              alt="10MS love"
-              className="h-14 w-auto object-contain opacity-80"
-            />
-          </div>
           {/* Image preview inside input area */}
           {preview && (
             <div className="mb-2 inline-flex items-start">

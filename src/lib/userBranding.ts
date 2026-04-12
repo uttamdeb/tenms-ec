@@ -24,7 +24,6 @@ const EMAIL_TO_BRAND: Record<string, "ayman" | "mishal" | "niloy" | "raied" | "m
   "farhan@10minuteschool.com": "farhan",
   "farhana@10minuteschool.com": "farhana",
   "uttam@10minuteschool.com": "uttam",
-  "uttamdeb670@gmail.com": "uttam",
   "uttamdeb670@outlook.com": "uttam",
 };
 

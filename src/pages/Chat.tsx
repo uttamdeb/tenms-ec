@@ -545,11 +545,16 @@ const Chat = ({ mode }: ChatProps) => {
                 </div>
                 <div className="grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:col-span-2 sm:p-5">
-                    <div className="mb-6 flex items-start justify-between gap-4 sm:mb-10">
-                      <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
-                      <div className="flex flex-col items-end gap-2 sm:gap-3">
+                    <div className="mb-4 flex items-center justify-between gap-4 sm:mb-5">
+                      <div className="flex items-center gap-3">
+                        <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
+                        <div>
+                          <span className="label-tech block">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end">
                         {userBranding && (
-                          <div className="flex h-16 w-[7.5rem] items-center justify-center overflow-hidden rounded-[1rem] bg-[hsl(var(--surface-highest))]/55 shadow-[inset_0_0_0_1px_hsl(var(--outline-ghost)/0.15)] backdrop-blur-sm sm:h-20 sm:w-[9.5rem]">
+                          <div className="flex h-16 w-[7.5rem] items-center justify-center overflow-hidden sm:h-20 sm:w-[9.5rem]">
                             <img
                               src={userBranding.src}
                               alt={userBranding.alt}
@@ -557,7 +562,6 @@ const Chat = ({ mode }: ChatProps) => {
                             />
                           </div>
                         )}
-                        <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
                       </div>
                     </div>
                     <div>
