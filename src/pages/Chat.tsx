@@ -257,101 +257,207 @@ const Chat = ({ mode }: ChatProps) => {
       } as CSSProperties}
     >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_24%),radial-gradient(circle_at_100%_100%,hsl(var(--primary)/0.06),transparent_22%)]" />
-      <header className="surface-shell relative z-20 flex min-h-[4.85rem] shrink-0 items-center justify-between gap-2 px-3 py-2.5 sm:min-h-[5.1rem] sm:px-6 sm:py-3">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
-          >
-            {sidebarOpen ? <PanelLeftClose className="h-4 w-4 sm:h-5 sm:w-5" /> : <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
-          </Button>
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <img src={tentenIcon} alt="10MS Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <h1 className="headline-agent truncate pb-[0.08em] text-[1.05rem] leading-[1.12] sm:text-[1.75rem] sm:leading-[1.06]">10MS Data Agent</h1>
-                <HoverCard openDelay={80} closeDelay={120}>
-                  <HoverCardTrigger asChild>
-                    <button
-                      type="button"
-                      className="label-tech inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] font-semibold text-primary transition-colors hover:bg-primary/15 sm:px-2.5 sm:text-[0.65rem]"
-                    >
-                      <span>{mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}</span>
-                      <ChevronDown className="h-2.5 w-2.5 shrink-0" />
-                    </button>
-                  </HoverCardTrigger>
-                  <HoverCardContent align="start" className="w-48 rounded-2xl border-border/60 bg-background/95 p-2 backdrop-blur-xl">
-                    <div className="space-y-1">
+      <header className="surface-shell relative z-20 shrink-0 px-3 py-2.5 sm:min-h-[5.1rem] sm:px-6 sm:py-3">
+        <div className="hidden items-center justify-between gap-2 sm:flex">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
+            </Button>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <img src={tentenIcon} alt="10MS Data Agent" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-3">
+                  <h1 className="headline-agent truncate pb-[0.08em] text-[1.75rem] leading-[1.06]">10MS Data Agent</h1>
+                  <HoverCard openDelay={80} closeDelay={120}>
+                    <HoverCardTrigger asChild>
                       <button
                         type="button"
-                        onClick={() => mode !== "ec" && runWithViewTransition(() => navigate("/ec-chat"))}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "ec" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                        className="label-tech inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[0.65rem] font-semibold text-primary transition-colors hover:bg-primary/15"
                       >
-                        <span>EC</span>
-                        <span className="label-tech text-[0.55rem]">Branch</span>
+                        <span>{mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}</span>
+                        <ChevronDown className="h-2.5 w-2.5 shrink-0" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => mode !== "10ms" && runWithViewTransition(() => navigate("/10ms-chat"))}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "10ms" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
-                      >
-                        <span>10MS</span>
-                        <span className="label-tech text-[0.55rem]">Online</span>
-                      </button>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
+                    </HoverCardTrigger>
+                    <HoverCardContent align="start" className="w-48 rounded-2xl border-border/60 bg-background/95 p-2 backdrop-blur-xl">
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => mode !== "ec" && runWithViewTransition(() => navigate("/ec-chat"))}
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "ec" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                        >
+                          <span>EC</span>
+                          <span className="label-tech text-[0.55rem]">Branch</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => mode !== "10ms" && runWithViewTransition(() => navigate("/10ms-chat"))}
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "10ms" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                        >
+                          <span>10MS</span>
+                          <span className="label-tech text-[0.55rem]">Online</span>
+                        </button>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                </div>
+                <p className="label-tech mt-1 truncate">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
               </div>
-              <p className="label-tech mt-1 hidden truncate sm:block">A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL</p>
             </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+              <Zap className="h-3.5 w-3.5" />
+              <span>{isUnlimited ? "Unlimited" : tenergy}</span>
+              <span className="text-xs font-normal opacity-70">Tenergy</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-10 shrink-0 gap-1.5 px-3 transition-colors duration-200 ${galleryOpen ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => { setGalleryOpen(!galleryOpen); if (!galleryOpen && isMobile) setSidebarOpen(false); }}
+              title="Gallery"
+            >
+              <LayoutGrid className="h-5 w-5" />
+              <span className="text-sm">Gallery</span>
+            </Button>
+            <Button 
+              variant="default"
+              size="sm"
+              className="h-9 shrink-0 px-5"
+              onClick={handleNewChat}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="ml-1">New Chat</span>
+            </Button>
+            <ThemeToggle />
+            <Button 
+              variant="ghost"
+              size="sm"
+              onClick={() => runWithViewTransition(() => navigate("/"))}
+              className="inline-flex"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="ml-1">Mode</span>
+            </Button>
+            {profile && (
+              <div className="shrink-0">
+                <ProfileDropdown
+                  profile={profile}
+                  onUpdateProfile={updateProfile}
+                  onUploadAvatar={uploadAvatar}
+                />
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-            <Zap className="h-3.5 w-3.5" />
-            <span>{isUnlimited ? "Unlimited" : tenergy}</span>
-            <span className="hidden text-xs font-normal opacity-70 sm:inline">Tenergy</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-10 shrink-0 gap-1.5 px-2 sm:px-3 transition-colors duration-200 ${galleryOpen ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            onClick={() => { setGalleryOpen(!galleryOpen); if (!galleryOpen && isMobile) setSidebarOpen(false); }}
-            title="Gallery"
-          >
-            <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="hidden text-sm sm:inline">Gallery</span>
-          </Button>
-          <Button 
-            variant="default"
-            size="sm"
-            className="h-10 w-10 shrink-0 px-0 sm:h-9 sm:w-auto sm:px-5"
-            onClick={handleNewChat}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="ml-1 hidden sm:inline">New Chat</span>
-          </Button>
-          <ThemeToggle />
-          <Button 
-            variant="ghost"
-            size="sm"
-            onClick={() => runWithViewTransition(() => navigate("/"))}
-            className="hidden sm:inline-flex"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="ml-1">Mode</span>
-          </Button>
-          {profile && (
-            <div className="shrink-0">
-              <ProfileDropdown
-                profile={profile}
-                onUpdateProfile={updateProfile}
-                onUploadAvatar={uploadAvatar}
-              />
+
+        <div className="space-y-2 sm:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+              </Button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <img src={tentenIcon} alt="10MS Data Agent" className="h-7 w-7 shrink-0 rounded-lg object-contain" />
+                  <h1 className="headline-agent truncate text-[1rem] leading-[1.05]">10MS Data Agent</h1>
+                </div>
+                <p className="label-tech mt-1 truncate text-[0.55rem]">{mode === "10ms" ? "10MS workspace" : "EC workspace"}</p>
+              </div>
             </div>
-          )}
+            {profile && (
+              <div className="shrink-0">
+                <ProfileDropdown
+                  profile={profile}
+                  onUpdateProfile={updateProfile}
+                  onUploadAvatar={uploadAvatar}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <HoverCard openDelay={80} closeDelay={120}>
+              <HoverCardTrigger asChild>
+                <button
+                  type="button"
+                  className="label-tech inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-primary/10 px-3 text-[0.62rem] font-semibold text-primary transition-colors hover:bg-primary/15"
+                >
+                  <span>{mode === "10ms" ? "Mode: 10MS" : "Mode: EC"}</span>
+                  <ChevronDown className="h-2.5 w-2.5 shrink-0" />
+                </button>
+              </HoverCardTrigger>
+              <HoverCardContent align="start" className="w-48 rounded-2xl border-border/60 bg-background/95 p-2 backdrop-blur-xl">
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => mode !== "ec" && runWithViewTransition(() => navigate("/ec-chat"))}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "ec" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                  >
+                    <span>EC</span>
+                    <span className="label-tech text-[0.55rem]">Branch</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => mode !== "10ms" && runWithViewTransition(() => navigate("/10ms-chat"))}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${mode === "10ms" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-white/5"}`}
+                  >
+                    <span>10MS</span>
+                    <span className="label-tech text-[0.55rem]">Online</span>
+                  </button>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+
+            <div className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-sm font-semibold text-primary">
+              <Zap className="h-3.5 w-3.5" />
+              <span>{isUnlimited ? "Unlimited" : tenergy}</span>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-10 shrink-0 gap-1.5 rounded-full px-3 transition-colors duration-200 ${galleryOpen ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => { setGalleryOpen(!galleryOpen); if (!galleryOpen && isMobile) setSidebarOpen(false); }}
+              title="Gallery"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="text-sm">Gallery</span>
+            </Button>
+
+            <Button 
+              variant="default"
+              size="sm"
+              className="h-10 w-10 shrink-0 rounded-full px-0"
+              onClick={handleNewChat}
+              title="New Chat"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+
+            <Button 
+              variant="ghost"
+              size="sm"
+              onClick={() => runWithViewTransition(() => navigate("/"))}
+              className="h-10 shrink-0 rounded-full px-3 text-muted-foreground hover:text-foreground"
+              title="Mode"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="ml-1 text-sm">Mode</span>
+            </Button>
+
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
