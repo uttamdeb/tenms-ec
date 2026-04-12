@@ -544,16 +544,23 @@ const Chat = ({ mode }: ChatProps) => {
                     </p>
                   </div>
                 </div>
-                <div className="grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
+                <div className="relative grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
+                  <div className="pointer-events-none absolute -right-2 -top-3 hidden animate-in fade-in duration-700 delay-300 sm:block">
+                    <img
+                      src={tentenLove}
+                      alt="10MS love"
+                      className="h-12 w-auto object-contain opacity-75 lg:h-14"
+                    />
+                  </div>
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:col-span-2 sm:p-5">
                     <div className="mb-6 flex items-start justify-between gap-4 sm:mb-10">
                       <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 sm:gap-4">
                         {userBranding && (
                           <img
                             src={userBranding.src}
                             alt={userBranding.alt}
-                            className="h-9 w-auto max-w-[6.5rem] object-contain sm:h-10 sm:max-w-[7rem]"
+                            className="h-12 w-auto max-w-[8.5rem] object-contain sm:h-14 sm:max-w-[10rem]"
                           />
                         )}
                         <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
@@ -573,13 +580,6 @@ const Chat = ({ mode }: ChatProps) => {
                     <ReleaseNotes isBIUser={profile?.role === "BI"} />
                   </Suspense>
                 </div>
-              </div>
-              <div className="pointer-events-none mx-auto mt-4 flex w-full max-w-5xl justify-end animate-in fade-in duration-700 delay-300 sm:mt-6">
-                <img
-                  src={tentenLove}
-                  alt="10MS love"
-                  className="h-16 w-auto object-contain opacity-80 sm:h-20"
-                />
               </div>
               <div className="mt-4 w-full animate-in fade-in duration-700 delay-500 sm:mt-6">
                 <SuggestedMessages mode={mode} onSelect={(msg) => sendMessage(msg)} />
