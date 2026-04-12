@@ -11,6 +11,8 @@ const SuggestedMessages = ({ mode, onSelect }: SuggestedMessagesProps) => {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
+      setSuggestions([]);
+
       const { data, error } = await supabase
         .from("suggested_messages")
         .select("message")
@@ -24,7 +26,7 @@ const SuggestedMessages = ({ mode, onSelect }: SuggestedMessagesProps) => {
     };
 
     fetchSuggestions();
-  }, []);
+  }, [mode]);
 
   if (suggestions.length === 0) return null;
 
