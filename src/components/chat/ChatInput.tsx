@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import tentenLove from "@/assets/tenten-love.png";
 
 interface ChatInputProps {
   onSend: (message: string, attachmentUrl?: string) => void;
@@ -130,6 +131,13 @@ const ChatInput = ({ onSend, disabled, userId }: ChatInputProps) => {
             focus-within:shadow-[0_28px_72px_hsl(var(--ambient-glow)),inset_0_0_0_1.5px_hsl(var(--primary)/0.45)]
             ${isDragOver ? "bg-primary/10 shadow-[0_28px_72px_hsl(var(--ambient-glow)),inset_0_0_0_1.5px_hsl(var(--primary)/0.6)]" : ""}`}
         >
+          <div className="pointer-events-none absolute -right-2 -top-9 hidden sm:block">
+            <img
+              src={tentenLove}
+              alt="10MS love"
+              className="h-14 w-auto object-contain opacity-80"
+            />
+          </div>
           {/* Image preview inside input area */}
           {preview && (
             <div className="mb-2 inline-flex items-start">

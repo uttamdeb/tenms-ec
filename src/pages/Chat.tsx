@@ -29,7 +29,6 @@ interface ChatProps {
 const QueryGuide = lazy(() => import("@/components/chat/QueryGuide"));
 const ReleaseNotes = lazy(() => import("@/components/chat/ReleaseNotes"));
 import tentenIcon from "@/assets/tenten-icon.png";
-import tentenLove from "@/assets/tenten-love.png";
 import { runWithViewTransition } from "@/lib/viewTransitions";
 import { getUserBranding } from "@/lib/userBranding";
 
@@ -544,23 +543,16 @@ const Chat = ({ mode }: ChatProps) => {
                     </p>
                   </div>
                 </div>
-                <div className="relative grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
-                  <div className="pointer-events-none absolute -right-2 -top-3 hidden animate-in fade-in duration-700 delay-300 sm:block">
-                    <img
-                      src={tentenLove}
-                      alt="10MS love"
-                      className="h-12 w-auto object-contain opacity-75 lg:h-14"
-                    />
-                  </div>
+                <div className="grid w-full max-w-xl gap-3 sm:gap-4 sm:grid-cols-2">
                   <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:col-span-2 sm:p-5">
                     <div className="mb-6 flex items-start justify-between gap-4 sm:mb-10">
                       <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
-                      <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="flex flex-col items-end gap-2 sm:gap-3">
                         {userBranding && (
                           <img
                             src={userBranding.src}
                             alt={userBranding.alt}
-                            className="h-12 w-auto max-w-[8.5rem] object-contain sm:h-14 sm:max-w-[10rem]"
+                            className="h-16 w-auto max-w-[11rem] object-contain sm:h-20 sm:max-w-[13rem]"
                           />
                         )}
                         <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
