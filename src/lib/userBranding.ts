@@ -1,19 +1,19 @@
-import aymanBlack from "@/assets/Ayman - Black.png";
-import aymanWhite from "@/assets/Ayman - White.png";
-import farhanaBlack from "@/assets/Farhana Dina - Black.png";
-import farhanaWhite from "@/assets/Farhana Dina - White.png";
-import farhanBlack from "@/assets/Farhan - Black.png";
-import farhanWhite from "@/assets/Farhan - White.png";
-import mimBlack from "@/assets/Mim - Black.png";
-import mimWhite from "@/assets/Mim - White.png";
-import mishalBlack from "@/assets/Mishal - Black.png";
-import mishalWhite from "@/assets/Mishal - White.png";
-import niloyBlack from "@/assets/Niloy - Black.png";
-import niloyWhite from "@/assets/Niloy - White.png";
-import raiedBlack from "@/assets/Raied - Black.png";
-import raiedWhite from "@/assets/Raied - White.png";
-import uttamBlack from "@/assets/Uttam - Black.png";
-import uttamWhite from "@/assets/Uttam - White.png";
+import aymanBlack from "@/assets/ayman-black.png";
+import aymanWhite from "@/assets/ayman-white.png";
+import farhanaBlack from "@/assets/farhana-black.png";
+import farhanaWhite from "@/assets/farhana-white.png";
+import farhanBlack from "@/assets/farhan-black.png";
+import farhanWhite from "@/assets/farhan-white.png";
+import mimBlack from "@/assets/mim-black.png";
+import mimWhite from "@/assets/mim-white.png";
+import mishalBlack from "@/assets/mishal-black.png";
+import mishalWhite from "@/assets/mishal-white.png";
+import niloyBlack from "@/assets/niloy-black.png";
+import niloyWhite from "@/assets/niloy-white.png";
+import raiedBlack from "@/assets/raied-black.png";
+import raiedWhite from "@/assets/raied-white.png";
+import uttamBlack from "@/assets/uttam-black.png";
+import uttamWhite from "@/assets/uttam-white.png";
 
 const EMAIL_TO_BRAND: Record<string, "ayman" | "mishal" | "niloy" | "raied" | "mim" | "farhana" | "farhan" | "uttam"> = {
   "ayman@10minuteschool.com": "ayman",
