@@ -373,7 +373,6 @@ const Chat = ({ mode }: ChatProps) => {
                 <img src={tentenIcon} alt="10MS Data Agent" className="h-7 w-7 shrink-0 rounded-lg object-contain" />
                 <h1 className="headline-agent truncate text-[1rem] leading-[1.05]">10MS Data Agent</h1>
               </div>
-              <p className="label-tech mt-1 truncate text-[0.55rem]">{mode === "10ms" ? "10MS workspace" : "EC workspace"}</p>
             </div>
             {profile && (
               <div className="flex justify-end">
