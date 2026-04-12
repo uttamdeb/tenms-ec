@@ -167,13 +167,11 @@ function formatDate(dateStr: string) {
 
 const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   const [items, setItems] = useState<GalleryItem[]>([]);
-  const [visibleCount, setVisibleCount] = useState(RENDER_BATCH_SIZE);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
   const loadPage = useCallback(async (currentOffset: number) => {
@@ -228,50 +226,29 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   useEffect(() => {
     setLoading(true);
     setItems([]);
-    setVisibleCount(RENDER_BATCH_SIZE);
     setHasMore(true);
     setOffset(0);
     loadPage(0).finally(() => setLoading(false));
   }, [loadPage, mode]);
 
-  const hasMoreVisibleItems = visibleCount < items.length;
-
-  // Intersection observer for infinite scroll
   useEffect(() => {
-    if (!sentinelRef.current || !scrollContainerRef.current || !hasMore) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0].isIntersecting) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-        if (hasMoreVisibleItems) {
-          setVisibleCount((current) => Math.min(current + RENDER_BATCH_SIZE, items.length));
-          return;
-        }
+    const handleScroll = () => {
+      if (!hasMore || loadingMoreRef.current) return;
 
-        if (!loadingMoreRef.current && hasMore) {
-          setLoadingMore(true);
-          loadUntilGalleryItems(offset)
-            .then(({ fetchedCount, addedCount }) => {
-              if (addedCount > 0) {
-                setVisibleCount((current) => Math.min(current + RENDER_BATCH_SIZE, current + addedCount));
-              }
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom > 240) return;
 
-              if (fetchedCount === 0 || fetchedCount < PAGE_SIZE) {
-                return;
-              }
-            })
-            .finally(() => setLoadingMore(false));
-        }
-      },
-      {
-        root: scrollContainerRef.current,
-        threshold: 0.1,
-        rootMargin: "0px 0px 160px 0px",
-      }
-    );
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, hasMoreVisibleItems, items.length, loadUntilGalleryItems, offset]);
+      setLoadingMore(true);
+      loadUntilGalleryItems(offset).finally(() => setLoadingMore(false));
+    };
+
+    handleScroll();
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [hasMore, loadUntilGalleryItems, offset, items.length]);
 
   if (loading) {
     return (
@@ -295,7 +272,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   return (
     <div ref={scrollContainerRef} className="flex h-full flex-col overflow-y-auto overscroll-y-contain px-2 py-3 [-webkit-overflow-scrolling:touch]">
       <div className="space-y-4">
-        {items.slice(0, visibleCount).map((item, idx) => (
+        {items.map((item, idx) => (
           <div key={`${item.messageId}-${idx}`} className="space-y-1.5">
             <p className="label-tech px-1">{formatDate(item.created_at)}</p>
             {item.type === "chart" && item.chartSpec && (
@@ -308,9 +285,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
             )}
           </div>
         ))}
-        {/* Sentinel for infinite scroll */}
-        <div ref={sentinelRef} className="h-4" />
-        {(hasMoreVisibleItems || loadingMore) && (
+        {loadingMore && (
           <div className="flex justify-center py-2">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
