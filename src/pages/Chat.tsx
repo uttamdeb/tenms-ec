@@ -550,11 +550,13 @@ const Chat = ({ mode }: ChatProps) => {
                       <img src={tentenIcon} alt="10MS Data Agent" className="h-10 w-10 rounded-xl object-contain" />
                       <div className="flex items-center gap-3">
                         {userBranding && (
-                          <img
-                            src={userBranding.src}
-                            alt={userBranding.alt}
-                            className="h-9 w-auto max-w-[6.5rem] object-contain sm:h-10 sm:max-w-[7rem]"
-                          />
+                          <div className="flex min-h-10 min-w-[6.5rem] items-center justify-center rounded-lg bg-amber-100/70 px-2 py-1 outline outline-1 outline-amber-500/40 sm:min-w-[7rem] dark:bg-amber-400/10 dark:outline-amber-300/30">
+                            <img
+                              src={userBranding.src}
+                              alt={userBranding.alt}
+                              className="h-9 w-auto max-w-[6.5rem] object-contain sm:h-10 sm:max-w-[7rem]"
+                            />
+                          </div>
                         )}
                         <span className="label-tech">{mode === "10ms" ? "10MS Data Workspace" : "EC Data Workspace"}</span>
                       </div>
