@@ -172,6 +172,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
@@ -201,6 +202,24 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
     return { fetchedCount: data.length, addedCount: newItems.length };
   }, [mode]);
 
+  const loadUntilGalleryItems = useCallback(async (startOffset: number) => {
+    let nextOffset = startOffset;
+    let totalAddedCount = 0;
+    let lastFetchedCount = 0;
+
+    while (true) {
+      const { fetchedCount, addedCount } = await loadPage(nextOffset);
+      lastFetchedCount = fetchedCount;
+      totalAddedCount += addedCount;
+
+      if (addedCount > 0 || fetchedCount < PAGE_SIZE || fetchedCount === 0) {
+        return { fetchedCount: lastFetchedCount, addedCount: totalAddedCount };
+      }
+
+      nextOffset += fetchedCount;
+    }
+  }, [loadPage]);
+
   useEffect(() => {
     loadingMoreRef.current = loadingMore;
   }, [loadingMore]);
@@ -219,7 +238,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
 
   // Intersection observer for infinite scroll
   useEffect(() => {
-    if (!sentinelRef.current || !hasMore) return;
+    if (!sentinelRef.current || !scrollContainerRef.current || !hasMore) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries[0].isIntersecting) return;
@@ -231,7 +250,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
 
         if (!loadingMoreRef.current && hasMore) {
           setLoadingMore(true);
-          loadPage(offset)
+          loadUntilGalleryItems(offset)
             .then(({ fetchedCount, addedCount }) => {
               if (addedCount > 0) {
                 setVisibleCount((current) => Math.min(current + RENDER_BATCH_SIZE, current + addedCount));
@@ -244,11 +263,15 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
             .finally(() => setLoadingMore(false));
         }
       },
-      { threshold: 0.1 }
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.1,
+        rootMargin: "0px 0px 160px 0px",
+      }
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, hasMoreVisibleItems, items.length, loadingMore, loadPage, offset]);
+  }, [hasMore, hasMoreVisibleItems, items.length, loadUntilGalleryItems, offset]);
 
   if (loading) {
     return (
@@ -270,7 +293,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto overscroll-y-contain px-2 py-3 [-webkit-overflow-scrolling:touch]">
+    <div ref={scrollContainerRef} className="flex h-full flex-col overflow-y-auto overscroll-y-contain px-2 py-3 [-webkit-overflow-scrolling:touch]">
       <div className="space-y-4">
         {items.slice(0, visibleCount).map((item, idx) => (
           <div key={`${item.messageId}-${idx}`} className="space-y-1.5">
