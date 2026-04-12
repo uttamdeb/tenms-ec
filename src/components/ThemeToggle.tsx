@@ -15,8 +15,8 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="outline" size="icon" className="h-10 w-10 bg-card/70">
-        <Sun className="h-[1.2rem] w-[1.2rem]" />
+      <Button variant="outline" size="icon" className="h-11 w-11 rounded-full bg-card/70 sm:h-10 sm:w-10 sm:rounded-md">
+        <Sun className="h-[1.3rem] w-[1.3rem] sm:h-[1.2rem] sm:w-[1.2rem]" />
       </Button>
     );
   }
@@ -28,12 +28,12 @@ export function ThemeToggle() {
       onClick={() =>
         runWithViewTransition(() => setTheme(theme === "dark" ? "light" : "dark"))
       }
-      className="h-10 w-10 bg-card/70 transition-smooth"
+      className="h-11 w-11 rounded-full bg-card/70 transition-smooth sm:h-10 sm:w-10 sm:rounded-md"
     >
       {theme === "dark" ? (
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-smooth" />
+        <Sun className="h-[1.3rem] w-[1.3rem] rotate-0 scale-100 transition-smooth sm:h-[1.2rem] sm:w-[1.2rem]" />
       ) : (
-        <Moon className="h-[1.2rem] w-[1.2rem] rotate-90 scale-100 transition-smooth" />
+        <Moon className="h-[1.3rem] w-[1.3rem] rotate-90 scale-100 transition-smooth sm:h-[1.2rem] sm:w-[1.2rem]" />
       )}
       <span className="sr-only">Toggle theme</span>
     </Button>

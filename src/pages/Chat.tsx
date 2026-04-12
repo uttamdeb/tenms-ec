@@ -357,8 +357,8 @@ const Chat = ({ mode }: ChatProps) => {
         </div>
 
         <div className="space-y-2 sm:hidden">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
+          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2">
+            <div className="flex justify-start">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -367,16 +367,16 @@ const Chat = ({ mode }: ChatProps) => {
               >
                 {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
               </Button>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <img src={tentenIcon} alt="10MS Data Agent" className="h-7 w-7 shrink-0 rounded-lg object-contain" />
-                  <h1 className="headline-agent truncate text-[1rem] leading-[1.05]">10MS Data Agent</h1>
-                </div>
-                <p className="label-tech mt-1 truncate text-[0.55rem]">{mode === "10ms" ? "10MS workspace" : "EC workspace"}</p>
+            </div>
+            <div className="min-w-0 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <img src={tentenIcon} alt="10MS Data Agent" className="h-7 w-7 shrink-0 rounded-lg object-contain" />
+                <h1 className="headline-agent truncate text-[1rem] leading-[1.05]">10MS Data Agent</h1>
               </div>
+              <p className="label-tech mt-1 truncate text-[0.55rem]">{mode === "10ms" ? "10MS workspace" : "EC workspace"}</p>
             </div>
             {profile && (
-              <div className="shrink-0">
+              <div className="flex justify-end">
                 <ProfileDropdown
                   profile={profile}
                   onUpdateProfile={updateProfile}
@@ -384,6 +384,7 @@ const Chat = ({ mode }: ChatProps) => {
                 />
               </div>
             )}
+            {!profile && <div />}
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -419,11 +420,6 @@ const Chat = ({ mode }: ChatProps) => {
               </HoverCardContent>
             </HoverCard>
 
-            <div className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-sm font-semibold text-primary">
-              <Zap className="h-3.5 w-3.5" />
-              <span>{isUnlimited ? "Unlimited" : tenergy}</span>
-            </div>
-
             <Button
               variant="ghost"
               size="sm"
@@ -457,6 +453,11 @@ const Chat = ({ mode }: ChatProps) => {
             </Button>
 
             <ThemeToggle />
+
+            <div className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-sm font-semibold text-primary">
+              <Zap className="h-3.5 w-3.5" />
+              <span>{isUnlimited ? "Unlimited" : tenergy}</span>
+            </div>
           </div>
         </div>
       </header>
@@ -467,12 +468,12 @@ const Chat = ({ mode }: ChatProps) => {
           className={`transition-[transform,opacity] duration-300 ease-in-out ${
             galleryFullscreen ? "hidden" :
             isMobile
-              ? `absolute inset-y-12 left-0 z-40 w-64 overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
+              ? `absolute inset-y-0 left-0 z-40 w-72 max-w-[85vw] overflow-hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`
               : `relative hidden w-[var(--chat-sidebar-width)] shrink-0 sm:flex origin-left transition-all duration-300 ease-out ${sidebarOpen ? "pr-3 opacity-100 scale-x-100" : "pr-0 opacity-0 scale-x-95 pointer-events-none"}`
           }`}
         >
           <div
-            className={`w-full transition-all duration-300 ease-out ${
+            className={`h-full w-full transition-all duration-300 ease-out ${
               !isMobile && sidebarOpen ? "translate-x-0 opacity-100" : !isMobile ? "-translate-x-6 opacity-0" : ""
             }`}
           >
