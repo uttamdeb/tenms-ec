@@ -598,7 +598,7 @@ const Chat = ({ mode }: ChatProps) => {
                 </Button>
               </div>
             </div>
-            {galleryOpen && <ChatGallery mode={mode} />}
+            {galleryOpen && <ChatGallery key={`desktop-${mode}`} mode={mode} />}
           </aside>
         </div>
       </div>
@@ -621,7 +621,7 @@ const Chat = ({ mode }: ChatProps) => {
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4 [-webkit-overflow-scrolling:touch]">
-          {galleryOpen && <ChatGallery mode={mode} />}
+          {galleryOpen && <ChatGallery key={`mobile-${mode}`} mode={mode} />}
         </div>
       </div>
     </div>

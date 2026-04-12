@@ -173,10 +173,11 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
 
   const loadPage = useCallback(async (currentOffset: number) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) return { fetchedCount: 0, addedCount: 0 };
 
     const { data, error } = await supabase
       .from("chat_messages")
@@ -187,7 +188,7 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
       .order("created_at", { ascending: false })
       .range(currentOffset, currentOffset + PAGE_SIZE - 1);
 
-    if (error || !data) return;
+    if (error || !data) return { fetchedCount: 0, addedCount: 0 };
 
     const newItems: GalleryItem[] = [];
     for (const msg of data) {
@@ -197,12 +198,20 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
     setItems((prev) => currentOffset === 0 ? newItems : [...prev, ...newItems]);
     setHasMore(data.length === PAGE_SIZE);
     setOffset(currentOffset + data.length);
-  }, []);
+    return { fetchedCount: data.length, addedCount: newItems.length };
+  }, [mode]);
+
+  useEffect(() => {
+    loadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
 
   // Initial load
   useEffect(() => {
     setLoading(true);
+    setItems([]);
     setVisibleCount(RENDER_BATCH_SIZE);
+    setHasMore(true);
+    setOffset(0);
     loadPage(0).finally(() => setLoading(false));
   }, [loadPage, mode]);
 
@@ -220,9 +229,19 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
           return;
         }
 
-        if (!loadingMore && hasMore) {
+        if (!loadingMoreRef.current && hasMore) {
           setLoadingMore(true);
-          loadPage(offset).finally(() => setLoadingMore(false));
+          loadPage(offset)
+            .then(({ fetchedCount, addedCount }) => {
+              if (addedCount > 0) {
+                setVisibleCount((current) => Math.min(current + RENDER_BATCH_SIZE, current + addedCount));
+              }
+
+              if (fetchedCount === 0 || fetchedCount < PAGE_SIZE) {
+                return;
+              }
+            })
+            .finally(() => setLoadingMore(false));
         }
       },
       { threshold: 0.1 }
