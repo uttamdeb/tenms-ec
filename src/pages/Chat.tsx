@@ -448,31 +448,11 @@ const Chat = ({ mode }: ChatProps) => {
                       </p>
                     </div>
                   </div>
-                  <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:p-5">
-                    <span className="label-tech">{mode === "10ms" ? "Online revenue" : "Revenue collection"}</span>
-                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">
-                      {mode === "10ms"
-                        ? "Track Dec-Jan enrollment season bookings, monthly recognition windows, and FY26 revenue across OB, HSC, SSC, and bundled products."
-                        : "Track month-wise revenue collected amount since Jan 2026."}
-                    </p>
-                  </div>
-                  <div className="surface-card rounded-[1.5rem] p-4 shadow-sm sm:p-5">
-                    <span className="label-tech">Agent analysis</span>
-                    <p className="mt-5 text-base font-semibold sm:mt-8 sm:text-lg">
-                      {mode === "10ms"
-                        ? "Ask for renewal diagnosis, CAC questions, product-tier comparisons, and acquisition-funnel analysis."
-                        : "Generate summaries, compare branches, and validate operational data quickly."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="mx-auto mt-5 w-full max-w-5xl animate-in fade-in duration-700 delay-300 sm:mt-8">
-                <Suspense fallback={null}>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <Suspense fallback={null}>
                     <QueryGuide isBIUser={profile?.role === "BI"} />
                     <ReleaseNotes isBIUser={profile?.role === "BI"} />
-                  </div>
-                </Suspense>
+                  </Suspense>
+                </div>
               </div>
               <div className="mt-4 w-full animate-in fade-in duration-700 delay-500 sm:mt-6">
                 <SuggestedMessages mode={mode} onSelect={(msg) => sendMessage(msg)} />
