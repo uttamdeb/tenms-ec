@@ -36,6 +36,7 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   const { onCharactersUsed, hasEnoughTenergy = true, onAssistantMessageReady } = options;
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const currentSessionIdRef = useRef<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string | null>(null);
@@ -44,6 +45,39 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
   const thinkingDurationRef = useRef(0);
   const [userName, setUserName] = useState("user");
   const [userId, setUserId] = useState<string | null>(null);
+
+  const resetActiveSessionState = useCallback(() => {
+    setCurrentSessionId(null);
+    setMessages([]);
+    setPendingJobId(null);
+    setStreamingMessage(null);
+    setThinkingDurationSeconds(null);
+    thinkingDurationRef.current = 0;
+  }, []);
+
+  const getSessionForMode = useCallback(async (sessionId: string) => {
+    const cachedSession = sessions.find((item) => item.id === sessionId);
+    if (cachedSession) {
+      return cachedSession.mode === mode ? cachedSession : null;
+    }
+
+    const { data, error } = await supabase
+      .from("chat_sessions")
+      .select("id, mode, user_id, status, title, created_at, updated_at")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error validating session:", error);
+      return null;
+    }
+
+    if (!data || data.mode !== mode || data.user_id !== userId || data.status === "deleted") {
+      return null;
+    }
+
+    return data as ChatSession;
+  }, [mode, sessions, userId]);
 
   const animateAssistantMessage = useCallback(async (content: string) => {
     const normalizedContent = content ?? "";
@@ -117,8 +151,23 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
     if (userId) loadSessions();
   }, [userId, loadSessions]);
 
+  useEffect(() => {
+    if (!currentSessionId) return;
+
+    const sessionStillVisible = sessions.some((session) => session.id === currentSessionId);
+    if (!sessionStillVisible) {
+      resetActiveSessionState();
+    }
+  }, [currentSessionId, resetActiveSessionState, sessions]);
+
   // Load messages for current session
   const loadMessages = useCallback(async (sessionId: string) => {
+    const session = await getSessionForMode(sessionId);
+    if (!session) {
+      resetActiveSessionState();
+      return;
+    }
+
     const { data, error } = await supabase
       .from("chat_messages")
       .select("*")
@@ -131,7 +180,15 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       return;
     }
     setMessages((data || []) as ChatMessage[]);
-  }, [mode]);
+  }, [getSessionForMode, mode, resetActiveSessionState]);
+
+  useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
+
+  useEffect(() => {
+    resetActiveSessionState();
+  }, [mode, resetActiveSessionState]);
 
   useEffect(() => {
     if (currentSessionId) loadMessages(currentSessionId);
@@ -291,7 +348,16 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       return;
     }
 
-    let sessionId = currentSessionId;
+    let sessionId = currentSessionIdRef.current;
+    const activeSession = sessionId
+      ? sessions.find((session) => session.id === sessionId && session.mode === mode)
+      : null;
+
+    if (sessionId && !activeSession) {
+      sessionId = null;
+      resetActiveSessionState();
+    }
+
     if (!sessionId) {
       sessionId = await createSession();
       if (!sessionId) return;
@@ -390,11 +456,17 @@ export function useChat(mode: ChatMode, options: UseChatOptions = {}) {
       thinkingDurationRef.current = 0;
       toast.error(err instanceof Error ? err.message : "Failed to get response from agent");
     }
-  }, [userId, currentSessionId, userName, messages.length, createSession, hasEnoughTenergy, mode]);
+  }, [userId, userName, messages.length, createSession, hasEnoughTenergy, mode, resetActiveSessionState, sessions]);
 
   const selectSession = useCallback((sessionId: string) => {
+    const session = sessions.find((item) => item.id === sessionId);
+    if (!session || session.mode !== mode) {
+      resetActiveSessionState();
+      return;
+    }
+
     setCurrentSessionId(sessionId);
-  }, []);
+  }, [mode, resetActiveSessionState, sessions]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
     const { error } = await supabase
