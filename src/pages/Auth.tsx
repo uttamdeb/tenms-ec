@@ -318,6 +318,8 @@ const Auth = () => {
                 </svg>
                 Sign in with Google
               </Button>
+
+              <TenMSLoginButton disabled={loading} />
             </CardContent>
           </Card>
         </div>
