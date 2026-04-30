@@ -95,7 +95,6 @@ export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
         clientId={TENMS_CLIENT_ID}
         text="Sign in with 10 Minute School"
         theme="dark"
-        variant="outline"
         size="medium"
         onSuccess={handleSuccess}
         onError={(err) => {
