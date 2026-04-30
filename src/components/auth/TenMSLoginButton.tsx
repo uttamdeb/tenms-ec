@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-const TENMS_CLIENT_ID = "tenms_e597013ee371f84e95b395715107b4fd";
+const TENMS_CLIENT_ID = "tenms_e0508a637433a0a4d850f016fca8dd41";
 
 export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
   const [busy, setBusy] = useState(false);
