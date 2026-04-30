@@ -12,6 +12,7 @@ import Footer from "@/components/layout/Footer";
 import { runWithViewTransition } from "@/lib/viewTransitions";
 import { lovable } from "@/integrations/lovable/index";
 import tentenIcon from "@/assets/tenten-icon.png";
+import TenMSLoginButton from "@/components/auth/TenMSLoginButton";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -317,6 +318,8 @@ const Auth = () => {
                 </svg>
                 Sign in with Google
               </Button>
+
+              <TenMSLoginButton disabled={loading} />
             </CardContent>
           </Card>
         </div>
