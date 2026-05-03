@@ -25,10 +25,11 @@ export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
         email?: string;
         name?: string;
         picture?: string;
+        phone?: string;
       };
 
-      if (!u?.email) {
-        toast.error("10 Minute School did not return an email for this account.");
+      if (!u?.email && !u?.phone) {
+        toast.error("10 Minute School did not return an email or phone for this account.");
         return;
       }
 
