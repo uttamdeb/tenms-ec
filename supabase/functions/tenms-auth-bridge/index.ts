@@ -14,11 +14,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Try a few likely userinfo endpoints in order.
+// Correct userinfo endpoint (verified working).
 const USERINFO_CANDIDATES = [
-  "https://auth.10minuteschool.com/oauth/userinfo",
-  "https://auth.10minuteschool.com/userinfo",
-  "https://auth.10minuteschool.com/oauth2/userinfo",
+  "https://api.10minuteschool.com/auth/v1/oauth/userinfo",
 ];
 
 interface BridgeRequest {
@@ -28,6 +26,7 @@ interface BridgeRequest {
     email?: string;
     name?: string;
     picture?: string;
+    phone?: string;
   };
 }
 
@@ -35,8 +34,10 @@ interface TenMSUser {
   sub?: string;
   name?: string;
   email?: string;
+  phone?: string;
   picture?: string;
   email_verified?: boolean;
+  phone_verified?: boolean;
 }
 
 function json(body: unknown, status = 200) {
