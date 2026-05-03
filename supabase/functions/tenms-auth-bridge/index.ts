@@ -14,11 +14,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Try a few likely userinfo endpoints in order.
+// Correct userinfo endpoint (verified working).
 const USERINFO_CANDIDATES = [
-  "https://auth.10minuteschool.com/oauth/userinfo",
-  "https://auth.10minuteschool.com/userinfo",
-  "https://auth.10minuteschool.com/oauth2/userinfo",
+  "https://api.10minuteschool.com/auth/v1/oauth/userinfo",
 ];
 
 interface BridgeRequest {
@@ -28,6 +26,7 @@ interface BridgeRequest {
     email?: string;
     name?: string;
     picture?: string;
+    phone?: string;
   };
 }
 
@@ -35,8 +34,10 @@ interface TenMSUser {
   sub?: string;
   name?: string;
   email?: string;
+  phone?: string;
   picture?: string;
   email_verified?: boolean;
+  phone_verified?: boolean;
 }
 
 function json(body: unknown, status = 200) {
@@ -78,10 +79,10 @@ Deno.serve(async (req) => {
   if (!accessToken) return json({ error: "missing_access_token" }, 400);
 
   // Verify token by calling userinfo. Fall back to client-supplied profile
-  // ONLY if all userinfo endpoints fail AND we have an email (best effort).
+  // ONLY if userinfo fails (best effort).
   let user = await fetchUserInfo(accessToken);
-  if (!user || !user.email) {
-    if (profile?.email) {
+  if (!user || (!user.email && !user.phone)) {
+    if (profile?.email || profile?.phone) {
       console.warn(
         "[tenms-auth-bridge] userinfo unavailable, falling back to client profile",
       );
@@ -90,14 +91,23 @@ Deno.serve(async (req) => {
         email: profile.email,
         name: profile.name,
         picture: profile.picture,
+        phone: profile.phone,
       };
     } else {
       return json({ error: "userinfo_failed" }, 400);
     }
   }
 
-  const email = user.email!.toLowerCase();
-  const fullName = user.name ?? email.split("@")[0];
+  // Prefer email; if missing, synthesize one from phone so Supabase auth works.
+  const realEmail = user.email?.toLowerCase() ?? null;
+  const phone = user.phone ?? null;
+  const normalizedPhone = phone ? phone.replace(/[^0-9]/g, "") : null;
+  const email =
+    realEmail ?? (normalizedPhone ? `${normalizedPhone}@tenms.local` : null);
+  if (!email) {
+    return json({ error: "no_email_or_phone" }, 400);
+  }
+  const fullName = user.name ?? (realEmail ? realEmail.split("@")[0] : (normalizedPhone ?? "User"));
   const avatarUrl = user.picture ?? null;
   const tenmsSub = user.sub ?? null;
 
@@ -139,6 +149,7 @@ Deno.serve(async (req) => {
         full_name: fullName,
         avatar_url: avatarUrl,
         tenms_sub: tenmsSub,
+        tenms_phone: phone,
         provider: "tenms",
       },
     });
@@ -153,6 +164,7 @@ Deno.serve(async (req) => {
         full_name: fullName,
         avatar_url: avatarUrl,
         tenms_sub: tenmsSub,
+        tenms_phone: phone,
       },
     });
   }
@@ -170,7 +182,7 @@ Deno.serve(async (req) => {
   try {
     await admin
       .from("profiles")
-      .update({ full_name: fullName, avatar_url: avatarUrl, email })
+      .update({ full_name: fullName, avatar_url: avatarUrl, email: realEmail ?? email })
       .eq("id", userId);
   } catch (e) {
     console.warn("[tenms-auth-bridge] profile sync failed (non-fatal)", e);
