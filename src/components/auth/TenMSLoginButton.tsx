@@ -45,6 +45,7 @@ export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
               email: u.email,
               name: u.name,
               picture: u.picture,
+              phone: u.phone,
             },
           },
         },
