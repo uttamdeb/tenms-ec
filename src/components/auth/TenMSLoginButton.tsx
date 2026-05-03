@@ -1,18 +1,14 @@
-import { useMemo, useState } from "react";
-import { LoginButton, TenMSAuth } from "@tenminuteschool/auth-react";
+import { useState } from "react";
+import { LoginButton } from "@tenminuteschool/auth-react";
 import type { AuthResponse } from "@tenminuteschool/auth-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-
-const TENMS_CLIENT_ID = "tenms_97b90a8f9c72ba6c3dc777c37df5ea9d";
+import { tenmsAuth, TENMS_CLIENT_ID } from "@/lib/tenmsAuth";
 
 export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
   const [busy, setBusy] = useState(false);
-  const auth = useMemo(
-    () => new TenMSAuth({ clientId: TENMS_CLIENT_ID, storage: "localStorage" }),
-    [],
-  );
+  const auth = tenmsAuth;
 
   const handleSuccess = async (response: AuthResponse) => {
     setBusy(true);
