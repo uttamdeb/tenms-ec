@@ -34,6 +34,15 @@ const ProfileDropdown = ({ profile, onUpdateProfile, onUploadAvatar }: ProfileDr
     .slice(0, 2);
 
   const handleLogout = async () => {
+    // Best-effort 10MS SDK logout (revokes token + clears its storage).
+    try {
+      const { tenmsAuth } = await import("@/lib/tenmsAuth");
+      if (tenmsAuth.isLoggedIn?.()) {
+        await tenmsAuth.logout();
+      }
+    } catch (e) {
+      console.warn("[10ms] sdk logout failed", e);
+    }
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Error signing out");
