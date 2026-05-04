@@ -120,7 +120,17 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Find existing user by email (link-by-email per product decision).
+  console.log("[tenms-auth-bridge] resolving user", {
+    hasRealEmail: !!realEmail,
+    hasPhone: !!phone,
+    syntheticEmail: !realEmail,
+    email,
+    tenmsSub,
+  });
+
+  // Find existing user. Match by:
+  //   1) tenms_sub in user_metadata (most stable identity)
+  //   2) email match (handles real-email and synthetic-phone-email users)
   let userId: string | null = null;
   try {
     let page = 1;
@@ -128,7 +138,11 @@ Deno.serve(async (req) => {
     while (page <= 25) {
       const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
       if (error) throw error;
-      const match = data.users.find((u) => u.email?.toLowerCase() === email);
+      const bySub = tenmsSub
+        ? data.users.find((u) => (u.user_metadata as { tenms_sub?: string } | null)?.tenms_sub === tenmsSub)
+        : undefined;
+      const byEmail = data.users.find((u) => u.email?.toLowerCase() === email);
+      const match = bySub ?? byEmail;
       if (match) {
         userId = match.id;
         break;
@@ -142,6 +156,7 @@ Deno.serve(async (req) => {
   }
 
   if (!userId) {
+    console.log("[tenms-auth-bridge] creating new user", { email });
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
@@ -159,7 +174,12 @@ Deno.serve(async (req) => {
     }
     userId = created.user.id;
   } else {
-    await admin.auth.admin.updateUserById(userId, {
+    console.log("[tenms-auth-bridge] updating existing user", { userId });
+    // Ensure email is confirmed AND email field is set (may be missing on older
+    // phone-only users). Without confirmed email, generateLink magiclink fails.
+    const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+      email,
+      email_confirm: true,
       user_metadata: {
         full_name: fullName,
         avatar_url: avatarUrl,
@@ -167,6 +187,9 @@ Deno.serve(async (req) => {
         tenms_phone: phone,
       },
     });
+    if (updErr) {
+      console.warn("[tenms-auth-bridge] updateUserById failed (non-fatal)", updErr);
+    }
   }
 
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
@@ -174,8 +197,13 @@ Deno.serve(async (req) => {
     email,
   });
   if (linkErr || !linkData?.properties?.hashed_token) {
-    console.error("[tenms-auth-bridge] generateLink failed", linkErr);
-    return json({ error: "generate_link_failed", detail: linkErr?.message }, 500);
+    console.error("[tenms-auth-bridge] generateLink failed", {
+      message: linkErr?.message,
+      status: (linkErr as { status?: number } | null)?.status,
+      email,
+      userId,
+    });
+    return json({ error: "generate_link_failed", detail: linkErr?.message ?? "no token returned" }, 500);
   }
 
   // Best-effort profile sync (handle_new_user trigger handles inserts).
