@@ -23,6 +23,7 @@ const EMAIL_TO_BRAND: Record<string, "ayman" | "mishal" | "niloy" | "raied" | "m
   "mim@10minuteschool.com": "mim",
   "rabeya.mim@10minuteschool.com": "mim",
   "farhan@10minuteschool.com": "farhan",
+  "farhanurrahaman27@gmail.com": "farhan",
   "farhana@10minuteschool.com": "farhana",
   "uttam@10minuteschool.com": "uttam",
   "uttamdeb670@outlook.com": "uttam",
