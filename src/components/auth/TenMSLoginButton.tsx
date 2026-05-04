@@ -22,9 +22,10 @@ export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
         name?: string;
         picture?: string;
         phone?: string;
+        contact?: string;
       };
 
-      if (!u?.email && !u?.phone) {
+      if (!u?.email?.trim() && !u?.phone?.trim() && !u?.contact?.trim()) {
         toast.error("10 Minute School did not return an email or phone for this account.");
         return;
       }
@@ -41,15 +42,18 @@ export function TenMSLoginButton({ disabled }: { disabled?: boolean }) {
               email: u.email,
               name: u.name,
               picture: u.picture,
-              phone: u.phone,
+              phone: u.phone ?? u.contact,
+              contact: u.contact,
             },
           },
         },
       );
       if (error || !data?.token_hash) {
         console.error("[10ms] bridge failed", error, data);
+        const bridgeError = data as { error?: string; detail?: string } | undefined;
         toast.error(
-          (data as { error?: string } | undefined)?.error ??
+          bridgeError?.detail ??
+            bridgeError?.error ??
             error?.message ??
             "10 Minute School sign-in failed",
         );
