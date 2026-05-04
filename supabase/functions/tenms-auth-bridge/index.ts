@@ -27,6 +27,7 @@ interface BridgeRequest {
     name?: string;
     picture?: string;
     phone?: string;
+    contact?: string;
   };
 }
 
@@ -35,9 +36,15 @@ interface TenMSUser {
   name?: string;
   email?: string;
   phone?: string;
+  contact?: string;
   picture?: string;
   email_verified?: boolean;
   phone_verified?: boolean;
+}
+
+function cleanString(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
 function json(body: unknown, status = 200) {
@@ -76,13 +83,16 @@ Deno.serve(async (req) => {
   }
 
   const { accessToken, profile } = body;
-  if (!accessToken) return json({ error: "missing_access_token" }, 400);
+  if (!accessToken) {
+    console.warn("[tenms-auth-bridge] missing access token");
+    return json({ error: "missing_access_token" }, 400);
+  }
 
   // Verify token by calling userinfo. Fall back to client-supplied profile
   // ONLY if userinfo fails (best effort).
   let user = await fetchUserInfo(accessToken);
-  if (!user || (!user.email && !user.phone)) {
-    if (profile?.email || profile?.phone) {
+  if (!user || (!cleanString(user.email) && !cleanString(user.phone) && !cleanString(user.contact))) {
+    if (cleanString(profile?.email) || cleanString(profile?.phone) || cleanString(profile?.contact)) {
       console.warn(
         "[tenms-auth-bridge] userinfo unavailable, falling back to client profile",
       );
@@ -91,16 +101,17 @@ Deno.serve(async (req) => {
         email: profile.email,
         name: profile.name,
         picture: profile.picture,
-        phone: profile.phone,
+        phone: profile.phone ?? profile.contact,
       };
     } else {
+      console.warn("[tenms-auth-bridge] userinfo failed without usable profile fallback");
       return json({ error: "userinfo_failed" }, 400);
     }
   }
 
   // Prefer email; if missing, synthesize one from phone so Supabase auth works.
-  const realEmail = user.email?.toLowerCase() ?? null;
-  const phone = user.phone ?? null;
+  const realEmail = cleanString(user.email)?.toLowerCase() ?? null;
+  const phone = cleanString(user.phone) ?? cleanString(user.contact);
   const normalizedPhone = phone ? phone.replace(/[^0-9]/g, "") : null;
   const email =
     realEmail ?? (normalizedPhone ? `${normalizedPhone}@tenms.local` : null);
