@@ -84,269 +84,6 @@ export type Database = {
           },
         ]
       }
-      dashboards: {
-        Row: {
-          archived_at: string | null
-          created_at: string
-          description: string | null
-          filters: Json
-          id: string
-          layout: Json
-          mode: string
-          name: string
-          settings: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          archived_at?: string | null
-          created_at?: string
-          description?: string | null
-          filters?: Json
-          id?: string
-          layout?: Json
-          mode?: string
-          name: string
-          settings?: Json
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          archived_at?: string | null
-          created_at?: string
-          description?: string | null
-          filters?: Json
-          id?: string
-          layout?: Json
-          mode?: string
-          name?: string
-          settings?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      dashboard_elements: {
-        Row: {
-          content: Json
-          created_at: string
-          dashboard_id: string
-          element_type: string
-          id: string
-          layout: Json
-          mode: string
-          position: number
-          query_config: Json
-          settings: Json
-          source_message_id: string | null
-          source_query_run_id: string | null
-          source_sql_run_id: string | null
-          title: string
-          updated_at: string
-          user_id: string
-          visual_spec: Json
-        }
-        Insert: {
-          content?: Json
-          created_at?: string
-          dashboard_id: string
-          element_type: string
-          id?: string
-          layout?: Json
-          mode?: string
-          position?: number
-          query_config?: Json
-          settings?: Json
-          source_message_id?: string | null
-          source_query_run_id?: string | null
-          source_sql_run_id?: string | null
-          title: string
-          updated_at?: string
-          user_id: string
-          visual_spec?: Json
-        }
-        Update: {
-          content?: Json
-          created_at?: string
-          dashboard_id?: string
-          element_type?: string
-          id?: string
-          layout?: Json
-          mode?: string
-          position?: number
-          query_config?: Json
-          settings?: Json
-          source_message_id?: string | null
-          source_query_run_id?: string | null
-          source_sql_run_id?: string | null
-          title?: string
-          updated_at?: string
-          user_id?: string
-          visual_spec?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dashboard_elements_dashboard_id_fkey"
-            columns: ["dashboard_id"]
-            isOneToOne: false
-            referencedRelation: "dashboards"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dashboard_elements_source_message_id_fkey"
-            columns: ["source_message_id"]
-            isOneToOne: false
-            referencedRelation: "chat_messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dashboard_elements_source_query_run_id_fkey"
-            columns: ["source_query_run_id"]
-            isOneToOne: false
-            referencedRelation: "agent_query_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dashboard_elements_source_sql_run_id_fkey"
-            columns: ["source_sql_run_id"]
-            isOneToOne: false
-            referencedRelation: "agent_sql_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dashboard_element_cache: {
-        Row: {
-          created_at: string
-          data: Json
-          element_id: string
-          executed_sql: string | null
-          filter_hash: string
-          filters: Json
-          id: string
-          refreshed_at: string
-          stale_after: string | null
-          status: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          data?: Json
-          element_id: string
-          executed_sql?: string | null
-          filter_hash: string
-          filters?: Json
-          id?: string
-          refreshed_at?: string
-          stale_after?: string | null
-          status?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          data?: Json
-          element_id?: string
-          executed_sql?: string | null
-          filter_hash?: string
-          filters?: Json
-          id?: string
-          refreshed_at?: string
-          stale_after?: string | null
-          status?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dashboard_element_cache_element_id_fkey"
-            columns: ["element_id"]
-            isOneToOne: false
-            referencedRelation: "dashboard_elements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dashboard_refresh_jobs: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          dashboard_id: string
-          element_ids: string[]
-          error: string | null
-          filters: Json
-          id: string
-          mode: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          dashboard_id: string
-          element_ids?: string[]
-          error?: string | null
-          filters?: Json
-          id?: string
-          mode?: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          dashboard_id?: string
-          element_ids?: string[]
-          error?: string | null
-          filters?: Json
-          id?: string
-          mode?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dashboard_refresh_jobs_dashboard_id_fkey"
-            columns: ["dashboard_id"]
-            isOneToOne: false
-            referencedRelation: "dashboards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      agent_sql_runs: {
-        Row: {
-          bq_result: string
-          created_at: string
-          executed_sql: string
-          id: string
-          message_id: string
-        }
-        Insert: {
-          bq_result: string
-          created_at?: string
-          executed_sql: string
-          id?: string
-          message_id: string
-        }
-        Update: {
-          bq_result?: string
-          created_at?: string
-          executed_sql?: string
-          id?: string
-          message_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_sql_runs_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "chat_messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       agent_query_runs: {
         Row: {
           agent_sql_run_id: string | null
@@ -400,6 +137,38 @@ export type Database = {
           },
           {
             foreignKeyName: "agent_query_runs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_sql_runs: {
+        Row: {
+          bq_result: string
+          created_at: string
+          executed_sql: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          bq_result: string
+          created_at?: string
+          executed_sql: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          bq_result?: string
+          created_at?: string
+          executed_sql?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_sql_runs_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "chat_messages"
@@ -499,6 +268,237 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_element_cache: {
+        Row: {
+          created_at: string
+          data: Json
+          element_id: string
+          executed_sql: string | null
+          filter_hash: string
+          filters: Json
+          id: string
+          refreshed_at: string
+          stale_after: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          element_id: string
+          executed_sql?: string | null
+          filter_hash: string
+          filters?: Json
+          id?: string
+          refreshed_at?: string
+          stale_after?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          element_id?: string
+          executed_sql?: string | null
+          filter_hash?: string
+          filters?: Json
+          id?: string
+          refreshed_at?: string
+          stale_after?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_element_cache_element_id_fkey"
+            columns: ["element_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_elements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_elements: {
+        Row: {
+          content: Json
+          created_at: string
+          dashboard_id: string
+          element_type: string
+          id: string
+          layout: Json
+          mode: string
+          position: number
+          query_config: Json
+          settings: Json
+          source_message_id: string | null
+          source_query_run_id: string | null
+          source_sql_run_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          visual_spec: Json
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          dashboard_id: string
+          element_type: string
+          id?: string
+          layout?: Json
+          mode?: string
+          position?: number
+          query_config?: Json
+          settings?: Json
+          source_message_id?: string | null
+          source_query_run_id?: string | null
+          source_sql_run_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          visual_spec?: Json
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          dashboard_id?: string
+          element_type?: string
+          id?: string
+          layout?: Json
+          mode?: string
+          position?: number
+          query_config?: Json
+          settings?: Json
+          source_message_id?: string | null
+          source_query_run_id?: string | null
+          source_sql_run_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          visual_spec?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_elements_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboard_elements_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboard_elements_source_query_run_id_fkey"
+            columns: ["source_query_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_query_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboard_elements_source_sql_run_id_fkey"
+            columns: ["source_sql_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_sql_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_refresh_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dashboard_id: string
+          element_ids: string[]
+          error: string | null
+          filters: Json
+          id: string
+          mode: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dashboard_id: string
+          element_ids?: string[]
+          error?: string | null
+          filters?: Json
+          id?: string
+          mode?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dashboard_id?: string
+          element_ids?: string[]
+          error?: string | null
+          filters?: Json
+          id?: string
+          mode?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_refresh_jobs_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboards: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          description: string | null
+          filters: Json
+          id: string
+          layout: Json
+          mode: string
+          name: string
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          filters?: Json
+          id?: string
+          layout?: Json
+          mode?: string
+          name: string
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          filters?: Json
+          id?: string
+          layout?: Json
+          mode?: string
+          name?: string
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -552,7 +552,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_current_user_bi: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
