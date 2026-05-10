@@ -57,3 +57,93 @@ CREATE TABLE IF NOT EXISTS public.daily_usage (
   characters_used BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id, usage_date)
 );
+
+-- 6. dashboards
+CREATE TABLE IF NOT EXISTS public.dashboards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  mode TEXT NOT NULL DEFAULT 'ec',
+  name TEXT NOT NULL,
+  description TEXT,
+  filters JSONB NOT NULL DEFAULT '{"dateRange":{"preset":"last_7_days"}}'::jsonb,
+  layout JSONB NOT NULL DEFAULT '{}'::jsonb,
+  settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  archived_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS dashboards_user_mode_updated_at_idx
+  ON public.dashboards (user_id, mode, updated_at DESC)
+  WHERE archived_at IS NULL;
+
+-- 7. dashboard_elements
+CREATE TABLE IF NOT EXISTS public.dashboard_elements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  dashboard_id UUID NOT NULL REFERENCES public.dashboards(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  mode TEXT NOT NULL DEFAULT 'ec',
+  element_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  source_message_id UUID REFERENCES public.chat_messages(id) ON DELETE SET NULL,
+  source_sql_run_id UUID REFERENCES public.agent_sql_runs(id) ON DELETE SET NULL,
+  source_query_run_id UUID,
+  visual_spec JSONB NOT NULL DEFAULT '{}'::jsonb,
+  query_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  layout JSONB NOT NULL DEFAULT '{"x":0,"y":0,"w":6,"h":4}'::jsonb,
+  settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS dashboard_elements_dashboard_position_idx
+  ON public.dashboard_elements (dashboard_id, position, created_at);
+
+-- 8. dashboard_element_cache
+CREATE TABLE IF NOT EXISTS public.dashboard_element_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  element_id UUID NOT NULL REFERENCES public.dashboard_elements(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  filter_hash TEXT NOT NULL,
+  filters JSONB NOT NULL DEFAULT '{}'::jsonb,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  executed_sql TEXT,
+  status TEXT NOT NULL DEFAULT 'fresh',
+  refreshed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  stale_after TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  UNIQUE (element_id, filter_hash)
+);
+
+-- 9. dashboard_refresh_jobs
+CREATE TABLE IF NOT EXISTS public.dashboard_refresh_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  dashboard_id UUID NOT NULL REFERENCES public.dashboards(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  mode TEXT NOT NULL DEFAULT 'ec',
+  status TEXT NOT NULL DEFAULT 'queued',
+  filters JSONB NOT NULL DEFAULT '{}'::jsonb,
+  element_ids UUID[] NOT NULL DEFAULT '{}'::uuid[],
+  error TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- 10. agent_query_runs
+CREATE TABLE IF NOT EXISTS public.agent_query_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id UUID NOT NULL REFERENCES public.chat_messages(id) ON DELETE CASCADE,
+  agent_sql_run_id UUID REFERENCES public.agent_sql_runs(id) ON DELETE SET NULL,
+  query_index INTEGER NOT NULL DEFAULT 1,
+  raw_sql TEXT NOT NULL,
+  parameterized_sql TEXT,
+  date_binding JSONB NOT NULL DEFAULT '{}'::jsonb,
+  result_schema JSONB NOT NULL DEFAULT '[]'::jsonb,
+  result_rows JSONB NOT NULL DEFAULT '[]'::jsonb,
+  result_text TEXT,
+  n8n_execution_id TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);

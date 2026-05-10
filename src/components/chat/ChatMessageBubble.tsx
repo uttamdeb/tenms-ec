@@ -3,7 +3,7 @@ import { Children, isValidElement, useMemo, useRef, useState, type ReactNode, la
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp, Code, Database } from "lucide-react";
+import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp, Code, Database, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
+import type { DashboardMode, DashboardPinPayload } from "@/lib/dashboardTypes";
 
 const MarkdownChartLazy = lazy(() => import("@/components/chat/MarkdownChartLazy").then((m) => ({ default: m.MarkdownChart })));
 
@@ -78,10 +79,28 @@ const parseMarkdownTable = (children: ReactNode) => {
   };
 };
 
-const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: string }) => {
+const rowsToMarkdown = (rows: string[][]) => {
+  if (rows.length === 0) return "";
+  const [header, ...body] = rows;
+  const separator = header.map(() => "---");
+  return [header, separator, ...body]
+    .map((row) => `| ${row.join(" | ")} |`)
+    .join("\n");
+};
+
+const MarkdownTable = memo(({
+  children,
+  title,
+  onAddToDashboard,
+}: {
+  children: ReactNode;
+  title?: string;
+  onAddToDashboard?: (title: string | undefined, rows: string[][], tableMarkdown: string) => void;
+}) => {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const { header, body, rows } = useMemo(() => parseMarkdownTable(children), [children]);
+  const tableMarkdown = useMemo(() => rowsToMarkdown(rows), [rows]);
 
   const handleCopyTable = async () => {
     const tableText = rows.map((row) => row.join("\t")).join("\n");
@@ -126,6 +145,23 @@ const MarkdownTable = memo(({ children, title }: { children: ReactNode; title?: 
         )}
         <TooltipProvider delayDuration={150}>
           <div className="flex items-center gap-0.5">
+          {onAddToDashboard && tableMarkdown && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+                  onClick={() => onAddToDashboard(title, rows, tableMarkdown)}
+                  aria-label="Add table to dashboard"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add to dashboard</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -236,7 +272,10 @@ interface ChatMessageBubbleProps {
   userRole?: string | null;
   executed_sql?: string | null;
   bq_result?: string | null;
+  sourceSqlRunId?: string | null;
   thinkingDuration?: number;
+  mode?: DashboardMode;
+  onAddToDashboard?: (payload: DashboardPinPayload) => void;
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
 }
 
@@ -250,6 +289,9 @@ interface AssistantActionBarProps {
   userRole?: string | null;
   executed_sql?: string | null;
   bq_result?: string | null;
+  sourceSqlRunId?: string | null;
+  mode?: DashboardMode;
+  onAddToDashboard?: (payload: DashboardPinPayload) => void;
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
 }
 
@@ -263,6 +305,9 @@ const AssistantActionBar = memo(({
   userRole,
   executed_sql,
   bq_result,
+  sourceSqlRunId,
+  mode = "ec",
+  onAddToDashboard,
   onFeedbackChange,
 }: AssistantActionBarProps) => {
   const isBIUser = userRole === "BI";
@@ -308,6 +353,27 @@ const AssistantActionBar = memo(({
   const handleCopyBqResult = async () => {
     if (!bq_result) return;
     await copyToClipboard(bq_result, "BigQuery result copied", setBqCopied);
+  };
+
+  const handleAddResponseToDashboard = () => {
+    if (!onAddToDashboard) return;
+    const firstHeading = normalizedContent.match(/^#{1,4}\s+(.+)$/m)?.[1]?.replace(/\*\*/g, "").trim();
+    onAddToDashboard({
+      type: "text",
+      mode,
+      title: firstHeading || "Assistant response",
+      sourceMessageId: id,
+      sourceSqlRunId,
+      content: {
+        text: normalizedContent,
+        rawMarkdown: normalizedContent,
+      },
+      queryConfig: {
+        source: "chat_response",
+        executedSql: executed_sql ?? null,
+        refreshable: Boolean(sourceSqlRunId),
+      },
+    });
   };
 
   const handleLike = async () => {
@@ -436,6 +502,24 @@ const AssistantActionBar = memo(({
             <TooltipContent>{debugCopied ? "Copied debug info" : "Copy debug info"}</TooltipContent>
           </Tooltip>
 
+          {isBIUser && onAddToDashboard && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  onClick={handleAddResponseToDashboard}
+                  aria-label="Add response to dashboard"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add to dashboard</TooltipContent>
+            </Tooltip>
+          )}
+
           {isBIUser && executed_sql && bq_result && (
             <>
               <Tooltip>
@@ -515,7 +599,10 @@ const ChatMessageBubble = memo(({
   userRole,
   executed_sql,
   bq_result,
+  sourceSqlRunId,
   thinkingDuration,
+  mode = "ec",
+  onAddToDashboard,
   onFeedbackChange,
 }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
@@ -588,7 +675,42 @@ const ChatMessageBubble = memo(({
 
                       if (isChartSpec(parsed)) {
                         return (
-                          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+                          <div className="relative w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+                            {onAddToDashboard && (
+                              <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-3 top-3 z-10 h-8 w-8 rounded-full bg-background/70 text-muted-foreground backdrop-blur hover:bg-primary/15 hover:text-primary"
+                                      onClick={() => onAddToDashboard({
+                                        type: "chart",
+                                        mode,
+                                        title: parsed.title,
+                                        sourceMessageId: id,
+                                        sourceSqlRunId,
+                                        visualSpec: parsed,
+                                        content: {
+                                          chartSpec: parsed,
+                                          rawMarkdown: codeContent,
+                                        },
+                                        queryConfig: {
+                                          source: "chat_chart",
+                                          executedSql: executed_sql ?? null,
+                                          refreshable: Boolean(sourceSqlRunId),
+                                        },
+                                      })}
+                                      aria-label="Add chart to dashboard"
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Add to dashboard</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                             <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground"><img src={tentenGlasses} alt="Loading chart" className="h-12 w-12 object-contain opacity-90" /><span>Loading chart...</span></div>}>
                               <MarkdownChartLazy spec={parsed} />
                             </Suspense>
@@ -637,7 +759,27 @@ const ChatMessageBubble = memo(({
                   lastHeadingRef.current = "";
                   return (
                     <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
-                      <MarkdownTable title={title || undefined}>{children}</MarkdownTable>
+                      <MarkdownTable
+                        title={title || undefined}
+                        onAddToDashboard={onAddToDashboard ? (tableTitle, rows, tableMarkdown) => onAddToDashboard({
+                          type: "table",
+                          mode,
+                          title: tableTitle || "Pinned table",
+                          sourceMessageId: id,
+                          sourceSqlRunId,
+                          content: {
+                            tableMarkdown,
+                            rows,
+                          },
+                          queryConfig: {
+                            source: "chat_table",
+                            executedSql: executed_sql ?? null,
+                            refreshable: Boolean(sourceSqlRunId),
+                          },
+                        }) : undefined}
+                      >
+                        {children}
+                      </MarkdownTable>
                     </div>
                   );
                 },
@@ -676,6 +818,9 @@ const ChatMessageBubble = memo(({
             userRole={userRole}
             executed_sql={executed_sql}
             bq_result={bq_result}
+            sourceSqlRunId={sourceSqlRunId}
+            mode={mode}
+            onAddToDashboard={onAddToDashboard}
             onFeedbackChange={onFeedbackChange}
           />
         )}
@@ -703,7 +848,10 @@ const ChatMessageBubble = memo(({
     && prevProps.userRole === nextProps.userRole
     && prevProps.executed_sql === nextProps.executed_sql
     && prevProps.bq_result === nextProps.bq_result
-    && prevProps.thinkingDuration === nextProps.thinkingDuration;
+    && prevProps.sourceSqlRunId === nextProps.sourceSqlRunId
+    && prevProps.thinkingDuration === nextProps.thinkingDuration
+    && prevProps.mode === nextProps.mode
+    && prevProps.onAddToDashboard === nextProps.onAddToDashboard;
 });
 
 export default ChatMessageBubble;

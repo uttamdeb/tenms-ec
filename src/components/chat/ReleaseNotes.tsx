@@ -77,7 +77,7 @@ const DEFAULT_NOTES = `# 10MS Data Agent — Release Notes
 ### Fixes
 - Fixed pie chart labels showing numeric values instead of category names.
 - Fixed excess whitespace below bar and line charts.
-- Fixed new chart types (scatter, horizontal\_bar, stacked\_bar, area, stacked\_area, donut) rendering as raw JSON instead of visualizations.
+- Fixed new chart types (scatter, horizontal_bar, stacked_bar, area, stacked_area, donut) rendering as raw JSON instead of visualizations.
 - Fixed mobile gallery being clipped inside overflow-hidden container.
 - Fixed mobile gallery horizontal swipe for wide tables and charts.
 - Fixed theme submenu in profile dropdown not opening reliably on touch devices (replaced with dialog).

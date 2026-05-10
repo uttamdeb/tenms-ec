@@ -6,7 +6,7 @@ import { mirror, mirrorEnabled } from './mirrorClient';
  */
 function mirrorWrite(
   table: string,
-  operation: 'insert' | 'upsert' | 'update',
+  operation: 'insert' | 'upsert' | 'update' | 'delete',
   payload: Record<string, unknown> | Record<string, unknown>[],
   options?: { onConflict?: string; eqColumn?: string; eqValue?: unknown },
 ) {
@@ -19,9 +19,11 @@ function mirrorWrite(
         query = mirror.from(table).insert(payload);
       } else if (operation === 'upsert') {
         query = mirror.from(table).upsert(payload, options?.onConflict ? { onConflict: options.onConflict } : undefined);
-      } else {
+      } else if (operation === 'update') {
         // update — requires eq filter
         query = mirror.from(table).update(payload).eq(options!.eqColumn!, options!.eqValue!);
+      } else {
+        query = mirror.from(table).delete().eq(options!.eqColumn!, options!.eqValue!);
       }
       const { error } = await query;
       if (error) console.warn(`[mirror] ${operation} ${table}:`, error.message);
@@ -43,4 +45,8 @@ export function mirrorUpsert(table: string, payload: Record<string, unknown> | R
 
 export function mirrorUpdate(table: string, payload: Record<string, unknown>, eqColumn: string, eqValue: unknown) {
   mirrorWrite(table, 'update', payload, { eqColumn, eqValue });
+}
+
+export function mirrorDelete(table: string, eqColumn: string, eqValue: unknown) {
+  mirrorWrite(table, 'delete', {}, { eqColumn, eqValue });
 }

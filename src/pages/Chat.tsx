@@ -15,10 +15,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "next-themes";
-import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, X, Maximize2, Minimize2, ChevronDown } from "lucide-react";
+import { Loader2, ArrowLeft, PanelLeftClose, PanelLeft, Plus, Zap, LayoutGrid, LayoutDashboard, X, Maximize2, Minimize2, ChevronDown } from "lucide-react";
 import ChatGallery from "@/components/chat/ChatGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRef, useCallback, lazy, Suspense } from "react";
+import { AddToDashboardDialog } from "@/components/dashboard/AddToDashboardDialog";
+import { useDashboards } from "@/hooks/useDashboards";
+import { getDashboardPath, type DashboardPinPayload } from "@/lib/dashboardTypes";
 
 type ChatMode = "ec" | "10ms";
 
@@ -98,9 +101,10 @@ const Chat = ({ mode }: ChatProps) => {
   const galleryResizing = useRef(false);
   const [sidebarWidth, setSidebarWidth] = useState(288); // 18rem default
   const sidebarResizing = useRef(false);
-  const [sqlRunData, setSqlRunData] = useState<Record<string, { executed_sql: string; bq_result: string }>>({});
+  const [sqlRunData, setSqlRunData] = useState<Record<string, { id: string; executed_sql: string; bq_result: string }>>({});
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
   const [thoughtDurations, setThoughtDurations] = useState<Record<string, number>>({});
+  const [dashboardPinPayload, setDashboardPinPayload] = useState<DashboardPinPayload | null>(null);
   const [streamingPreviewMeta, setStreamingPreviewMeta] = useState<{ messageId: string | null; thinkingDuration: number | null }>({
     messageId: null,
     thinkingDuration: null,
@@ -109,6 +113,8 @@ const Chat = ({ mode }: ChatProps) => {
   const { theme } = useTheme();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile, updateProfile, uploadAvatar } = useProfile();
+  const isBIUser = profile?.role === "BI";
+  const dashboardStore = useDashboards(mode, isBIUser);
   const { tenergy, isUnlimited, hasEnoughTenergy, addUsage } = useTenergy();
   const userBranding = getUserBranding(profile?.email, theme);
 
@@ -197,13 +203,14 @@ const Chat = ({ mode }: ChatProps) => {
       const messageIds = assistantMessages.map(m => m.id);
       const { data } = await supabase
         .from("agent_sql_runs")
-        .select("message_id, executed_sql, bq_result")
+        .select("id, message_id, executed_sql, bq_result")
         .in("message_id", messageIds);
 
       if (data) {
-        const dataByMessageId: Record<string, { executed_sql: string; bq_result: string }> = {};
+        const dataByMessageId: Record<string, { id: string; executed_sql: string; bq_result: string }> = {};
         data.forEach(row => {
           dataByMessageId[row.message_id] = {
+            id: row.id,
             executed_sql: row.executed_sql,
             bq_result: row.bq_result
           };
@@ -329,6 +336,18 @@ const Chat = ({ mode }: ChatProps) => {
               <LayoutGrid className="h-5 w-5" />
               <span className="text-sm">Gallery</span>
             </Button>
+            {isBIUser && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 shrink-0 gap-1.5 px-3 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                onClick={() => runWithViewTransition(() => navigate(getDashboardPath(mode)))}
+                title="Dashboards"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+                <span className="text-sm">Dashboards</span>
+              </Button>
+            )}
             <Button 
               variant="default"
               size="sm"
@@ -433,6 +452,19 @@ const Chat = ({ mode }: ChatProps) => {
               <LayoutGrid className="h-4 w-4" />
               <span className="text-sm">Gallery</span>
             </Button>
+
+            {isBIUser && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 shrink-0 gap-1.5 rounded-full px-3 text-muted-foreground hover:text-foreground"
+                onClick={() => runWithViewTransition(() => navigate(getDashboardPath(mode)))}
+                title="Dashboards"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="text-sm">Dashboards</span>
+              </Button>
+            )}
 
             <Button 
               variant="default"
@@ -604,7 +636,10 @@ const Chat = ({ mode }: ChatProps) => {
                       userRole={profile?.role}
                       executed_sql={sqlData?.executed_sql || null}
                       bq_result={sqlData?.bq_result || null}
+                      sourceSqlRunId={sqlData?.id || null}
                       thinkingDuration={thoughtDurations[msg.id]}
+                      mode={mode}
+                      onAddToDashboard={isBIUser ? setDashboardPinPayload : undefined}
                     />
                   );
                 })}
@@ -703,7 +738,7 @@ const Chat = ({ mode }: ChatProps) => {
                 </Button>
               </div>
             </div>
-            {galleryOpen && <ChatGallery key={`desktop-${mode}`} mode={mode} />}
+            {galleryOpen && <ChatGallery key={`desktop-${mode}`} mode={mode} onAddToDashboard={isBIUser ? setDashboardPinPayload : undefined} />}
           </aside>
         </div>
       </div>
@@ -726,9 +761,24 @@ const Chat = ({ mode }: ChatProps) => {
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4 [-webkit-overflow-scrolling:touch]">
-          {galleryOpen && <ChatGallery key={`mobile-${mode}`} mode={mode} />}
+          {galleryOpen && <ChatGallery key={`mobile-${mode}`} mode={mode} onAddToDashboard={isBIUser ? setDashboardPinPayload : undefined} />}
         </div>
       </div>
+      <AddToDashboardDialog
+        open={Boolean(dashboardPinPayload)}
+        mode={mode}
+        payload={dashboardPinPayload}
+        dashboards={dashboardStore.dashboards}
+        onOpenChange={(open) => {
+          if (!open) setDashboardPinPayload(null);
+        }}
+        onAdd={async (dashboardId, payload, title) => {
+          await dashboardStore.addElement(dashboardId, payload, title);
+        }}
+        onCreateAndAdd={async (dashboardName, payload, title) => {
+          await dashboardStore.createDashboardAndAddElement(dashboardName, payload, title);
+        }}
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ const corsHeaders = {
 const WEBHOOK_URL = "https://n8n-prod.10minuteschool.com/webhook/ec-data-agent";
 
 type JobStatus = 'queued' | 'running' | 'completed' | 'failed';
+type QueryRunPayload = Record<string, unknown>;
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -33,10 +34,13 @@ const buildMirrorClient = () => {
   return createClient(mirrorUrl, mirrorKey);
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
 const mirrorInsert = async (
   mirror: ReturnType<typeof buildMirrorClient>,
   table: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown> | Record<string, unknown>[],
 ) => {
   if (!mirror) return;
 
@@ -147,6 +151,8 @@ const handleCallback = async (req: Request) => {
     response,
     executed_sql,
     bq_result,
+    query_runs,
+    n8n_execution_id,
     error,
     responsePayload,
   } = await req.json();
@@ -218,24 +224,68 @@ const handleCallback = async (req: Request) => {
     bq_result: bq_result ?? null,
   };
 
+  let agentSqlRunId: string | null = null;
   if (executed_sql && bq_result) {
     const bqResultStr = typeof bq_result === 'string' ? bq_result : JSON.stringify(bq_result);
-    const { error: sqlRunError } = await supabase.from('agent_sql_runs').insert({
-      message_id: assistantMessageId,
-      executed_sql,
-      bq_result: bqResultStr,
-    });
+    const { data: sqlRun, error: sqlRunError } = await supabase
+      .from('agent_sql_runs')
+      .insert({
+        message_id: assistantMessageId,
+        executed_sql,
+        bq_result: bqResultStr,
+      })
+      .select('id, message_id, executed_sql, bq_result, created_at')
+      .single();
 
-    if (sqlRunError) {
+    if (sqlRunError || !sqlRun) {
       console.error('Failed to save agent SQL run:', { jobId, assistantMessageId, sqlRunError });
-      throw sqlRunError;
+      throw sqlRunError ?? new Error('Failed to save agent SQL run');
     }
 
-    await mirrorInsert(mirror, 'agent_sql_runs', {
-      message_id: assistantMessageId,
-      executed_sql,
-      bq_result: bqResultStr,
-    });
+    agentSqlRunId = sqlRun.id;
+    await mirrorInsert(mirror, 'agent_sql_runs', sqlRun);
+  }
+
+  if (Array.isArray(query_runs) && query_runs.length > 0) {
+    const queryRunRows = query_runs
+      .filter(isRecord)
+      .map((queryRun: QueryRunPayload, index: number) => {
+        const rawSql = queryRun.raw_sql ?? queryRun.sql ?? queryRun.executed_sql;
+        if (typeof rawSql !== 'string' || !rawSql.trim()) {
+          return null;
+        }
+
+        return {
+          message_id: assistantMessageId,
+          agent_sql_run_id: agentSqlRunId,
+          query_index: typeof queryRun.query_index === 'number' ? queryRun.query_index : index + 1,
+          raw_sql: rawSql,
+          parameterized_sql: typeof queryRun.parameterized_sql === 'string' ? queryRun.parameterized_sql : null,
+          date_binding: isRecord(queryRun.date_binding) ? queryRun.date_binding : {},
+          result_schema: Array.isArray(queryRun.result_schema) ? queryRun.result_schema : [],
+          result_rows: Array.isArray(queryRun.result_rows) ? queryRun.result_rows : [],
+          result_text: typeof queryRun.result_text === 'string' ? queryRun.result_text : null,
+          n8n_execution_id: typeof n8n_execution_id === 'string'
+            ? n8n_execution_id
+            : typeof n8n_execution_id === 'number'
+              ? String(n8n_execution_id)
+              : null,
+        };
+      })
+      .filter((row): row is Record<string, unknown> => row !== null);
+
+    if (queryRunRows.length > 0) {
+      const { data: savedQueryRuns, error: queryRunError } = await supabase
+        .from('agent_query_runs')
+        .insert(queryRunRows)
+        .select('*');
+
+      if (queryRunError) {
+        console.error('Failed to save structured query runs:', { jobId, assistantMessageId, queryRunError });
+      } else if (savedQueryRuns) {
+        await mirrorInsert(mirror, 'agent_query_runs', savedQueryRuns);
+      }
+    }
   }
 
   await markJobCompleted(

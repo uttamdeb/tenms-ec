@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Chat from "./pages/Chat";
+import Dashboards from "./pages/Dashboards";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/ec-chat" element={<Chat mode="ec" />} />
               <Route path="/10ms-chat" element={<Chat mode="10ms" />} />
+              <Route path="/dashboards/:mode" element={<Dashboards />} />
               <Route path="/chat" element={<Navigate replace to="/ec-chat" />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

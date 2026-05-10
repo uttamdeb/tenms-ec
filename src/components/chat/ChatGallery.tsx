@@ -1,8 +1,9 @@
 import { memo, lazy, Suspense, useState, useEffect, useCallback, useRef } from "react";
-import { Loader2, Copy, Check, Download } from "lucide-react";
+import { Loader2, Copy, Check, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
+import type { DashboardMode, DashboardPinPayload } from "@/lib/dashboardTypes";
 import tentenGlasses from "@/assets/tenten-glasses.png";
 
 const MarkdownChartLazy = lazy(() =>
@@ -16,6 +17,8 @@ interface GalleryItem {
   chartSpec?: ChartSpec;
   tableMarkdown?: string;
   tableTitle?: string;
+  sourceSqlRunId?: string | null;
+  executedSql?: string | null;
 }
 
 const CHART_BLOCK_RE = /```chart\s*\n([\s\S]*?)\n```/g;
@@ -25,20 +28,32 @@ const RENDER_BATCH_SIZE = 6;
 
 const CARTESIAN_CHART_TYPES = new Set(["bar", "horizontal_bar", "stacked_bar", "line", "area", "stacked_area"]);
 const PIE_CHART_TYPES = new Set(["pie", "donut"]);
+type ChartProbe = Partial<ChartSpec> & {
+  xKey?: unknown;
+  yKey?: unknown;
+  labelKey?: unknown;
+  valueKey?: unknown;
+  series?: unknown;
+};
 
 const isChartSpec = (value: unknown): value is ChartSpec => {
   if (!value || typeof value !== "object") return false;
-  const c = value as Partial<ChartSpec>;
+  const c = value as ChartProbe;
   if (CARTESIAN_CHART_TYPES.has(c.type as string))
-    return Boolean(c.title && (c as any).xKey && Array.isArray((c as any).series) && Array.isArray(c.data));
+    return Boolean(c.title && c.xKey && Array.isArray(c.series) && Array.isArray(c.data));
   if (PIE_CHART_TYPES.has(c.type as string))
-    return Boolean(c.title && (c as any).labelKey && (c as any).valueKey && Array.isArray(c.data));
+    return Boolean(c.title && c.labelKey && c.valueKey && Array.isArray(c.data));
   if (c.type === "scatter")
-    return Boolean(c.title && (c as any).xKey && (c as any).yKey && Array.isArray((c as any).series) && Array.isArray(c.data));
+    return Boolean(c.title && c.xKey && c.yKey && Array.isArray(c.series) && Array.isArray(c.data));
   return false;
 };
 
-function extractFromContent(messageId: string, created_at: string, content: string): GalleryItem[] {
+function extractFromContent(
+  messageId: string,
+  created_at: string,
+  content: string,
+  sqlRun?: { id: string; executed_sql: string } | null,
+): GalleryItem[] {
   const items: GalleryItem[] = [];
   const normalized = content
     .replace(/\\r\\n/g, "\n")
@@ -52,7 +67,16 @@ function extractFromContent(messageId: string, created_at: string, content: stri
   while ((match = CHART_BLOCK_RE.exec(normalized)) !== null) {
     try {
       const parsed = JSON.parse(match[1]);
-      if (isChartSpec(parsed)) items.push({ messageId, created_at, type: "chart", chartSpec: parsed });
+      if (isChartSpec(parsed)) {
+        items.push({
+          messageId,
+          created_at,
+          type: "chart",
+          chartSpec: parsed,
+          sourceSqlRunId: sqlRun?.id ?? null,
+          executedSql: sqlRun?.executed_sql ?? null,
+        });
+      }
     } catch { /* skip */ }
   }
 
@@ -63,7 +87,15 @@ function extractFromContent(messageId: string, created_at: string, content: stri
     const before = normalized.slice(0, match.index);
     const headingMatch = before.match(/#{1,4}\s+(.+)$/m);
     const tableTitle = headingMatch ? headingMatch[1].replace(/\*\*/g, "").trim() : undefined;
-    items.push({ messageId, created_at, type: "table", tableMarkdown: match[1].trim(), tableTitle });
+    items.push({
+      messageId,
+      created_at,
+      type: "table",
+      tableMarkdown: match[1].trim(),
+      tableTitle,
+      sourceSqlRunId: sqlRun?.id ?? null,
+      executedSql: sqlRun?.executed_sql ?? null,
+    });
   }
   void HEADING_RE;
 
@@ -75,8 +107,13 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
   const [downloaded, setDownloaded] = useState(false);
 
   const lines = markdown.split("\n").filter(Boolean);
-  const headerCells = lines[0]?.split("|").filter((c) => c.trim()).map((c) => c.trim()) || [];
-  const dataRows = lines.slice(2).map((line) => line.split("|").filter((c) => c.trim()).map((c) => c.trim()));
+  const parseRow = (line: string) => {
+    const cells = line.split("|");
+    const innerCells = cells.length > 2 ? cells.slice(1, -1) : cells;
+    return innerCells.map((cell) => cell.trim());
+  };
+  const headerCells = lines[0] ? parseRow(lines[0]) : [];
+  const dataRows = lines.slice(2).map(parseRow);
   const previewRows = dataRows.slice(0, 5);
   const allRows = [headerCells, ...dataRows];
 
@@ -138,7 +175,7 @@ const TablePreview = memo(({ markdown, title }: { markdown: string; title?: stri
             <thead>
               <tr className="border-b border-border/40">
                 {headerCells.map((cell, i) => (
-                  <th key={i} className="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-foreground">{cell}</th>
+                  <th key={`${cell}-${i}`} className="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-foreground">{cell}</th>
                 ))}
               </tr>
             </thead>
@@ -166,7 +203,55 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
+const buildDashboardPayload = (mode: DashboardMode, item: GalleryItem): DashboardPinPayload | null => {
+  if (item.type === "chart" && item.chartSpec) {
+    return {
+      type: "chart",
+      mode,
+      title: item.chartSpec.title,
+      sourceMessageId: item.messageId,
+      sourceSqlRunId: item.sourceSqlRunId ?? null,
+      visualSpec: item.chartSpec,
+      content: {
+        chartSpec: item.chartSpec,
+        rawMarkdown: JSON.stringify(item.chartSpec, null, 2),
+      },
+      queryConfig: {
+        source: "gallery_chart",
+        executedSql: item.executedSql ?? null,
+        refreshable: Boolean(item.sourceSqlRunId),
+      },
+    };
+  }
+
+  if (item.type === "table" && item.tableMarkdown) {
+    return {
+      type: "table",
+      mode,
+      title: item.tableTitle || "Pinned table",
+      sourceMessageId: item.messageId,
+      sourceSqlRunId: item.sourceSqlRunId ?? null,
+      content: {
+        tableMarkdown: item.tableMarkdown,
+      },
+      queryConfig: {
+        source: "gallery_table",
+        executedSql: item.executedSql ?? null,
+        refreshable: Boolean(item.sourceSqlRunId),
+      },
+    };
+  }
+
+  return null;
+};
+
+const ChatGallery = memo(({
+  mode,
+  onAddToDashboard,
+}: {
+  mode: DashboardMode;
+  onAddToDashboard?: (payload: DashboardPinPayload) => void;
+}) => {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -190,9 +275,16 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
 
     if (error || !data) return { fetchedCount: 0, addedCount: 0 };
 
+    const messageIds = data.map((message) => message.id);
+    const { data: sqlRuns } = await supabase
+      .from("agent_sql_runs")
+      .select("id, message_id, executed_sql")
+      .in("message_id", messageIds);
+    const sqlRunByMessageId = new Map((sqlRuns ?? []).map((run) => [run.message_id, run]));
+
     const newItems: GalleryItem[] = [];
     for (const msg of data) {
-      newItems.push(...extractFromContent(msg.id, msg.created_at, msg.content));
+      newItems.push(...extractFromContent(msg.id, msg.created_at, msg.content, sqlRunByMessageId.get(msg.id)));
     }
 
     setItems((prev) => currentOffset === 0 ? newItems : [...prev, ...newItems]);
@@ -276,7 +368,23 @@ const ChatGallery = memo(({ mode }: { mode: "ec" | "10ms" }) => {
       <div className="space-y-4">
         {items.map((item, idx) => (
           <div key={`${item.messageId}-${idx}`} className="space-y-1.5">
-            <p className="label-tech px-1">{formatDate(item.created_at)}</p>
+            <div className="flex items-center justify-between gap-2 px-1">
+              <p className="label-tech min-w-0 truncate">{formatDate(item.created_at)}</p>
+              {onAddToDashboard && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const payload = buildDashboardPayload(mode, item);
+                    if (payload) onAddToDashboard(payload);
+                  }}
+                  title="Add to dashboard"
+                  aria-label="Add to dashboard"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
             {item.type === "chart" && item.chartSpec && (
               <Suspense fallback={<div className="flex h-32 flex-col items-center justify-center gap-3 rounded-xl border border-border/40 text-xs text-muted-foreground"><img src={tentenGlasses} alt="Loading chart" className="h-10 w-10 object-contain opacity-90" /><span>Loading chart...</span></div>}>
                 <MarkdownChartLazy spec={item.chartSpec} />
