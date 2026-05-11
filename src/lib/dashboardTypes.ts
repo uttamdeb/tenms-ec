@@ -51,7 +51,8 @@ export const DASHBOARD_SIZE_LAYOUTS: Record<DashboardSize, DashboardLayout> = {
 
 export const toJson = (value: unknown): Json => JSON.parse(JSON.stringify(value)) as Json;
 
-export const getDashboardPath = (mode: DashboardMode) => `/dashboards/${mode}`;
+export const getDashboardPath = (mode: DashboardMode, dashboardId?: string | null) =>
+  dashboardId ? `/dashboards/${mode}/${dashboardId}` : `/dashboards/${mode}`;
 
 export const getChatPath = (mode: DashboardMode) => (mode === "10ms" ? "/10ms-chat" : "/ec-chat");
 

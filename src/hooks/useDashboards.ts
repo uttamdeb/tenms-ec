@@ -110,6 +110,15 @@ export function useDashboards(mode: DashboardMode, enabled = true) {
     loadDashboards();
   }, [loadDashboards]);
 
+  useEffect(() => {
+    if (!enabled || !activeDashboardId || elementsByDashboard[activeDashboardId]) return;
+
+    loadElements(activeDashboardId).catch((error) => {
+      console.error("Failed to load dashboard elements:", error);
+      toast.error("Failed to load dashboard elements");
+    });
+  }, [activeDashboardId, elementsByDashboard, enabled, loadElements]);
+
   const createDashboard = useCallback(async (name: string) => {
     if (dashboards.length >= DASHBOARD_LIMIT_PER_MODE) {
       throw new Error(`You can have up to ${DASHBOARD_LIMIT_PER_MODE} dashboards per workspace.`);
@@ -225,7 +234,7 @@ export function useDashboards(mode: DashboardMode, enabled = true) {
       source_query_run_id: payload.sourceQueryRunId ?? null,
       visual_spec: toJson(payload.visualSpec ?? {}),
       query_config: toJson({
-        refreshable: Boolean(payload.sourceSqlRunId),
+        refreshable: Boolean(payload.sourceQueryRunId || payload.sourceSqlRunId),
         ...payload.queryConfig,
       }),
       content: toJson(payload.content),
@@ -320,12 +329,14 @@ export function useDashboards(mode: DashboardMode, enabled = true) {
       });
 
       if (error) throw error;
-      toast.success(data?.message ?? "Dashboard refresh requested");
+      await loadElements(dashboardId);
+      const refreshed = typeof data?.refreshed === "number" ? data.refreshed : 0;
+      toast.success(data?.message ?? `Refreshed ${refreshed} dashboard ${refreshed === 1 ? "tile" : "tiles"}`);
       return data;
     } finally {
       setBusy(false);
     }
-  }, [activeDashboard?.filters, mode]);
+  }, [activeDashboard?.filters, loadElements, mode]);
 
   return {
     dashboards,

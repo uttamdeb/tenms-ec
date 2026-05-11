@@ -4,6 +4,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
 import type { DashboardMode, DashboardPinPayload } from "@/lib/dashboardTypes";
+import {
+  chooseQueryRunForChart,
+  chooseQueryRunForTable,
+  type DashboardQueryRun,
+} from "@/lib/dashboardQueryRuns";
 import tentenGlasses from "@/assets/tenten-glasses.png";
 
 const MarkdownChartLazy = lazy(() =>
@@ -18,7 +23,9 @@ interface GalleryItem {
   tableMarkdown?: string;
   tableTitle?: string;
   sourceSqlRunId?: string | null;
+  sourceQueryRunId?: string | null;
   executedSql?: string | null;
+  rawSql?: string | null;
 }
 
 const CHART_BLOCK_RE = /```chart\s*\n([\s\S]*?)\n```/g;
@@ -53,6 +60,7 @@ function extractFromContent(
   created_at: string,
   content: string,
   sqlRun?: { id: string; executed_sql: string } | null,
+  queryRuns: DashboardQueryRun[] = [],
 ): GalleryItem[] {
   const items: GalleryItem[] = [];
   const normalized = content
@@ -68,13 +76,16 @@ function extractFromContent(
     try {
       const parsed = JSON.parse(match[1]);
       if (isChartSpec(parsed)) {
+        const queryRun = chooseQueryRunForChart(queryRuns, parsed);
         items.push({
           messageId,
           created_at,
           type: "chart",
           chartSpec: parsed,
           sourceSqlRunId: sqlRun?.id ?? null,
+          sourceQueryRunId: queryRun?.id ?? null,
           executedSql: sqlRun?.executed_sql ?? null,
+          rawSql: queryRun?.raw_sql ?? null,
         });
       }
     } catch { /* skip */ }
@@ -87,14 +98,23 @@ function extractFromContent(
     const before = normalized.slice(0, match.index);
     const headingMatch = before.match(/#{1,4}\s+(.+)$/m);
     const tableTitle = headingMatch ? headingMatch[1].replace(/\*\*/g, "").trim() : undefined;
+    const tableMarkdown = match[1].trim();
+    const tableHeaders = tableMarkdown
+      .split("\n")[0]
+      ?.split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim()) ?? [];
+    const queryRun = chooseQueryRunForTable(queryRuns, tableHeaders);
     items.push({
       messageId,
       created_at,
       type: "table",
-      tableMarkdown: match[1].trim(),
+      tableMarkdown,
       tableTitle,
       sourceSqlRunId: sqlRun?.id ?? null,
+      sourceQueryRunId: queryRun?.id ?? null,
       executedSql: sqlRun?.executed_sql ?? null,
+      rawSql: queryRun?.raw_sql ?? null,
     });
   }
   void HEADING_RE;
@@ -211,6 +231,7 @@ const buildDashboardPayload = (mode: DashboardMode, item: GalleryItem): Dashboar
       title: item.chartSpec.title,
       sourceMessageId: item.messageId,
       sourceSqlRunId: item.sourceSqlRunId ?? null,
+      sourceQueryRunId: item.sourceQueryRunId ?? null,
       visualSpec: item.chartSpec,
       content: {
         chartSpec: item.chartSpec,
@@ -218,8 +239,9 @@ const buildDashboardPayload = (mode: DashboardMode, item: GalleryItem): Dashboar
       },
       queryConfig: {
         source: "gallery_chart",
+        rawSql: item.rawSql ?? null,
         executedSql: item.executedSql ?? null,
-        refreshable: Boolean(item.sourceSqlRunId),
+        refreshable: Boolean(item.sourceQueryRunId || item.sourceSqlRunId),
       },
     };
   }
@@ -231,13 +253,15 @@ const buildDashboardPayload = (mode: DashboardMode, item: GalleryItem): Dashboar
       title: item.tableTitle || "Pinned table",
       sourceMessageId: item.messageId,
       sourceSqlRunId: item.sourceSqlRunId ?? null,
+      sourceQueryRunId: item.sourceQueryRunId ?? null,
       content: {
         tableMarkdown: item.tableMarkdown,
       },
       queryConfig: {
         source: "gallery_table",
+        rawSql: item.rawSql ?? null,
         executedSql: item.executedSql ?? null,
-        refreshable: Boolean(item.sourceSqlRunId),
+        refreshable: Boolean(item.sourceQueryRunId || item.sourceSqlRunId),
       },
     };
   }
@@ -282,9 +306,27 @@ const ChatGallery = memo(({
       .in("message_id", messageIds);
     const sqlRunByMessageId = new Map((sqlRuns ?? []).map((run) => [run.message_id, run]));
 
+    const { data: queryRuns } = await supabase
+      .from("agent_query_runs")
+      .select("id, message_id, agent_sql_run_id, query_index, raw_sql, result_schema, result_rows, result_text")
+      .in("message_id", messageIds)
+      .order("query_index", { ascending: true });
+    const queryRunsByMessageId = new Map<string, DashboardQueryRun[]>();
+    for (const run of queryRuns ?? []) {
+      const current = queryRunsByMessageId.get(run.message_id) ?? [];
+      current.push(run);
+      queryRunsByMessageId.set(run.message_id, current);
+    }
+
     const newItems: GalleryItem[] = [];
     for (const msg of data) {
-      newItems.push(...extractFromContent(msg.id, msg.created_at, msg.content, sqlRunByMessageId.get(msg.id)));
+      newItems.push(...extractFromContent(
+        msg.id,
+        msg.created_at,
+        msg.content,
+        sqlRunByMessageId.get(msg.id),
+        queryRunsByMessageId.get(msg.id) ?? [],
+      ));
     }
 
     setItems((prev) => currentOffset === 0 ? newItems : [...prev, ...newItems]);

@@ -187,32 +187,38 @@ alter table public.dashboard_element_cache enable row level security;
 alter table public.dashboard_refresh_jobs enable row level security;
 alter table public.agent_query_runs enable row level security;
 
+drop policy if exists "BI users can view own dashboards" on public.dashboards;
 create policy "BI users can view own dashboards"
   on public.dashboards
   for select
   using (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can insert own dashboards" on public.dashboards;
 create policy "BI users can insert own dashboards"
   on public.dashboards
   for insert
   with check (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can update own dashboards" on public.dashboards;
 create policy "BI users can update own dashboards"
   on public.dashboards
   for update
   using (auth.uid() = user_id and public.is_current_user_bi())
   with check (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can delete own dashboards" on public.dashboards;
 create policy "BI users can delete own dashboards"
   on public.dashboards
   for delete
   using (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can view own dashboard elements" on public.dashboard_elements;
 create policy "BI users can view own dashboard elements"
   on public.dashboard_elements
   for select
   using (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can insert own dashboard elements" on public.dashboard_elements;
 create policy "BI users can insert own dashboard elements"
   on public.dashboard_elements
   for insert
@@ -229,6 +235,7 @@ create policy "BI users can insert own dashboard elements"
     )
   );
 
+drop policy if exists "BI users can update own dashboard elements" on public.dashboard_elements;
 create policy "BI users can update own dashboard elements"
   on public.dashboard_elements
   for update
@@ -246,11 +253,13 @@ create policy "BI users can update own dashboard elements"
     )
   );
 
+drop policy if exists "BI users can delete own dashboard elements" on public.dashboard_elements;
 create policy "BI users can delete own dashboard elements"
   on public.dashboard_elements
   for delete
   using (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can view own dashboard cache" on public.dashboard_element_cache;
 create policy "BI users can view own dashboard cache"
   on public.dashboard_element_cache
   for select
@@ -265,6 +274,7 @@ create policy "BI users can view own dashboard cache"
     )
   );
 
+drop policy if exists "BI users can manage own dashboard cache" on public.dashboard_element_cache;
 create policy "BI users can manage own dashboard cache"
   on public.dashboard_element_cache
   for all
@@ -289,11 +299,13 @@ create policy "BI users can manage own dashboard cache"
     )
   );
 
+drop policy if exists "BI users can view own dashboard refresh jobs" on public.dashboard_refresh_jobs;
 create policy "BI users can view own dashboard refresh jobs"
   on public.dashboard_refresh_jobs
   for select
   using (auth.uid() = user_id and public.is_current_user_bi());
 
+drop policy if exists "BI users can insert own dashboard refresh jobs" on public.dashboard_refresh_jobs;
 create policy "BI users can insert own dashboard refresh jobs"
   on public.dashboard_refresh_jobs
   for insert
@@ -310,6 +322,7 @@ create policy "BI users can insert own dashboard refresh jobs"
     )
   );
 
+drop policy if exists "BI users can view own agent query runs" on public.agent_query_runs;
 create policy "BI users can view own agent query runs"
   on public.agent_query_runs
   for select

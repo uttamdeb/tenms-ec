@@ -101,6 +101,9 @@ CREATE TABLE IF NOT EXISTS public.dashboard_elements (
 CREATE INDEX IF NOT EXISTS dashboard_elements_dashboard_position_idx
   ON public.dashboard_elements (dashboard_id, position, created_at);
 
+CREATE INDEX IF NOT EXISTS dashboard_elements_user_mode_idx
+  ON public.dashboard_elements (user_id, mode, created_at DESC);
+
 -- 8. dashboard_element_cache
 CREATE TABLE IF NOT EXISTS public.dashboard_element_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,6 +119,12 @@ CREATE TABLE IF NOT EXISTS public.dashboard_element_cache (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   UNIQUE (element_id, filter_hash)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS dashboard_element_cache_element_filter_hash_uidx
+  ON public.dashboard_element_cache (element_id, filter_hash);
+
+CREATE INDEX IF NOT EXISTS dashboard_element_cache_user_idx
+  ON public.dashboard_element_cache (user_id, refreshed_at DESC);
 
 -- 9. dashboard_refresh_jobs
 CREATE TABLE IF NOT EXISTS public.dashboard_refresh_jobs (
@@ -147,3 +156,13 @@ CREATE TABLE IF NOT EXISTS public.agent_query_runs (
   n8n_execution_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.dashboard_elements
+  ADD COLUMN IF NOT EXISTS source_query_run_id UUID;
+
+CREATE INDEX IF NOT EXISTS dashboard_elements_source_query_run_idx
+  ON public.dashboard_elements (source_query_run_id)
+  WHERE source_query_run_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS agent_query_runs_message_idx
+  ON public.agent_query_runs (message_id, query_index);

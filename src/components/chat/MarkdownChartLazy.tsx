@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useCallback, useState, useId } from "react";
+import { memo, useMemo, useRef, useCallback, useState, useId, type ReactNode } from "react";
 import { toPng } from "html-to-image";
 import {
   ChartContainer,
@@ -139,9 +139,20 @@ const PieLegend = memo(({ items }: { items: Array<{ label: string; fullLabel: st
 });
 
 const ChartActionButtons = memo(
-  ({ copied, onCopy, onDownload }: { copied: boolean; onCopy: () => void; onDownload: () => void }) => (
+  ({
+    copied,
+    onCopy,
+    onDownload,
+    extraAction,
+  }: {
+    copied: boolean;
+    onCopy: () => void;
+    onDownload: () => void;
+    extraAction?: ReactNode;
+  }) => (
     <TooltipProvider delayDuration={150}>
       <div className="chart-action-btns flex shrink-0 gap-1">
+        {extraAction}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -195,7 +206,7 @@ const ChartHeader = memo(({ title, description }: { title: string; description: 
   </div>
 ));
 
-export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
+export const MarkdownChart = memo(({ spec, extraAction }: { spec: ChartSpec; extraAction?: ReactNode }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const uid = useId().replace(/:/g, "");
@@ -312,7 +323,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       <div ref={chartRef} className={CHART_GLASS_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
-          <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
+          <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} extraAction={extraAction} />
         </div>
         <div className={CHART_VIEWPORT_TALL_CLASS}>
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)] lg:items-center">
@@ -371,7 +382,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
       <div ref={chartRef} className={CHART_GLASS_CLASS}>
         <div className="flex items-start justify-between gap-2">
           <ChartHeader title={spec.title} description={spec.description} />
-          <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
+          <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} extraAction={extraAction} />
         </div>
         <div className={CHART_VIEWPORT_CLASS}>
           <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
@@ -400,7 +411,7 @@ export const MarkdownChart = memo(({ spec }: { spec: ChartSpec }) => {
     <div ref={chartRef} className={CHART_GLASS_CLASS}>
       <div className="flex items-start justify-between gap-2">
         <ChartHeader title={cartSpec.title} description={cartSpec.description} />
-        <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} />
+        <ChartActionButtons copied={copied} onCopy={handleCopy} onDownload={handleDownload} extraAction={extraAction} />
       </div>
       <div className={CHART_VIEWPORT_CLASS}>
         <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">

@@ -32,6 +32,11 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { type ChartSpec } from "@/components/chat/MarkdownChartLazy";
 import type { DashboardMode, DashboardPinPayload } from "@/lib/dashboardTypes";
+import {
+  chooseQueryRunForChart,
+  chooseQueryRunForTable,
+  type DashboardQueryRun,
+} from "@/lib/dashboardQueryRuns";
 
 const MarkdownChartLazy = lazy(() => import("@/components/chat/MarkdownChartLazy").then((m) => ({ default: m.MarkdownChart })));
 
@@ -273,6 +278,7 @@ interface ChatMessageBubbleProps {
   executed_sql?: string | null;
   bq_result?: string | null;
   sourceSqlRunId?: string | null;
+  queryRuns?: DashboardQueryRun[];
   thinkingDuration?: number;
   mode?: DashboardMode;
   onAddToDashboard?: (payload: DashboardPinPayload) => void;
@@ -290,6 +296,7 @@ interface AssistantActionBarProps {
   executed_sql?: string | null;
   bq_result?: string | null;
   sourceSqlRunId?: string | null;
+  queryRuns?: DashboardQueryRun[];
   mode?: DashboardMode;
   onAddToDashboard?: (payload: DashboardPinPayload) => void;
   onFeedbackChange?: (messageId: string, feedback: "like" | "dislike" | null, feedbackNote?: string | null) => Promise<void>;
@@ -306,6 +313,7 @@ const AssistantActionBar = memo(({
   executed_sql,
   bq_result,
   sourceSqlRunId,
+  queryRuns = [],
   mode = "ec",
   onAddToDashboard,
   onFeedbackChange,
@@ -364,14 +372,16 @@ const AssistantActionBar = memo(({
       title: firstHeading || "Assistant response",
       sourceMessageId: id,
       sourceSqlRunId,
+      sourceQueryRunId: queryRuns[0]?.id ?? null,
       content: {
         text: normalizedContent,
         rawMarkdown: normalizedContent,
       },
       queryConfig: {
         source: "chat_response",
+        rawSql: queryRuns[0]?.raw_sql ?? null,
         executedSql: executed_sql ?? null,
-        refreshable: Boolean(sourceSqlRunId),
+        refreshable: Boolean(queryRuns[0]?.id || sourceSqlRunId),
       },
     });
   };
@@ -600,6 +610,7 @@ const ChatMessageBubble = memo(({
   executed_sql,
   bq_result,
   sourceSqlRunId,
+  queryRuns = [],
   thinkingDuration,
   mode = "ec",
   onAddToDashboard,
@@ -674,45 +685,46 @@ const ChatMessageBubble = memo(({
                       const parsed = JSON.parse(codeContent);
 
                       if (isChartSpec(parsed)) {
+                        const queryRun = chooseQueryRunForChart(queryRuns, parsed);
                         return (
-                          <div className="relative w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-                            {onAddToDashboard && (
-                              <TooltipProvider delayDuration={150}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="absolute right-3 top-3 z-10 h-8 w-8 rounded-full bg-background/70 text-muted-foreground backdrop-blur hover:bg-primary/15 hover:text-primary"
-                                      onClick={() => onAddToDashboard({
-                                        type: "chart",
-                                        mode,
-                                        title: parsed.title,
-                                        sourceMessageId: id,
-                                        sourceSqlRunId,
-                                        visualSpec: parsed,
-                                        content: {
-                                          chartSpec: parsed,
-                                          rawMarkdown: codeContent,
-                                        },
-                                        queryConfig: {
-                                          source: "chat_chart",
-                                          executedSql: executed_sql ?? null,
-                                          refreshable: Boolean(sourceSqlRunId),
-                                        },
-                                      })}
-                                      aria-label="Add chart to dashboard"
-                                    >
-                                      <Plus className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Add to dashboard</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
+                          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
                             <Suspense fallback={<div className="my-4 flex w-full flex-col items-center gap-4 rounded-lg border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground"><img src={tentenGlasses} alt="Loading chart" className="h-12 w-12 object-contain opacity-90" /><span>Loading chart...</span></div>}>
-                              <MarkdownChartLazy spec={parsed} />
+                              <MarkdownChartLazy
+                                spec={parsed}
+                                extraAction={onAddToDashboard ? (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                                        onClick={() => onAddToDashboard({
+                                          type: "chart",
+                                          mode,
+                                          title: parsed.title,
+                                          sourceMessageId: id,
+                                          sourceSqlRunId,
+                                          sourceQueryRunId: queryRun?.id ?? null,
+                                          visualSpec: parsed,
+                                          content: {
+                                            chartSpec: parsed,
+                                            rawMarkdown: codeContent,
+                                          },
+                                          queryConfig: {
+                                            source: "chat_chart",
+                                            rawSql: queryRun?.raw_sql ?? null,
+                                            executedSql: executed_sql ?? null,
+                                            refreshable: Boolean(queryRun?.id || sourceSqlRunId),
+                                          },
+                                        })}
+                                        aria-label="Add chart to dashboard"
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Add to dashboard</TooltipContent>
+                                  </Tooltip>
+                                ) : undefined}
+                              />
                             </Suspense>
                           </div>
                         );
@@ -761,22 +773,27 @@ const ChatMessageBubble = memo(({
                     <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
                       <MarkdownTable
                         title={title || undefined}
-                        onAddToDashboard={onAddToDashboard ? (tableTitle, rows, tableMarkdown) => onAddToDashboard({
-                          type: "table",
-                          mode,
-                          title: tableTitle || "Pinned table",
-                          sourceMessageId: id,
-                          sourceSqlRunId,
-                          content: {
-                            tableMarkdown,
-                            rows,
-                          },
-                          queryConfig: {
-                            source: "chat_table",
-                            executedSql: executed_sql ?? null,
-                            refreshable: Boolean(sourceSqlRunId),
-                          },
-                        }) : undefined}
+                        onAddToDashboard={onAddToDashboard ? (tableTitle, rows, tableMarkdown) => {
+                          const queryRun = chooseQueryRunForTable(queryRuns, rows[0] ?? []);
+                          onAddToDashboard({
+                            type: "table",
+                            mode,
+                            title: tableTitle || "Pinned table",
+                            sourceMessageId: id,
+                            sourceSqlRunId,
+                            sourceQueryRunId: queryRun?.id ?? null,
+                            content: {
+                              tableMarkdown,
+                              rows,
+                            },
+                            queryConfig: {
+                              source: "chat_table",
+                              rawSql: queryRun?.raw_sql ?? null,
+                              executedSql: executed_sql ?? null,
+                              refreshable: Boolean(queryRun?.id || sourceSqlRunId),
+                            },
+                          });
+                        } : undefined}
                       >
                         {children}
                       </MarkdownTable>
@@ -819,6 +836,7 @@ const ChatMessageBubble = memo(({
             executed_sql={executed_sql}
             bq_result={bq_result}
             sourceSqlRunId={sourceSqlRunId}
+            queryRuns={queryRuns}
             mode={mode}
             onAddToDashboard={onAddToDashboard}
             onFeedbackChange={onFeedbackChange}
@@ -849,6 +867,7 @@ const ChatMessageBubble = memo(({
     && prevProps.executed_sql === nextProps.executed_sql
     && prevProps.bq_result === nextProps.bq_result
     && prevProps.sourceSqlRunId === nextProps.sourceSqlRunId
+    && prevProps.queryRuns === nextProps.queryRuns
     && prevProps.thinkingDuration === nextProps.thinkingDuration
     && prevProps.mode === nextProps.mode
     && prevProps.onAddToDashboard === nextProps.onAddToDashboard;

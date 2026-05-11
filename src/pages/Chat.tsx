@@ -22,6 +22,7 @@ import { useRef, useCallback, lazy, Suspense } from "react";
 import { AddToDashboardDialog } from "@/components/dashboard/AddToDashboardDialog";
 import { useDashboards } from "@/hooks/useDashboards";
 import { getDashboardPath, type DashboardPinPayload } from "@/lib/dashboardTypes";
+import type { DashboardQueryRun } from "@/lib/dashboardQueryRuns";
 
 type ChatMode = "ec" | "10ms";
 
@@ -102,6 +103,7 @@ const Chat = ({ mode }: ChatProps) => {
   const [sidebarWidth, setSidebarWidth] = useState(288); // 18rem default
   const sidebarResizing = useRef(false);
   const [sqlRunData, setSqlRunData] = useState<Record<string, { id: string; executed_sql: string; bq_result: string }>>({});
+  const [queryRunData, setQueryRunData] = useState<Record<string, DashboardQueryRun[]>>({});
   const [thinkingNote, setThinkingNote] = useState(THINKING_NOTES[0]);
   const [thoughtDurations, setThoughtDurations] = useState<Record<string, number>>({});
   const [dashboardPinPayload, setDashboardPinPayload] = useState<DashboardPinPayload | null>(null);
@@ -201,10 +203,17 @@ const Chat = ({ mode }: ChatProps) => {
       if (assistantMessages.length === 0) return;
 
       const messageIds = assistantMessages.map(m => m.id);
-      const { data } = await supabase
-        .from("agent_sql_runs")
-        .select("id, message_id, executed_sql, bq_result")
-        .in("message_id", messageIds);
+      const [{ data }, { data: queryRuns }] = await Promise.all([
+        supabase
+          .from("agent_sql_runs")
+          .select("id, message_id, executed_sql, bq_result")
+          .in("message_id", messageIds),
+        supabase
+          .from("agent_query_runs")
+          .select("id, message_id, agent_sql_run_id, query_index, raw_sql, result_schema, result_rows, result_text")
+          .in("message_id", messageIds)
+          .order("query_index", { ascending: true }),
+      ]);
 
       if (data) {
         const dataByMessageId: Record<string, { id: string; executed_sql: string; bq_result: string }> = {};
@@ -216,6 +225,14 @@ const Chat = ({ mode }: ChatProps) => {
           };
         });
         setSqlRunData(dataByMessageId);
+      }
+
+      if (queryRuns) {
+        const runsByMessageId: Record<string, DashboardQueryRun[]> = {};
+        queryRuns.forEach((run) => {
+          runsByMessageId[run.message_id] = [...(runsByMessageId[run.message_id] ?? []), run];
+        });
+        setQueryRunData(runsByMessageId);
       }
     };
 
@@ -620,6 +637,7 @@ const Chat = ({ mode }: ChatProps) => {
               <div className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden px-3 py-4 sm:px-6 sm:py-6">
                 {messages.map((msg) => {
                   const sqlData = sqlRunData[msg.id];
+                  const queryRuns = queryRunData[msg.id] ?? [];
                   return (
                     <ChatMessageBubble
                       key={msg.id}
@@ -637,6 +655,7 @@ const Chat = ({ mode }: ChatProps) => {
                       executed_sql={sqlData?.executed_sql || null}
                       bq_result={sqlData?.bq_result || null}
                       sourceSqlRunId={sqlData?.id || null}
+                      queryRuns={queryRuns}
                       thinkingDuration={thoughtDurations[msg.id]}
                       mode={mode}
                       onAddToDashboard={isBIUser ? setDashboardPinPayload : undefined}

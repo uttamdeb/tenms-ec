@@ -16,6 +16,12 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ProfileDropdown from "@/components/profile/ProfileDropdown";
 import { useProfile } from "@/hooks/useProfile";
@@ -26,6 +32,7 @@ import {
   type DashboardElement,
   type DashboardMode,
   type DashboardSize,
+  getDashboardPath,
   getChatPath,
   normalizeDashboardMode,
   toJson,
@@ -123,6 +130,12 @@ const DashboardTable = ({ markdown }: { markdown: string }) => {
   );
 };
 
+const SIZE_LABELS: Record<DashboardSize, string> = {
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+};
+
 const DashboardTile = ({
   element,
   onResize,
@@ -138,29 +151,49 @@ const DashboardTile = ({
   const chartSpec = (content.chartSpec ?? visualSpec) as ChartSpec | undefined;
   const tableMarkdown = typeof content.tableMarkdown === "string" ? content.tableMarkdown : "";
   const text = typeof content.text === "string" ? content.text : "";
+  const isChart = element.element_type === "chart";
+  const isTable = element.element_type === "table";
 
   return (
-    <article className={cn("surface-card col-span-1 flex min-h-[18rem] flex-col rounded-[1.35rem] p-4 shadow-sm", gridSpanClass[size])}>
+    <article className={cn(
+      "surface-card col-span-1 flex flex-col self-start rounded-[1.35rem] p-4 shadow-sm",
+      isChart ? "min-h-[18rem]" : "min-h-0",
+      gridSpanClass[size],
+    )}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="label-tech text-[0.62rem] text-primary">{element.element_type}</p>
-          <h3 className="mt-1 truncate text-base font-semibold text-foreground">{element.title}</h3>
+          {!isChart && <h3 className="mt-1 truncate text-base font-semibold text-foreground">{element.title}</h3>}
           <p className="mt-1 text-xs text-muted-foreground">Added {formatDateTime(element.created_at)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {(["small", "medium", "large"] as DashboardSize[]).map((item) => (
-            <Button
-              key={item}
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={cn("h-8 w-8 rounded-full", size === item && "bg-primary/10 text-primary")}
-              onClick={() => onResize(item)}
-              title={`Resize ${item}`}
-            >
-              {item === "large" ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
-            </Button>
-          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
+                title="Resize tile"
+              >
+                {size === "large" ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+                <span className="sr-only">Resize tile</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              {(["small", "medium", "large"] as DashboardSize[]).map((item) => (
+                <DropdownMenuItem
+                  key={item}
+                  className={cn("gap-2", size === item && "text-primary")}
+                  onClick={() => onResize(item)}
+                >
+                  {item === "large" ? <Maximize2 className="h-3.5 w-3.5" /> : item === "medium" ? <LayoutDashboard className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+                  <span>{SIZE_LABELS[item]}</span>
+                  {size === item && <Check className="ml-auto h-3.5 w-3.5" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             type="button"
             variant="ghost"
@@ -174,7 +207,7 @@ const DashboardTile = ({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className={cn("min-h-0 overflow-hidden", isChart ? "flex-1" : "flex-none", isTable && "rounded-[1rem]")}>
         {element.element_type === "chart" && chartSpec && (
           <div className="h-full min-w-0 overflow-x-auto">
             <Suspense fallback={<div className="flex h-48 items-center justify-center text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
@@ -199,7 +232,7 @@ const DashboardTile = ({
 
 const Dashboards = () => {
   const navigate = useNavigate();
-  const { mode: modeParam } = useParams();
+  const { mode: modeParam, dashboardId } = useParams();
   const mode = normalizeDashboardMode(modeParam) as DashboardMode;
   const [authLoading, setAuthLoading] = useState(true);
   const [creatingName, setCreatingName] = useState("");
@@ -211,6 +244,7 @@ const Dashboards = () => {
   const {
     dashboards,
     activeDashboard,
+    activeDashboardId,
     activeElements,
     loading,
     busy,
@@ -251,10 +285,32 @@ const Dashboards = () => {
     setEndDate(range.endDate);
   }, [activeDashboard]);
 
+  useEffect(() => {
+    if (loading || dashboards.length === 0) return;
+
+    const requestedDashboard = dashboardId
+      ? dashboards.find((dashboard) => dashboard.id === dashboardId)
+      : null;
+
+    if (requestedDashboard) {
+      if (activeDashboardId !== requestedDashboard.id) setActiveDashboardId(requestedDashboard.id);
+      return;
+    }
+
+    const fallbackId = activeDashboardId && dashboards.some((dashboard) => dashboard.id === activeDashboardId)
+      ? activeDashboardId
+      : dashboards[0]?.id;
+
+    if (fallbackId) {
+      runWithViewTransition(() => navigate(getDashboardPath(mode, fallbackId), { replace: true }));
+    }
+  }, [activeDashboardId, dashboardId, dashboards, loading, mode, navigate, setActiveDashboardId]);
+
   const handleCreate = async () => {
     try {
       const dashboard = await createDashboard(creatingName || `${mode === "10ms" ? "10MS" : "EC"} Dashboard`);
       setCreatingName("");
+      runWithViewTransition(() => navigate(getDashboardPath(mode, dashboard.id)));
       toast.success(`${dashboard.name} created`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create dashboard");
@@ -310,7 +366,9 @@ const Dashboards = () => {
     if (!activeDashboard) return;
     if (!window.confirm(`Remove dashboard "${activeDashboard.name}"?`)) return;
     try {
+      const nextDashboardId = dashboards.find((dashboard) => dashboard.id !== activeDashboard.id)?.id ?? null;
       await archiveDashboard(activeDashboard.id);
+      runWithViewTransition(() => navigate(getDashboardPath(mode, nextDashboardId)));
       toast.success("Dashboard removed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to remove dashboard");
@@ -377,22 +435,51 @@ const Dashboards = () => {
           </div>
 
           <div className="min-h-0 space-y-2 overflow-y-auto">
-            {dashboards.map((dashboard) => (
-              <button
-                key={dashboard.id}
-                type="button"
-                onClick={() => setActiveDashboardId(dashboard.id)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition-colors",
-                  activeDashboard?.id === dashboard.id
-                    ? "border-primary/60 bg-primary/10 text-primary"
-                    : "border-border/60 bg-background/35 text-foreground hover:bg-white/5",
-                )}
-              >
-                <span className="min-w-0 truncate text-sm font-medium">{dashboard.name}</span>
-                <LayoutDashboard className="h-4 w-4 shrink-0" />
-              </button>
-            ))}
+            {dashboards.map((dashboard) => {
+              const isActive = activeDashboard?.id === dashboard.id;
+
+              if (isActive) {
+                return (
+                  <div
+                    key={dashboard.id}
+                    className="rounded-2xl border border-primary/60 bg-primary/10 p-2 text-primary"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={renameValue}
+                        maxLength={80}
+                        onChange={(event) => setRenameValue(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") handleRename();
+                        }}
+                        className="h-9 border-primary/30 bg-background/45 text-sm font-medium text-foreground"
+                      />
+                      <Button type="button" variant="secondary" size="icon" className="h-9 w-9 shrink-0" onClick={handleRename} title="Save name">
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:text-destructive" onClick={handleArchive} title="Remove dashboard">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={dashboard.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveDashboardId(dashboard.id);
+                    runWithViewTransition(() => navigate(getDashboardPath(mode, dashboard.id)));
+                  }}
+                  className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background/35 px-3 py-3 text-left text-foreground transition-colors hover:bg-white/5"
+                >
+                  <span className="min-w-0 truncate text-sm font-medium">{dashboard.name}</span>
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                </button>
+              );
+            })}
 
             {dashboards.length === 0 && (
               <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
@@ -416,27 +503,7 @@ const Dashboards = () => {
           ) : (
             <div className="flex h-full flex-col overflow-hidden">
               <div className="shrink-0 space-y-3 bg-[hsl(var(--surface-lowest))]/24 p-4">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-                  <div className="min-w-0 space-y-2">
-                    <p className="label-tech">Dashboard setup</p>
-                    <div className="flex max-w-xl gap-2">
-                      <Input
-                        value={renameValue}
-                        maxLength={80}
-                        onChange={(event) => setRenameValue(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") handleRename();
-                        }}
-                      />
-                      <Button type="button" variant="secondary" size="icon" onClick={handleRename} title="Save name">
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="icon" onClick={handleArchive} title="Remove dashboard">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-end">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <div className="grid grid-cols-2 gap-2">
                       <label className="space-y-1">
