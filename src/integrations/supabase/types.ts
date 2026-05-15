@@ -25,7 +25,6 @@ export type Database = {
           request_payload: Json
           response_payload: Json | null
           session_id: string
-          source: string
           status: string
           updated_at: string
           user_id: string
@@ -41,7 +40,6 @@ export type Database = {
           request_payload?: Json
           response_payload?: Json | null
           session_id: string
-          source?: string
           status?: string
           updated_at?: string
           user_id: string
@@ -57,7 +55,6 @@ export type Database = {
           request_payload?: Json
           response_payload?: Json | null
           session_id?: string
-          source?: string
           status?: string
           updated_at?: string
           user_id?: string
@@ -189,7 +186,6 @@ export type Database = {
           mode: string
           role: string
           session_id: string
-          source: string
           user_id: string
         }
         Insert: {
@@ -201,7 +197,6 @@ export type Database = {
           mode?: string
           role: string
           session_id: string
-          source?: string
           user_id: string
         }
         Update: {
@@ -213,7 +208,6 @@ export type Database = {
           mode?: string
           role?: string
           session_id?: string
-          source?: string
           user_id?: string
         }
         Relationships: [
@@ -231,7 +225,6 @@ export type Database = {
           created_at: string
           id: string
           mode: string
-          source: string
           status: string
           title: string
           updated_at: string
@@ -241,7 +234,6 @@ export type Database = {
           created_at?: string
           id?: string
           mode?: string
-          source?: string
           status?: string
           title?: string
           updated_at?: string
@@ -251,7 +243,6 @@ export type Database = {
           created_at?: string
           id?: string
           mode?: string
-          source?: string
           status?: string
           title?: string
           updated_at?: string
@@ -507,180 +498,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      external_chat_events: {
-        Row: {
-          agent_job_id: string | null
-          created_at: string
-          error: string | null
-          event_type: string
-          external_event_id: string
-          id: string
-          payload: Json
-          platform: string
-          session_id: string | null
-          status: string
-          updated_at: string
-          user_id: string | null
-          user_message_id: string | null
-          workspace_id: string
-        }
-        Insert: {
-          agent_job_id?: string | null
-          created_at?: string
-          error?: string | null
-          event_type: string
-          external_event_id: string
-          id?: string
-          payload?: Json
-          platform: string
-          session_id?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-          user_message_id?: string | null
-          workspace_id: string
-        }
-        Update: {
-          agent_job_id?: string | null
-          created_at?: string
-          error?: string | null
-          event_type?: string
-          external_event_id?: string
-          id?: string
-          payload?: Json
-          platform?: string
-          session_id?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-          user_message_id?: string | null
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "external_chat_events_agent_job_id_fkey"
-            columns: ["agent_job_id"]
-            isOneToOne: false
-            referencedRelation: "agent_jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "external_chat_events_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "chat_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "external_chat_events_user_message_id_fkey"
-            columns: ["user_message_id"]
-            isOneToOne: false
-            referencedRelation: "chat_messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      external_chat_identities: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          email: string | null
-          external_user_id: string
-          id: string
-          metadata: Json
-          platform: string
-          updated_at: string
-          user_id: string
-          workspace_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          external_user_id: string
-          id?: string
-          metadata?: Json
-          platform: string
-          updated_at?: string
-          user_id: string
-          workspace_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          external_user_id?: string
-          id?: string
-          metadata?: Json
-          platform?: string
-          updated_at?: string
-          user_id?: string
-          workspace_id?: string
-        }
-        Relationships: []
-      }
-      external_chat_threads: {
-        Row: {
-          active: boolean
-          channel_id: string
-          conversation_type: string
-          created_at: string
-          external_user_id: string
-          id: string
-          metadata: Json
-          mode: string
-          platform: string
-          session_id: string
-          thread_key: string
-          updated_at: string
-          user_id: string
-          workspace_id: string
-        }
-        Insert: {
-          active?: boolean
-          channel_id: string
-          conversation_type?: string
-          created_at?: string
-          external_user_id: string
-          id?: string
-          metadata?: Json
-          mode?: string
-          platform: string
-          session_id: string
-          thread_key: string
-          updated_at?: string
-          user_id: string
-          workspace_id: string
-        }
-        Update: {
-          active?: boolean
-          channel_id?: string
-          conversation_type?: string
-          created_at?: string
-          external_user_id?: string
-          id?: string
-          metadata?: Json
-          mode?: string
-          platform?: string
-          session_id?: string
-          thread_key?: string
-          updated_at?: string
-          user_id?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "external_chat_threads_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "chat_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
