@@ -37,6 +37,8 @@ const buildMirrorClient = () => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
+const getRecord = (value: unknown): Record<string, unknown> => isRecord(value) ? value : {};
+
 const mirrorInsert = async (
   mirror: ReturnType<typeof buildMirrorClient>,
   table: string,
@@ -47,6 +49,115 @@ const mirrorInsert = async (
   const { error } = await mirror.from(table).insert(payload);
   if (error) {
     console.warn(`[mirror] insert ${table} failed:`, error.message);
+  }
+};
+
+const mirrorUpdate = async (
+  mirror: ReturnType<typeof buildMirrorClient>,
+  table: string,
+  payload: Record<string, unknown>,
+  column: string,
+  value: unknown,
+) => {
+  if (!mirror) return;
+
+  const { error } = await mirror.from(table).update(payload).eq(column, value);
+  if (error) {
+    console.warn(`[mirror] update ${table} failed:`, error.message);
+  }
+};
+
+const slackTextFromAgentOutput = (content: string) => {
+  const withChartSummaries = content.replace(/```chart\s*([\s\S]*?)```/gi, (_match, chartJson) => {
+    try {
+      const chart = JSON.parse(chartJson);
+      const title = typeof chart.title === 'string' ? chart.title : 'chart';
+      return `\n[Chart: ${title}. Open Data Agent for the interactive chart.]\n`;
+    } catch {
+      return '\n[Chart generated. Open Data Agent for the interactive chart.]\n';
+    }
+  });
+
+  const normalized = withChartSummaries
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim();
+
+  if (!normalized) return 'Data Agent completed the request, but did not return displayable text.';
+  if (normalized.length <= 3900) return normalized;
+  return `${normalized.slice(0, 3800).trimEnd()}\n\n...Output truncated for Slack. Open Data Agent for the full answer.`;
+};
+
+const postSlackMessage = async (channel: string, text: string) => {
+  const token = Deno.env.get('SLACK_BOT_TOKEN');
+  if (!token) {
+    console.warn('[chat-with-agent] SLACK_BOT_TOKEN missing; skipping Slack response');
+    return false;
+  }
+
+  const response = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      channel,
+      text,
+      unfurl_links: false,
+      unfurl_media: false,
+    }),
+  });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || body?.ok === false) {
+    console.warn('[chat-with-agent] Slack post failed:', body?.error ?? response.status);
+    return false;
+  }
+
+  return true;
+};
+
+const maybePostExternalChatResponse = async (
+  supabase: ReturnType<typeof buildServiceClient>,
+  mirror: ReturnType<typeof buildMirrorClient>,
+  job: { id: string; request_payload?: unknown },
+  assistantContent: string,
+  eventStatus: 'completed' | 'failed' = 'completed',
+) => {
+  const requestPayload = getRecord(job.request_payload);
+  if (requestPayload.source !== 'slack' && requestPayload.platform !== 'slack') {
+    return;
+  }
+
+  const slack = getRecord(requestPayload.slack);
+  const channelId = typeof slack.channelId === 'string' ? slack.channelId : null;
+  const eventId = typeof slack.eventId === 'string' ? slack.eventId : null;
+  const teamId = typeof slack.teamId === 'string' ? slack.teamId : null;
+  if (!channelId) {
+    console.warn('[chat-with-agent] Slack callback payload missing channelId', { jobId: job.id });
+    return;
+  }
+
+  let delivered = false;
+  try {
+    delivered = await postSlackMessage(channelId, slackTextFromAgentOutput(assistantContent));
+  } catch (error) {
+    console.warn('[chat-with-agent] Slack response delivery failed:', error);
+  }
+
+  if (eventId && teamId) {
+    const updates = {
+      status: delivered ? eventStatus : 'failed',
+      error: delivered ? null : 'Slack delivery failed',
+      updated_at: new Date().toISOString(),
+    };
+    await supabase
+      .from('external_chat_events')
+      .update(updates)
+      .eq('platform', 'slack')
+      .eq('workspace_id', teamId)
+      .eq('external_event_id', eventId);
+    await mirrorUpdate(mirror, 'external_chat_events', updates, 'external_event_id', eventId);
   }
 };
 
@@ -165,7 +276,7 @@ const handleCallback = async (req: Request) => {
   const mirror = buildMirrorClient();
   const { data: job, error: jobError } = await supabase
     .from('agent_jobs')
-    .select('id, session_id, user_id, mode, assistant_message_id')
+    .select('id, session_id, user_id, mode, source, assistant_message_id, request_payload')
     .eq('id', jobId)
     .single();
 
@@ -174,10 +285,18 @@ const handleCallback = async (req: Request) => {
   }
 
   if (status === 'failed') {
+    const failureMessage = typeof error === 'string' ? error : 'Agent job failed';
     await updateJobStatus(supabase, jobId, 'failed', {
-      error: typeof error === 'string' ? error : 'Agent job failed',
+      error: failureMessage,
       response_payload: responsePayload ?? null,
     });
+    await maybePostExternalChatResponse(
+      supabase,
+      mirror,
+      job,
+      `Data Agent could not complete that request: ${failureMessage}`,
+      'failed',
+    );
     return jsonResponse({ ok: true });
   }
 
@@ -196,6 +315,7 @@ const handleCallback = async (req: Request) => {
         role: 'assistant',
         content: assistantContent,
         mode: job.mode,
+        source: job.source ?? 'web',
       })
       .select('id')
       .single();
@@ -214,6 +334,7 @@ const handleCallback = async (req: Request) => {
       role: 'assistant',
       content: assistantContent,
       mode: job.mode,
+      source: job.source ?? 'web',
       created_at: new Date().toISOString(),
     });
   }
@@ -247,15 +368,16 @@ const handleCallback = async (req: Request) => {
   }
 
   if (Array.isArray(query_runs) && query_runs.length > 0) {
-    const queryRunRows = query_runs
+    const queryRunRows: Record<string, unknown>[] = [];
+    query_runs
       .filter(isRecord)
-      .map((queryRun: QueryRunPayload, index: number) => {
+      .forEach((queryRun: QueryRunPayload, index: number) => {
         const rawSql = queryRun.raw_sql ?? queryRun.sql ?? queryRun.executed_sql;
         if (typeof rawSql !== 'string' || !rawSql.trim()) {
-          return null;
+          return;
         }
 
-        return {
+        queryRunRows.push({
           message_id: assistantMessageId,
           agent_sql_run_id: agentSqlRunId,
           query_index: typeof queryRun.query_index === 'number' ? queryRun.query_index : index + 1,
@@ -270,9 +392,8 @@ const handleCallback = async (req: Request) => {
             : typeof n8n_execution_id === 'number'
               ? String(n8n_execution_id)
               : null,
-        };
-      })
-      .filter((row): row is Record<string, unknown> => row !== null);
+        });
+      });
 
     if (queryRunRows.length > 0) {
       const { data: savedQueryRuns, error: queryRunError } = await supabase
@@ -294,6 +415,8 @@ const handleCallback = async (req: Request) => {
     assistantMessageId,
     finalResponsePayload,
   );
+
+  await maybePostExternalChatResponse(supabase, mirror, job, assistantContent);
 
   return jsonResponse({ ok: true, assistantMessageId });
 };
@@ -340,6 +463,7 @@ serve(async (req) => {
         user_id: authUser.id,
         user_message_id: userMessageId,
         mode: mode ?? 'ec',
+        source: 'web',
         status: 'queued',
         request_payload: {
           user,

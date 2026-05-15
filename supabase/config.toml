@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-metabase-token]
 verify_jwt = false
+
+[functions.slack-agent-events]
+verify_jwt = false
