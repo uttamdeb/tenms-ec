@@ -67,6 +67,25 @@ const mirrorUpdate = async (
   }
 };
 
+const mirrorUpdateByFilters = async (
+  mirror: ReturnType<typeof buildMirrorClient>,
+  table: string,
+  payload: Record<string, unknown>,
+  filters: Record<string, unknown>,
+) => {
+  if (!mirror) return;
+
+  let query = mirror.from(table).update(payload);
+  Object.entries(filters).forEach(([column, value]) => {
+    query = query.eq(column, value);
+  });
+
+  const { error } = await query;
+  if (error) {
+    console.warn(`[mirror] update ${table} failed:`, error.message);
+  }
+};
+
 const slackTextFromAgentOutput = (content: string) => {
   const withChartSummaries = content.replace(/```chart\s*([\s\S]*?)```/gi, (_match, chartJson) => {
     try {
@@ -157,7 +176,11 @@ const maybePostExternalChatResponse = async (
       .eq('platform', 'slack')
       .eq('workspace_id', teamId)
       .eq('external_event_id', eventId);
-    await mirrorUpdate(mirror, 'external_chat_events', updates, 'external_event_id', eventId);
+    await mirrorUpdateByFilters(mirror, 'external_chat_events', updates, {
+      platform: 'slack',
+      workspace_id: teamId,
+      external_event_id: eventId,
+    });
   }
 };
 

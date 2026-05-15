@@ -259,6 +259,8 @@ const resolveOrCreateUser = async (
     .from("profiles")
     .select("id")
     .ilike("email", email)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (profileError) throw profileError;
