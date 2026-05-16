@@ -23,10 +23,17 @@ type SlackEventPayload = {
     user?: string;
     text?: string;
     ts?: string;
+    thread_ts?: string;
     event_ts?: string;
     channel_type?: string;
     bot_id?: string;
     subtype?: string;
+    assistant_thread?: {
+      user_id?: string;
+      channel_id?: string;
+      thread_ts?: string;
+      context?: JsonRecord;
+    };
   };
 };
 
@@ -209,13 +216,47 @@ const getSlackUserInfo = async (externalUserId: string): Promise<SlackUserInfo> 
   return payload.user as SlackUserInfo;
 };
 
-const postSlackMessage = async (channel: string, text: string) => {
+const postSlackMessage = async (channel: string, text: string, options: { threadTs?: string | null } = {}) => {
   await slackApi("chat.postMessage", {
     channel,
     text,
+    ...(options.threadTs ? { thread_ts: options.threadTs } : {}),
     unfurl_links: false,
     unfurl_media: false,
   });
+};
+
+const setSlackAssistantThreadTitle = async (channel: string, threadTs: string | null, title: string) => {
+  if (!threadTs) return;
+
+  try {
+    await slackApi("assistant.threads.setTitle", {
+      channel_id: channel,
+      thread_ts: threadTs,
+      title: title.slice(0, 80),
+    });
+  } catch (error) {
+    console.warn("[slack-agent-events] failed to set assistant thread title", error);
+  }
+};
+
+const setSlackAssistantThreadStatus = async (channel: string, threadTs: string | null, status: string) => {
+  if (!threadTs) return;
+
+  try {
+    await slackApi("assistant.threads.setStatus", {
+      channel_id: channel,
+      thread_ts: threadTs,
+      status,
+      loading_messages: [
+        "Checking the data warehouse...",
+        "Asking BigQuery politely...",
+        "Turning rows into an answer...",
+      ],
+    });
+  } catch (error) {
+    console.warn("[slack-agent-events] failed to set assistant thread status", error);
+  }
 };
 
 const parseModeAndInput = (text: string, fallbackMode: ChatMode): { mode: ChatMode; input: string; explicitMode: boolean } => {
@@ -341,6 +382,7 @@ const getMostRecentThread = async (
   supabase: ReturnType<typeof buildServiceClient>,
   workspaceId: string,
   channelId: string,
+  threadKey: string,
   userId: string,
 ) => {
   const { data, error } = await supabase
@@ -349,7 +391,7 @@ const getMostRecentThread = async (
     .eq("platform", "slack")
     .eq("workspace_id", workspaceId)
     .eq("channel_id", channelId)
-    .eq("thread_key", channelId)
+    .eq("thread_key", threadKey)
     .eq("user_id", userId)
     .eq("active", true)
     .order("updated_at", { ascending: false })
@@ -364,6 +406,7 @@ const getModeThread = async (
   supabase: ReturnType<typeof buildServiceClient>,
   workspaceId: string,
   channelId: string,
+  threadKey: string,
   userId: string,
   mode: ChatMode,
 ) => {
@@ -373,7 +416,7 @@ const getModeThread = async (
     .eq("platform", "slack")
     .eq("workspace_id", workspaceId)
     .eq("channel_id", channelId)
-    .eq("thread_key", channelId)
+    .eq("thread_key", threadKey)
     .eq("user_id", userId)
     .eq("mode", mode)
     .eq("active", true)
@@ -446,6 +489,7 @@ const enqueueAgent = async (
     mode: ChatMode;
     input: string;
     channelId: string;
+    slackThreadTs: string | null;
     slackUserId: string;
     teamId: string;
     externalEventId: string;
@@ -490,6 +534,7 @@ const enqueueAgent = async (
     slack: {
       teamId: params.teamId,
       channelId: params.channelId,
+      threadTs: params.slackThreadTs,
       userId: params.slackUserId,
       eventId: params.externalEventId,
       eventTs: params.eventTs,
@@ -639,20 +684,22 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
     }
 
     const rawText = cleanString(event.text);
+    const slackThreadTs = cleanString(event.thread_ts);
+    const threadKey = slackThreadTs ?? event.channel;
     if (!rawText) {
-      await postSlackMessage(event.channel, "Send me a text question and I will ask Data Agent.");
+      await postSlackMessage(event.channel, "Send me a text question and I will ask Data Agent.", { threadTs: slackThreadTs });
       await updateEvent(supabase, mirror, eventRow.id, { status: "ignored" });
       return;
     }
 
     const slackUser = await getSlackUserInfo(event.user);
     const user = await resolveOrCreateUser(supabase, mirror, slackUser, teamId);
-    const recentThread = await getMostRecentThread(supabase, teamId, event.channel, user.userId);
+    const recentThread = await getMostRecentThread(supabase, teamId, event.channel, threadKey, user.userId);
     const fallbackMode = recentThread?.mode ?? "ec";
     const parsed = parseModeAndInput(rawText, fallbackMode);
 
     if (!parsed.input) {
-      await postSlackMessage(event.channel, "Please include a question after the mode. Example: `ec admissions yesterday by branch`.");
+      await postSlackMessage(event.channel, "Please include a question after the mode. Example: `ec admissions yesterday by branch`.", { threadTs: slackThreadTs });
       await updateEvent(supabase, mirror, eventRow.id, { status: "ignored", user_id: user.userId });
       return;
     }
@@ -663,7 +710,7 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
         platform: "slack",
         workspace_id: teamId,
         channel_id: event.channel,
-        thread_key: event.channel,
+        thread_key: threadKey,
         conversation_type: "dm",
         external_user_id: event.user,
         user_id: user.userId,
@@ -672,13 +719,14 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
         metadata: { reset_event_id: externalEventId },
         active: true,
       });
-      await postSlackMessage(event.channel, `Started a new ${parsed.mode.toUpperCase()} Data Agent chat.`);
+      await setSlackAssistantThreadTitle(event.channel, slackThreadTs, `${parsed.mode.toUpperCase()} Data Agent chat`);
+      await postSlackMessage(event.channel, `Started a new ${parsed.mode.toUpperCase()} Data Agent chat.`, { threadTs: slackThreadTs });
       await updateEvent(supabase, mirror, eventRow.id, { status: "completed", user_id: user.userId, session_id: sessionId });
       return;
     }
 
     const modeThread = parsed.explicitMode
-      ? await getModeThread(supabase, teamId, event.channel, user.userId, parsed.mode)
+      ? await getModeThread(supabase, teamId, event.channel, threadKey, user.userId, parsed.mode)
       : recentThread;
 
     const sessionId = modeThread?.session_id ??
@@ -688,7 +736,7 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
       platform: "slack",
       workspace_id: teamId,
       channel_id: event.channel,
-      thread_key: event.channel,
+      thread_key: threadKey,
       conversation_type: "dm",
       external_user_id: event.user,
       user_id: user.userId,
@@ -698,6 +746,9 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
       active: true,
     });
 
+    await setSlackAssistantThreadTitle(event.channel, slackThreadTs, parsed.input);
+    await setSlackAssistantThreadStatus(event.channel, slackThreadTs, "is checking the data...");
+
     const enqueued = await enqueueAgent(supabase, mirror, {
       userId: user.userId,
       displayName: user.displayName,
@@ -705,6 +756,7 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
       mode: parsed.mode,
       input: parsed.input,
       channelId: event.channel,
+      slackThreadTs,
       slackUserId: event.user,
       teamId,
       externalEventId,
@@ -728,7 +780,9 @@ const processSlackEvent = async (payload: SlackEventPayload) => {
 
     if (event?.channel) {
       try {
-        await postSlackMessage(event.channel, `Data Agent could not process that yet: ${message}`);
+        await postSlackMessage(event.channel, `Data Agent could not process that yet: ${message}`, {
+          threadTs: cleanString(event.thread_ts),
+        });
       } catch (slackError) {
         console.warn("[slack-agent-events] failed to deliver Slack error message", slackError);
       }

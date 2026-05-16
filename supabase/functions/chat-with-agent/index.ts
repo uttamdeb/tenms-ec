@@ -106,7 +106,7 @@ const slackTextFromAgentOutput = (content: string) => {
   return `${normalized.slice(0, 3800).trimEnd()}\n\n...Output truncated for Slack. Open Data Agent for the full answer.`;
 };
 
-const postSlackMessage = async (channel: string, text: string) => {
+const postSlackMessage = async (channel: string, text: string, options: { threadTs?: string | null } = {}) => {
   const token = Deno.env.get('SLACK_BOT_TOKEN');
   if (!token) {
     console.warn('[chat-with-agent] SLACK_BOT_TOKEN missing; skipping Slack response');
@@ -122,6 +122,7 @@ const postSlackMessage = async (channel: string, text: string) => {
     body: JSON.stringify({
       channel,
       text,
+      ...(options.threadTs ? { thread_ts: options.threadTs } : {}),
       unfurl_links: false,
       unfurl_media: false,
     }),
@@ -150,6 +151,7 @@ const maybePostExternalChatResponse = async (
 
   const slack = getRecord(requestPayload.slack);
   const channelId = typeof slack.channelId === 'string' ? slack.channelId : null;
+  const threadTs = typeof slack.threadTs === 'string' ? slack.threadTs : null;
   const eventId = typeof slack.eventId === 'string' ? slack.eventId : null;
   const teamId = typeof slack.teamId === 'string' ? slack.teamId : null;
   if (!channelId) {
@@ -159,7 +161,7 @@ const maybePostExternalChatResponse = async (
 
   let delivered = false;
   try {
-    delivered = await postSlackMessage(channelId, slackTextFromAgentOutput(assistantContent));
+    delivered = await postSlackMessage(channelId, slackTextFromAgentOutput(assistantContent), { threadTs });
   } catch (error) {
     console.warn('[chat-with-agent] Slack response delivery failed:', error);
   }
