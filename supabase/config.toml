@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.slack-agent-events]
 verify_jwt = false
+
+[functions.google-chat-agent-events]
+verify_jwt = false

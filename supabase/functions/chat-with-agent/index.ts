@@ -10,6 +10,15 @@ const WEBHOOK_URL = "https://n8n-prod.10minuteschool.com/webhook/ec-data-agent";
 
 type JobStatus = 'queued' | 'running' | 'completed' | 'failed';
 type QueryRunPayload = Record<string, unknown>;
+type GoogleServiceAccountCredentials = {
+  client_email?: string;
+  private_key?: string;
+  token_uri?: string;
+};
+
+const GOOGLE_CHAT_SCOPE = 'https://www.googleapis.com/auth/chat.bot';
+const textEncoder = new TextEncoder();
+let googleChatTokenCache: { accessToken: string; expiresAt: number } | null = null;
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -86,7 +95,89 @@ const mirrorUpdateByFilters = async (
   }
 };
 
-const slackTextFromAgentOutput = (content: string) => {
+const bytesToBase64Url = (bytes: Uint8Array) =>
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+
+const textToBase64Url = (value: string) => bytesToBase64Url(textEncoder.encode(value));
+
+const pemToArrayBuffer = (pem: string) => {
+  const normalized = pem.replace(/\\n/g, '\n');
+  const base64 = normalized
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+};
+
+const signGoogleJwt = async (credentials: GoogleServiceAccountCredentials) => {
+  if (!credentials.client_email || !credentials.private_key) {
+    throw new Error('GOOGLE_CHAT_SERVICE_ACCOUNT_JSON is missing client_email or private_key.');
+  }
+
+  const tokenUri = credentials.token_uri ?? 'https://oauth2.googleapis.com/token';
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claims = {
+    iss: credentials.client_email,
+    scope: GOOGLE_CHAT_SCOPE,
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  };
+  const signingInput = `${textToBase64Url(JSON.stringify(header))}.${textToBase64Url(JSON.stringify(claims))}`;
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(credentials.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, textEncoder.encode(signingInput));
+  return `${signingInput}.${bytesToBase64Url(new Uint8Array(signature))}`;
+};
+
+const getGoogleChatAccessToken = async () => {
+  if (googleChatTokenCache && googleChatTokenCache.expiresAt > Date.now() + 60_000) {
+    return googleChatTokenCache.accessToken;
+  }
+
+  const rawCredentials = Deno.env.get('GOOGLE_CHAT_SERVICE_ACCOUNT_JSON');
+  if (!rawCredentials) {
+    throw new Error('GOOGLE_CHAT_SERVICE_ACCOUNT_JSON is not configured.');
+  }
+
+  const credentials = JSON.parse(rawCredentials) as GoogleServiceAccountCredentials;
+  const assertion = await signGoogleJwt(credentials);
+  const tokenUri = credentials.token_uri ?? 'https://oauth2.googleapis.com/token';
+  const response = await fetch(tokenUri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || typeof body.access_token !== 'string') {
+    throw new Error(`Google Chat token request failed: ${body.error_description ?? body.error ?? response.status}`);
+  }
+
+  googleChatTokenCache = {
+    accessToken: body.access_token,
+    expiresAt: Date.now() + (Number(body.expires_in) || 3600) * 1000,
+  };
+  return googleChatTokenCache.accessToken;
+};
+
+const externalTextFromAgentOutput = (content: string, surfaceName: string) => {
   const withChartSummaries = content.replace(/```chart\s*([\s\S]*?)```/gi, (_match, chartJson) => {
     try {
       const chart = JSON.parse(chartJson);
@@ -103,7 +194,7 @@ const slackTextFromAgentOutput = (content: string) => {
 
   if (!normalized) return 'Data Agent completed the request, but did not return displayable text.';
   if (normalized.length <= 3900) return normalized;
-  return `${normalized.slice(0, 3800).trimEnd()}\n\n...Output truncated for Slack. Open Data Agent for the full answer.`;
+  return `${normalized.slice(0, 3800).trimEnd()}\n\n...Output truncated for ${surfaceName}. Open Data Agent for the full answer.`;
 };
 
 const postSlackMessage = async (channel: string, text: string, options: { threadTs?: string | null } = {}) => {
@@ -137,6 +228,41 @@ const postSlackMessage = async (channel: string, text: string, options: { thread
   return true;
 };
 
+const postGoogleChatMessage = async (
+  spaceName: string,
+  text: string,
+  options: { threadName?: string | null; threadKey?: string | null; requestId?: string | null } = {},
+) => {
+  const accessToken = await getGoogleChatAccessToken();
+  const url = new URL(`https://chat.googleapis.com/v1/${spaceName}/messages`);
+  if (options.requestId) {
+    url.searchParams.set('requestId', options.requestId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 63));
+  }
+
+  const requestBody: Record<string, unknown> = { text };
+  if (options.threadName) {
+    requestBody.thread = { name: options.threadName };
+  } else if (options.threadKey) {
+    requestBody.thread = { threadKey: options.threadKey };
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify(requestBody),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.warn('[chat-with-agent] Google Chat post failed:', body?.error?.message ?? response.status);
+    return false;
+  }
+
+  return true;
+};
+
 const maybePostExternalChatResponse = async (
   supabase: ReturnType<typeof buildServiceClient>,
   mirror: ReturnType<typeof buildMirrorClient>,
@@ -145,44 +271,88 @@ const maybePostExternalChatResponse = async (
   eventStatus: 'completed' | 'failed' = 'completed',
 ) => {
   const requestPayload = getRecord(job.request_payload);
-  if (requestPayload.source !== 'slack' && requestPayload.platform !== 'slack') {
+  const platform = requestPayload.platform ?? requestPayload.source;
+
+  if (platform === 'slack') {
+    const slack = getRecord(requestPayload.slack);
+    const channelId = typeof slack.channelId === 'string' ? slack.channelId : null;
+    const threadTs = typeof slack.threadTs === 'string' ? slack.threadTs : null;
+    const eventId = typeof slack.eventId === 'string' ? slack.eventId : null;
+    const teamId = typeof slack.teamId === 'string' ? slack.teamId : null;
+    if (!channelId) {
+      console.warn('[chat-with-agent] Slack callback payload missing channelId', { jobId: job.id });
+      return;
+    }
+
+    let delivered = false;
+    try {
+      delivered = await postSlackMessage(channelId, externalTextFromAgentOutput(assistantContent, 'Slack'), { threadTs });
+    } catch (error) {
+      console.warn('[chat-with-agent] Slack response delivery failed:', error);
+    }
+
+    if (eventId && teamId) {
+      const updates = {
+        status: delivered ? eventStatus : 'failed',
+        error: delivered ? null : 'Slack delivery failed',
+        updated_at: new Date().toISOString(),
+      };
+      await supabase
+        .from('external_chat_events')
+        .update(updates)
+        .eq('platform', 'slack')
+        .eq('workspace_id', teamId)
+        .eq('external_event_id', eventId);
+      await mirrorUpdateByFilters(mirror, 'external_chat_events', updates, {
+        platform: 'slack',
+        workspace_id: teamId,
+        external_event_id: eventId,
+      });
+    }
     return;
   }
 
-  const slack = getRecord(requestPayload.slack);
-  const channelId = typeof slack.channelId === 'string' ? slack.channelId : null;
-  const threadTs = typeof slack.threadTs === 'string' ? slack.threadTs : null;
-  const eventId = typeof slack.eventId === 'string' ? slack.eventId : null;
-  const teamId = typeof slack.teamId === 'string' ? slack.teamId : null;
-  if (!channelId) {
-    console.warn('[chat-with-agent] Slack callback payload missing channelId', { jobId: job.id });
-    return;
-  }
+  if (platform === 'google_chat') {
+    const googleChat = getRecord(requestPayload.googleChat);
+    const spaceName = typeof googleChat.spaceName === 'string' ? googleChat.spaceName : null;
+    const threadName = typeof googleChat.threadName === 'string' ? googleChat.threadName : null;
+    const threadKey = typeof googleChat.threadKey === 'string' ? googleChat.threadKey : null;
+    const eventId = typeof googleChat.eventId === 'string' ? googleChat.eventId : null;
+    const workspaceId = typeof googleChat.workspaceId === 'string' ? googleChat.workspaceId : null;
+    if (!spaceName) {
+      console.warn('[chat-with-agent] Google Chat callback payload missing spaceName', { jobId: job.id });
+      return;
+    }
 
-  let delivered = false;
-  try {
-    delivered = await postSlackMessage(channelId, slackTextFromAgentOutput(assistantContent), { threadTs });
-  } catch (error) {
-    console.warn('[chat-with-agent] Slack response delivery failed:', error);
-  }
+    let delivered = false;
+    try {
+      delivered = await postGoogleChatMessage(spaceName, externalTextFromAgentOutput(assistantContent, 'Google Chat'), {
+        threadName,
+        threadKey,
+        requestId: `data-agent-${job.id}`,
+      });
+    } catch (error) {
+      console.warn('[chat-with-agent] Google Chat response delivery failed:', error);
+    }
 
-  if (eventId && teamId) {
-    const updates = {
-      status: delivered ? eventStatus : 'failed',
-      error: delivered ? null : 'Slack delivery failed',
-      updated_at: new Date().toISOString(),
-    };
-    await supabase
-      .from('external_chat_events')
-      .update(updates)
-      .eq('platform', 'slack')
-      .eq('workspace_id', teamId)
-      .eq('external_event_id', eventId);
-    await mirrorUpdateByFilters(mirror, 'external_chat_events', updates, {
-      platform: 'slack',
-      workspace_id: teamId,
-      external_event_id: eventId,
-    });
+    if (eventId && workspaceId) {
+      const updates = {
+        status: delivered ? eventStatus : 'failed',
+        error: delivered ? null : 'Google Chat delivery failed',
+        updated_at: new Date().toISOString(),
+      };
+      await supabase
+        .from('external_chat_events')
+        .update(updates)
+        .eq('platform', 'google_chat')
+        .eq('workspace_id', workspaceId)
+        .eq('external_event_id', eventId);
+      await mirrorUpdateByFilters(mirror, 'external_chat_events', updates, {
+        platform: 'google_chat',
+        workspace_id: workspaceId,
+        external_event_id: eventId,
+      });
+    }
   }
 };
 
