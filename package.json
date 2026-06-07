@@ -2,6 +2,8 @@
   "name": "vite_react_shadcn_ts",
   "private": true,
   "version": "0.0.0",
+  "description": "Conversational data assistant for governed analytics workflows.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

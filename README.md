@@ -1,14 +1,16 @@
-# 10MS Data Agent
+# Data Agent
 
-**A 10MS ORIGINLABS INITIATIVE | HIGHLY CONFIDENTIAL**
+**A 10MS OriginLabs initiative**
 
 ## Overview
 
-10MS Data Agent is an internal conversational data assistant built for 10 Minute School's English Centre and online segment operations. It lets authorised team members query branch performance, admissions, revenue collection, classroom operations, tele-eligible leads, online product metrics, and other segment analytics through a natural-language chat interface backed by an AI agent.
+Data Agent is a conversational data-assistant application built around natural-language analytics workflows. It lets authorised users query operational metrics through a chat interface backed by an AI agent, with support for tables, charts, persistent sessions, feedback, and governed data access patterns.
+
+This repository is an early-stage reference implementation and is under active development.
 
 ## Key Features
 
-- **Chat Interface** — conversational Q&A with the 10MS Data Agent; supports text input and image attachments
+- **Chat Interface** — conversational Q&A with Data Agent; supports text input and image attachments
 - **Simulated Streaming** — assistant responses are rendered with a typewriter-style streaming animation
 - **Embedded BI Dashboard** — Metabase dashboards embedded via signed JWT tokens for at-a-glance reporting
 - **Session Management** — persistent chat sessions with history sidebar, session titles, and message feedback (like/dislike)
@@ -72,3 +74,15 @@ Supabase Edge Function secrets:
 
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `METABASE_SECRET_KEY`
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local development and pull request guidelines.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting guidance.
+
+## License
+
+This project is available under the [MIT License](LICENSE).
