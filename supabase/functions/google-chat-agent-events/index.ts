@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 const AGENT_WEBHOOK_URL =
   Deno.env.get("N8N_AGENT_WEBHOOK_URL") ?? "https://n8n-prod.10minuteschool.com/webhook/ec-data-agent";
 const GOOGLE_CHAT_ISSUER = "chat@system.gserviceaccount.com";
+const GOOGLE_CHAT_ADDON_ISSUER_PATTERN = /^service-\d+@gcp-sa-gsuiteaddons\.iam\.gserviceaccount\.com$/;
 const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 
 const corsHeaders = {
@@ -213,7 +214,7 @@ const verifyGoogleChatRequest = async (req: Request) => {
   const ok = (
     (issuer === "https://accounts.google.com" || issuer === "accounts.google.com") &&
     claims.aud === audience &&
-    email === GOOGLE_CHAT_ISSUER &&
+    (email === GOOGLE_CHAT_ISSUER || GOOGLE_CHAT_ADDON_ISSUER_PATTERN.test(String(email))) &&
     Number.isFinite(exp) &&
     exp > now - 60 &&
     (!Number.isFinite(iat) || iat < now + 300)
