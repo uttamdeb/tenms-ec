@@ -160,16 +160,28 @@ const getGoogleJwks = async () => {
 const verifyGoogleChatRequest = async (req: Request) => {
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return false;
+  if (!token) {
+    console.error("[google-chat-agent-events] verify failed: no bearer token", { authHeader });
+    return false;
+  }
 
   const [encodedHeader, encodedPayload, encodedSignature] = token.split(".");
-  if (!encodedHeader || !encodedPayload || !encodedSignature) return false;
+  if (!encodedHeader || !encodedPayload || !encodedSignature) {
+    console.error("[google-chat-agent-events] verify failed: malformed token");
+    return false;
+  }
 
   const header = base64UrlToJson(encodedHeader) as JsonRecord;
-  if (header.alg !== "RS256" || typeof header.kid !== "string") return false;
+  if (header.alg !== "RS256" || typeof header.kid !== "string") {
+    console.error("[google-chat-agent-events] verify failed: unexpected header", header);
+    return false;
+  }
 
   const jwk = (await getGoogleJwks()).find((key) => key.kid === header.kid);
-  if (!jwk) return false;
+  if (!jwk) {
+    console.error("[google-chat-agent-events] verify failed: no matching jwk for kid", header.kid);
+    return false;
+  }
 
   const key = await crypto.subtle.importKey(
     "jwk",
@@ -184,7 +196,10 @@ const verifyGoogleChatRequest = async (req: Request) => {
     base64UrlToBytes(encodedSignature),
     textEncoder.encode(`${encodedHeader}.${encodedPayload}`),
   );
-  if (!verified) return false;
+  if (!verified) {
+    console.error("[google-chat-agent-events] verify failed: signature mismatch");
+    return false;
+  }
 
   const claims = base64UrlToJson(encodedPayload) as JsonRecord;
   const audience = Deno.env.get("GOOGLE_CHAT_REQUEST_AUDIENCE") ??
@@ -195,7 +210,7 @@ const verifyGoogleChatRequest = async (req: Request) => {
   const exp = Number(claims.exp);
   const iat = Number(claims.iat);
 
-  return (
+  const ok = (
     (issuer === "https://accounts.google.com" || issuer === "accounts.google.com") &&
     claims.aud === audience &&
     email === GOOGLE_CHAT_ISSUER &&
@@ -203,6 +218,20 @@ const verifyGoogleChatRequest = async (req: Request) => {
     exp > now - 60 &&
     (!Number.isFinite(iat) || iat < now + 300)
   );
+
+  if (!ok) {
+    console.error("[google-chat-agent-events] verify failed: claim check", {
+      issuer,
+      email,
+      claimsAud: claims.aud,
+      expectedAudience: audience,
+      exp,
+      iat,
+      now,
+    });
+  }
+
+  return ok;
 };
 
 const stripGoogleChatMentions = (text: string) =>
