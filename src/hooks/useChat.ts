@@ -4,6 +4,7 @@ import { mirrorInsert, mirrorUpdate } from "@/integrations/supabase/dualWrite";
 import { toast } from "sonner";
 
 export type ChatMode = "ec" | "10ms";
+export type ChatSource = "web" | "slack" | "google_chat";
 
 export interface ChatMessage {
   id: string;
@@ -13,6 +14,7 @@ export interface ChatMessage {
   session_id: string;
   user_id: string;
   mode: ChatMode;
+  source?: ChatSource | null;
   feedback?: "like" | "dislike" | null;
   feedback_note?: string | null;
 }

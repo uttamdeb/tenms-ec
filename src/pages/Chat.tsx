@@ -644,6 +644,7 @@ const Chat = ({ mode }: ChatProps) => {
                       id={msg.id}
                       role={msg.role}
                       content={msg.content}
+                      source={msg.source}
                       sessionId={msg.session_id}
                       userId={msg.user_id}
                       feedback={msg.feedback}

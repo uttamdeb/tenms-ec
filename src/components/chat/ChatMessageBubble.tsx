@@ -3,7 +3,7 @@ import { Children, isValidElement, useMemo, useRef, useState, type ReactNode, la
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp, Code, Database, Plus } from "lucide-react";
+import { Check, Copy, Bug, Download, ThumbsDown, ThumbsUp, Code, Database, Plus, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -264,10 +264,18 @@ const isChartSpec = (value: unknown): value is ChartSpec => {
   return false;
 };
 
+// Label shown on messages that originated outside the web app, so users can tell
+// which surface a conversation turn came from when reviewing history.
+const SOURCE_LABELS: Record<string, string> = {
+  google_chat: "Initiated in Google Chat",
+  slack: "Initiated in Slack",
+};
+
 interface ChatMessageBubbleProps {
   id: string;
   role: "user" | "assistant";
   content: string;
+  source?: string | null;
   sessionId?: string;
   userId?: string;
   feedback?: "like" | "dislike" | null;
@@ -600,6 +608,7 @@ const ChatMessageBubble = memo(({
   id,
   role,
   content,
+  source,
   sessionId,
   userId,
   feedback,
@@ -617,6 +626,7 @@ const ChatMessageBubble = memo(({
   onFeedbackChange,
 }: ChatMessageBubbleProps) => {
   const isUser = role === "user";
+  const originLabel = source ? SOURCE_LABELS[source] ?? null : null;
   const normalizedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
   // Track the last heading rendered so tables can display it as their title
   const lastHeadingRef = useRef<string>("");
@@ -638,6 +648,12 @@ const ChatMessageBubble = memo(({
             isUser ? "ml-auto max-w-[82vw] sm:max-w-[78%]" : "max-w-[calc(100vw-5.5rem)] flex-1 sm:max-w-[82%]"
           )}
         >
+          {isUser && originLabel && (
+            <p className="mb-1 flex items-center justify-end gap-1 pr-1 text-[0.65rem] tracking-wide text-muted-foreground/50">
+              <MessageSquare className="h-3 w-3" aria-hidden />
+              {originLabel}
+            </p>
+          )}
           <div
             className={cn(
               "min-w-0 break-words rounded-[1.5rem] px-4 py-3 shadow-sm",
@@ -857,6 +873,7 @@ const ChatMessageBubble = memo(({
   return prevProps.id === nextProps.id
     && prevProps.role === nextProps.role
     && prevProps.content === nextProps.content
+    && prevProps.source === nextProps.source
     && prevProps.sessionId === nextProps.sessionId
     && prevProps.userId === nextProps.userId
     && prevProps.feedback === nextProps.feedback
