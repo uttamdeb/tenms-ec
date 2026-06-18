@@ -923,7 +923,9 @@ serve(async (req) => {
     const verified = await verifyGoogleChatRequest(req);
     if (!verified) return jsonResponse({ error: "invalid_google_chat_token" }, 401);
 
-    const payload = await req.json() as GoogleChatEvent;
+    const rawBody = await req.text();
+    console.log("[google-chat-agent-events] RAW PAYLOAD", rawBody.slice(0, 4000));
+    const payload = JSON.parse(rawBody) as GoogleChatEvent;
 
     if (payload.type === "ADDED_TO_SPACE") {
       return jsonResponse({ text: "10MS Data Agent is ready. DM me or ask a question with `ec` or `10ms` first." });
