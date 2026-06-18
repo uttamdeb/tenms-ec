@@ -231,9 +231,33 @@ const postSlackMessage = async (channel: string, text: string, options: { thread
 const postGoogleChatMessage = async (
   spaceName: string,
   text: string,
-  options: { threadName?: string | null; threadKey?: string | null; requestId?: string | null } = {},
+  options: { threadName?: string | null; threadKey?: string | null; requestId?: string | null; updateMessageName?: string | null } = {},
 ) => {
   const accessToken = await getGoogleChatAccessToken();
+
+  // Update-in-place: patch the interim placeholder so the thread shows a single
+  // message that transforms from "checking..." into the answer. Any patch failure
+  // falls through to creating a fresh message, so delivery is never lost.
+  if (options.updateMessageName) {
+    try {
+      const patchUrl = new URL(`https://chat.googleapis.com/v1/${options.updateMessageName}`);
+      patchUrl.searchParams.set('updateMask', 'text');
+      const patchResponse = await fetch(patchUrl, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json; charset=utf-8',
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (patchResponse.ok) return true;
+      const patchBody = await patchResponse.json().catch(() => ({}));
+      console.warn('[chat-with-agent] Google Chat patch failed, creating new message instead:', patchBody?.error?.message ?? patchResponse.status);
+    } catch (error) {
+      console.warn('[chat-with-agent] Google Chat patch threw, creating new message instead:', error);
+    }
+  }
+
   const url = new URL(`https://chat.googleapis.com/v1/${spaceName}/messages`);
   if (options.requestId) {
     url.searchParams.set('requestId', options.requestId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 63));
@@ -319,6 +343,7 @@ const maybePostExternalChatResponse = async (
     const threadKey = typeof googleChat.threadKey === 'string' ? googleChat.threadKey : null;
     const eventId = typeof googleChat.eventId === 'string' ? googleChat.eventId : null;
     const workspaceId = typeof googleChat.workspaceId === 'string' ? googleChat.workspaceId : null;
+    const placeholderMessageName = typeof googleChat.placeholderMessageName === 'string' ? googleChat.placeholderMessageName : null;
     if (!spaceName) {
       console.warn('[chat-with-agent] Google Chat callback payload missing spaceName', { jobId: job.id });
       return;
@@ -330,6 +355,7 @@ const maybePostExternalChatResponse = async (
         threadName,
         threadKey,
         requestId: `data-agent-${job.id}`,
+        updateMessageName: placeholderMessageName,
       });
     } catch (error) {
       console.warn('[chat-with-agent] Google Chat response delivery failed:', error);

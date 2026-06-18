@@ -6,6 +6,7 @@ const AGENT_WEBHOOK_URL =
 const GOOGLE_CHAT_ISSUER = "chat@system.gserviceaccount.com";
 const GOOGLE_CHAT_ADDON_ISSUER_PATTERN = /^service-\d+@gcp-sa-gsuiteaddons\.iam\.gserviceaccount\.com$/;
 const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
+const GOOGLE_CHAT_BOT_SCOPE = "https://www.googleapis.com/auth/chat.bot";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -291,6 +292,112 @@ const resolveEmailFromDirectory = async (chatUserName: string): Promise<string |
   } catch (err) {
     console.error("[google-chat-agent-events] resolveEmailFromDirectory error", err);
     return null;
+  }
+};
+
+// ── Google Chat REST (for posting the interim placeholder message as the bot) ──
+// The bot token uses the chat.bot scope and does NOT impersonate a user (no `sub`),
+// unlike the Directory token above. This mirrors chat-with-agent's posting auth.
+
+let chatBotTokenCache: { accessToken: string; expiresAt: number } | null = null;
+
+const getGoogleChatBotToken = async () => {
+  if (chatBotTokenCache && chatBotTokenCache.expiresAt > Date.now() + 60_000) {
+    return chatBotTokenCache.accessToken;
+  }
+
+  const rawCredentials = Deno.env.get("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON");
+  if (!rawCredentials) throw new Error("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON is not configured.");
+
+  const credentials = JSON.parse(rawCredentials) as GoogleServiceAccountCredentials;
+  if (!credentials.client_email || !credentials.private_key) {
+    throw new Error("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON is missing client_email or private_key.");
+  }
+
+  const tokenUri = credentials.token_uri ?? "https://oauth2.googleapis.com/token";
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const claims = {
+    iss: credentials.client_email,
+    scope: GOOGLE_CHAT_BOT_SCOPE,
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const signingInput = `${textToBase64Url(JSON.stringify(header))}.${textToBase64Url(JSON.stringify(claims))}`;
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToArrayBuffer(credentials.private_key),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, textEncoder.encode(signingInput));
+  const jwt = `${signingInput}.${bytesToBase64Url(new Uint8Array(signature))}`;
+
+  const tokenResponse = await fetch(tokenUri, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  const tokenBody = await tokenResponse.json().catch(() => ({})) as Record<string, unknown>;
+  if (!tokenResponse.ok || typeof tokenBody.access_token !== "string") {
+    throw new Error(`Google Chat bot token request failed: ${tokenBody.error_description ?? tokenBody.error ?? tokenResponse.status}`);
+  }
+
+  chatBotTokenCache = {
+    accessToken: tokenBody.access_token as string,
+    expiresAt: Date.now() + (Number(tokenBody.expires_in) || 3600) * 1000,
+  };
+  return chatBotTokenCache.accessToken;
+};
+
+// Posts the interim "checking the data" message via REST and returns its resource
+// name (e.g. "spaces/AAA/messages/BBB.CCC") so chat-with-agent can later update it
+// in place with the final answer. Best-effort: returns null on any failure (incl.
+// an 8s timeout) so the caller degrades to a fresh-message reply instead of breaking.
+const createGoogleChatPlaceholder = async (
+  spaceName: string,
+  text: string,
+  options: { threadName?: string | null; threadKey?: string | null } = {},
+): Promise<string | null> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const accessToken = await getGoogleChatBotToken();
+    const url = new URL(`https://chat.googleapis.com/v1/${spaceName}/messages`);
+    const requestBody: Record<string, unknown> = { text };
+    if (options.threadName) {
+      requestBody.thread = { name: options.threadName };
+    } else if (options.threadKey) {
+      requestBody.thread = { threadKey: options.threadKey };
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      const errMessage = (body?.error as Record<string, unknown> | undefined)?.message ?? response.status;
+      console.warn("[google-chat-agent-events] placeholder post failed:", errMessage);
+      return null;
+    }
+    return typeof body.name === "string" ? body.name : null;
+  } catch (err) {
+    console.warn("[google-chat-agent-events] createGoogleChatPlaceholder error", err);
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
 };
 
@@ -661,6 +768,7 @@ const enqueueAgent = async (
     externalUserId: string;
     externalEventId: string;
     eventTime: string | null;
+    placeholderMessageName: string | null;
   },
 ) => {
   const now = new Date().toISOString();
@@ -706,6 +814,7 @@ const enqueueAgent = async (
       userId: params.externalUserId,
       eventId: params.externalEventId,
       eventTime: params.eventTime,
+      placeholderMessageName: params.placeholderMessageName,
     },
   };
 
@@ -901,6 +1010,15 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
       active: true,
     });
 
+    // Post the interim "checking the data" message via REST now so chat-with-agent
+    // can update it in place with the final answer (single-message, Slack-like UX).
+    // Best-effort: a null name makes the callback fall back to a fresh message.
+    const placeholderMessageName = await createGoogleChatPlaceholder(
+      spaceName,
+      "Data Agent is checking the data...",
+      { threadName, threadKey },
+    );
+
     const enqueued = await enqueueAgent(supabase, mirror, {
       userId: user.userId,
       displayName: user.displayName,
@@ -914,6 +1032,7 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
       externalUserId: user.externalUserId,
       externalEventId,
       eventTime: payload.eventTime ?? null,
+      placeholderMessageName,
     });
 
     await updateEvent(supabase, mirror, eventRow.id, {
@@ -1018,8 +1137,14 @@ serve(async (req) => {
     if (isNewChatCommand(parsed.input)) {
       return jsonResponse(chatTextReply(`Started a new ${parsed.mode.toUpperCase()} Data Agent chat.`, addon));
     }
+    if (!parsed.input) {
+      return jsonResponse(chatTextReply("Send me a data question. Example: `ec revenue today`", addon));
+    }
 
-    return jsonResponse(chatTextReply("Data Agent is checking the data...", addon));
+    // Real data question: the interim "checking the data..." message is posted via
+    // REST inside processGoogleChatMessage so it can be updated in place with the
+    // final answer. Suppress the synchronous bubble to avoid a duplicate message.
+    return jsonResponse({});
   } catch (error) {
     console.error("[google-chat-agent-events] request failed", error);
     return jsonResponse({ error: "Internal server error" }, 500);
