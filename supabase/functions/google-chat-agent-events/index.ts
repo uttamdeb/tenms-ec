@@ -7,6 +7,9 @@ const GOOGLE_CHAT_ISSUER = "chat@system.gserviceaccount.com";
 const GOOGLE_CHAT_ADDON_ISSUER_PATTERN = /^service-\d+@gcp-sa-gsuiteaddons\.iam\.gserviceaccount\.com$/;
 const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 const GOOGLE_CHAT_BOT_SCOPE = "https://www.googleapis.com/auth/chat.bot";
+const GOOGLE_CHAT_READ_SCOPE = "https://www.googleapis.com/auth/chat.messages.readonly";
+const GROUP_CONTEXT_MESSAGE_LIMIT = 25;
+const GROUP_CONTEXT_CHAR_BUDGET = 3000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -299,11 +302,15 @@ const resolveEmailFromDirectory = async (chatUserName: string): Promise<string |
 // The bot token uses the chat.bot scope and does NOT impersonate a user (no `sub`),
 // unlike the Directory token above. This mirrors chat-with-agent's posting auth.
 
-let chatBotTokenCache: { accessToken: string; expiresAt: number } | null = null;
+const chatTokenCache = new Map<string, { accessToken: string; expiresAt: number }>();
 
-const getGoogleChatBotToken = async () => {
-  if (chatBotTokenCache && chatBotTokenCache.expiresAt > Date.now() + 60_000) {
-    return chatBotTokenCache.accessToken;
+// Mints (and caches per-scope) a service-account access token for the Chat API.
+// chat.bot is used for posting as the app; chat.messages.readonly for reading a
+// space's recent messages to give the agent conversation context on @mention.
+const getGoogleChatToken = async (scope: string) => {
+  const cached = chatTokenCache.get(scope);
+  if (cached && cached.expiresAt > Date.now() + 60_000) {
+    return cached.accessToken;
   }
 
   const rawCredentials = Deno.env.get("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON");
@@ -319,7 +326,7 @@ const getGoogleChatBotToken = async () => {
   const header = { alg: "RS256", typ: "JWT" };
   const claims = {
     iss: credentials.client_email,
-    scope: GOOGLE_CHAT_BOT_SCOPE,
+    scope,
     aud: tokenUri,
     iat: now,
     exp: now + 3600,
@@ -346,14 +353,15 @@ const getGoogleChatBotToken = async () => {
   });
   const tokenBody = await tokenResponse.json().catch(() => ({})) as Record<string, unknown>;
   if (!tokenResponse.ok || typeof tokenBody.access_token !== "string") {
-    throw new Error(`Google Chat bot token request failed: ${tokenBody.error_description ?? tokenBody.error ?? tokenResponse.status}`);
+    throw new Error(`Google Chat token request failed (${scope}): ${tokenBody.error_description ?? tokenBody.error ?? tokenResponse.status}`);
   }
 
-  chatBotTokenCache = {
+  const token = {
     accessToken: tokenBody.access_token as string,
     expiresAt: Date.now() + (Number(tokenBody.expires_in) || 3600) * 1000,
   };
-  return chatBotTokenCache.accessToken;
+  chatTokenCache.set(scope, token);
+  return token.accessToken;
 };
 
 // Posts the interim "checking the data" message via REST and returns its resource
@@ -368,7 +376,7 @@ const createGoogleChatPlaceholder = async (
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
-    const accessToken = await getGoogleChatBotToken();
+    const accessToken = await getGoogleChatToken(GOOGLE_CHAT_BOT_SCOPE);
     const url = new URL(`https://chat.googleapis.com/v1/${spaceName}/messages`);
     const requestBody: Record<string, unknown> = { text };
     if (options.threadName) {
@@ -395,6 +403,82 @@ const createGoogleChatPlaceholder = async (
     return typeof body.name === "string" ? body.name : null;
   } catch (err) {
     console.warn("[google-chat-agent-events] createGoogleChatPlaceholder error", err);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+// Fetches the recent human conversation in a group space so the agent has context
+// when it is @mentioned mid-discussion. Best-effort: returns null on any failure
+// (incl. a missing chat.messages.readonly scope or an 8s timeout) so the question
+// still goes through without context. Skips the app's own messages and the
+// triggering message itself, and caps the total size to a char budget.
+const fetchGroupContextPreamble = async (
+  spaceName: string,
+  currentMessageName: string | null,
+): Promise<string | null> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const accessToken = await getGoogleChatToken(GOOGLE_CHAT_READ_SCOPE);
+    const url = new URL(`https://chat.googleapis.com/v1/${spaceName}/messages`);
+    url.searchParams.set("pageSize", String(GROUP_CONTEXT_MESSAGE_LIMIT));
+    url.searchParams.set("orderBy", "createTime DESC");
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      const errMessage = (body?.error as Record<string, unknown> | undefined)?.message ?? response.status;
+      console.warn("[google-chat-agent-events] space history fetch failed:", errMessage);
+      return null;
+    }
+
+    const rawMessages = Array.isArray(body.messages) ? body.messages as Record<string, unknown>[] : [];
+    // API returns newest-first; reverse to chronological for the preamble.
+    const lines: string[] = [];
+    for (const message of rawMessages.reverse()) {
+      const name = typeof message.name === "string" ? message.name : null;
+      if (currentMessageName && name === currentMessageName) continue;
+
+      const sender = isRecord(message.sender) ? message.sender : {};
+      if (sender.type === "BOT") continue; // skip the app's own placeholders/answers
+
+      const rawText = typeof message.text === "string"
+        ? message.text
+        : typeof message.argumentText === "string"
+          ? message.argumentText
+          : "";
+      const text = stripGoogleChatMentions(rawText);
+      if (!text) continue;
+
+      const speaker = cleanString(sender.displayName) ?? "Someone";
+      lines.push(`${speaker}: ${text}`);
+    }
+
+    if (lines.length === 0) return null;
+
+    // Keep the most recent lines that fit the char budget (drop oldest first).
+    let budget = GROUP_CONTEXT_CHAR_BUDGET;
+    const kept: string[] = [];
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      const line = lines[i];
+      if (budget - (line.length + 1) < 0) break;
+      budget -= line.length + 1;
+      kept.unshift(line);
+    }
+    if (kept.length === 0) return null;
+
+    return [
+      "[Context — recent conversation in this Google Chat space, oldest to newest. Use only if relevant to the question.]",
+      ...kept,
+      "[End context]",
+    ].join("\n");
+  } catch (err) {
+    console.warn("[google-chat-agent-events] fetchGroupContextPreamble error", err);
     return null;
   } finally {
     clearTimeout(timeout);
@@ -761,6 +845,7 @@ const enqueueAgent = async (
     sessionId: string;
     mode: ChatMode;
     input: string;
+    agentInput?: string;
     spaceName: string;
     threadName: string | null;
     threadKey: string;
@@ -772,6 +857,10 @@ const enqueueAgent = async (
   },
 ) => {
   const now = new Date().toISOString();
+  // What the agent sees (may include a group-context preamble); falls back to the
+  // clean user input. The stored chat_messages row and session title use the clean
+  // input so the web history isn't polluted with context.
+  const agentInput = params.agentInput ?? params.input;
   const { data: userMsg, error: messageError } = await supabase
     .from("chat_messages")
     .insert({
@@ -799,7 +888,7 @@ const enqueueAgent = async (
 
   const requestPayload = {
     user: params.displayName,
-    input: params.input,
+    input: agentInput,
     sessionId: params.sessionId,
     mode: params.mode,
     source: "google_chat",
@@ -859,7 +948,7 @@ const enqueueAgent = async (
       },
       body: JSON.stringify({
         user: params.displayName,
-        input: params.input,
+        input: agentInput,
         sessionId: params.sessionId,
         mode: params.mode,
         jobId: job.id,
@@ -900,7 +989,16 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
   const workspaceId = getWorkspaceId(email, googleUser);
   const spaceName = cleanString(space.name);
   const threadName = cleanString(payload.message?.thread?.name);
-  const threadKey = cleanString(payload.threadKey) ?? cleanString(payload.message?.thread?.threadKey) ?? threadName ?? spaceName;
+  // In a DM, every top-level message is its own Google Chat thread, so keying the
+  // session on the per-message thread fragments one conversation into many sessions.
+  // Use the (stable) space name as the thread key so a DM is one rolling session per
+  // mode — n8n's per-session memory then spans the whole DM. `new`/`reset` still
+  // starts a fresh session (the thread row repoints). Group spaces keep per-thread
+  // sessions, where a thread is a meaningful conversation unit.
+  const isDirectMessage = space.singleUserBotDm === true || space.type === "DM";
+  const threadKey = isDirectMessage
+    ? spaceName
+    : cleanString(payload.threadKey) ?? cleanString(payload.message?.thread?.threadKey) ?? threadName ?? spaceName;
   const externalUserId = cleanString(googleUser.name) ?? email;
   const externalEventId = cleanString(payload.message?.name) ??
     `${spaceName ?? "space"}:${payload.eventTime ?? new Date().toISOString()}:${externalUserId ?? crypto.randomUUID()}`;
@@ -1010,14 +1108,18 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
       active: true,
     });
 
-    // Post the interim "checking the data" message via REST now so chat-with-agent
-    // can update it in place with the final answer (single-message, Slack-like UX).
-    // Best-effort: a null name makes the callback fall back to a fresh message.
-    const placeholderMessageName = await createGoogleChatPlaceholder(
-      spaceName,
-      "Data Agent is checking the data...",
-      { threadName, threadKey },
-    );
+    // Post the interim placeholder (so chat-with-agent can update it in place) and,
+    // for group spaces, fetch the recent conversation for context — in parallel to
+    // keep latency down. Both are best-effort and degrade to null on failure.
+    const currentMessageName = cleanString(payload.message?.name);
+    const [placeholderMessageName, contextPreamble] = await Promise.all([
+      createGoogleChatPlaceholder(spaceName, "Data Agent is checking the data...", { threadName, threadKey }),
+      isDirectMessage ? Promise.resolve(null) : fetchGroupContextPreamble(spaceName, currentMessageName),
+    ]);
+
+    // Inject the group context inline into what the agent sees, but keep the stored
+    // user message (and session title) clean — see enqueueAgent's `agentInput`.
+    const agentInput = contextPreamble ? `${contextPreamble}\n\n${parsed.input}` : parsed.input;
 
     const enqueued = await enqueueAgent(supabase, mirror, {
       userId: user.userId,
@@ -1025,6 +1127,7 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
       sessionId,
       mode: parsed.mode,
       input: parsed.input,
+      agentInput,
       spaceName,
       threadName,
       threadKey,
