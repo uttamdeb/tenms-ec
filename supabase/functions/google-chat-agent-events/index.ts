@@ -7,7 +7,9 @@ const GOOGLE_CHAT_ISSUER = "chat@system.gserviceaccount.com";
 const GOOGLE_CHAT_ADDON_ISSUER_PATTERN = /^service-\d+@gcp-sa-gsuiteaddons\.iam\.gserviceaccount\.com$/;
 const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 const GOOGLE_CHAT_BOT_SCOPE = "https://www.googleapis.com/auth/chat.bot";
-const GOOGLE_CHAT_READ_SCOPE = "https://www.googleapis.com/auth/chat.messages.readonly";
+// chat.messages (not the narrower chat.messages.readonly) — already authorized for
+// this service account's DWD Client ID, so no admin console change is needed.
+const GOOGLE_CHAT_READ_SCOPE = "https://www.googleapis.com/auth/chat.messages";
 const GROUP_CONTEXT_MESSAGE_LIMIT = 25;
 const GROUP_CONTEXT_CHAR_BUDGET = 3000;
 
@@ -299,16 +301,25 @@ const resolveEmailFromDirectory = async (chatUserName: string): Promise<string |
 };
 
 // ── Google Chat REST (for posting the interim placeholder message as the bot) ──
-// The bot token uses the chat.bot scope and does NOT impersonate a user (no `sub`),
-// unlike the Directory token above. This mirrors chat-with-agent's posting auth.
+// The bot token uses the chat.bot scope and does NOT impersonate a user (no `sub`).
+// chat.messages is a USER-authentication scope (Google's app-auth equivalent,
+// chat.app.messages.readonly, needs a separate Workspace Marketplace admin-install flow,
+// not just a scope grant) — so reading space history impersonates the triggering human
+// via the same Domain-Wide Delegation mechanism already used for Directory lookups,
+// just with that user's own email as `sub` instead of a fixed admin. chat.messages is
+// already on this service account's DWD scope list (superset of chat.messages.readonly),
+// so this needs no further admin console change.
 
 const chatTokenCache = new Map<string, { accessToken: string; expiresAt: number }>();
 
-// Mints (and caches per-scope) a service-account access token for the Chat API.
-// chat.bot is used for posting as the app; chat.messages.readonly for reading a
-// space's recent messages to give the agent conversation context on @mention.
-const getGoogleChatToken = async (scope: string) => {
-  const cached = chatTokenCache.get(scope);
+// Mints (and caches per scope+subject) a service-account access token for the Chat API.
+// chat.bot impersonates no one (posts as the app). chat.messages impersonates
+// the given user via DWD (`subEmail`) so the agent can read a space's recent messages
+// for conversation context on @mention — that user must already be a domain account
+// authorized for DWD with this scope, and a member of the space being read.
+const getGoogleChatToken = async (scope: string, subEmail?: string | null) => {
+  const cacheKey = `${scope}::${subEmail ?? ""}`;
+  const cached = chatTokenCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now() + 60_000) {
     return cached.accessToken;
   }
@@ -324,13 +335,14 @@ const getGoogleChatToken = async (scope: string) => {
   const tokenUri = credentials.token_uri ?? "https://oauth2.googleapis.com/token";
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
-  const claims = {
+  const claims: Record<string, unknown> = {
     iss: credentials.client_email,
     scope,
     aud: tokenUri,
     iat: now,
     exp: now + 3600,
   };
+  if (subEmail) claims.sub = subEmail;
 
   const signingInput = `${textToBase64Url(JSON.stringify(header))}.${textToBase64Url(JSON.stringify(claims))}`;
   const key = await crypto.subtle.importKey(
@@ -360,7 +372,7 @@ const getGoogleChatToken = async (scope: string) => {
     accessToken: tokenBody.access_token as string,
     expiresAt: Date.now() + (Number(tokenBody.expires_in) || 3600) * 1000,
   };
-  chatTokenCache.set(scope, token);
+  chatTokenCache.set(cacheKey, token);
   return token.accessToken;
 };
 
@@ -411,17 +423,21 @@ const createGoogleChatPlaceholder = async (
 
 // Fetches the recent human conversation in a group space so the agent has context
 // when it is @mentioned mid-discussion. Best-effort: returns null on any failure
-// (incl. a missing chat.messages.readonly scope or an 8s timeout) so the question
-// still goes through without context. Skips the app's own messages and the
-// triggering message itself, and caps the total size to a char budget.
+// (incl. missing DWD authorization for chat.messages, or an 8s timeout) so
+// the question still goes through without context. Skips the app's own messages and
+// the triggering message itself, and caps the total size to a char budget.
+// Reads as `impersonateEmail` (the human who triggered this) via DWD — see
+// getGoogleChatToken — since that user is guaranteed to be a space member already.
 const fetchGroupContextPreamble = async (
   spaceName: string,
   currentMessageName: string | null,
+  impersonateEmail: string | null,
 ): Promise<string | null> => {
+  if (!impersonateEmail) return null;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
-    const accessToken = await getGoogleChatToken(GOOGLE_CHAT_READ_SCOPE);
+    const accessToken = await getGoogleChatToken(GOOGLE_CHAT_READ_SCOPE, impersonateEmail);
     const url = new URL(`https://chat.googleapis.com/v1/${spaceName}/messages`);
     url.searchParams.set("pageSize", String(GROUP_CONTEXT_MESSAGE_LIMIT));
     url.searchParams.set("orderBy", "createTime DESC");
@@ -1114,7 +1130,7 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
     const currentMessageName = cleanString(payload.message?.name);
     const [placeholderMessageName, contextPreamble] = await Promise.all([
       createGoogleChatPlaceholder(spaceName, "Data Agent is checking the data...", { threadName, threadKey }),
-      isDirectMessage ? Promise.resolve(null) : fetchGroupContextPreamble(spaceName, currentMessageName),
+      isDirectMessage ? Promise.resolve(null) : fetchGroupContextPreamble(spaceName, currentMessageName, user.email),
     ]);
 
     // Inject the group context inline into what the agent sees, but keep the stored
