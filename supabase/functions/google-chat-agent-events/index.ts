@@ -158,6 +158,125 @@ const getGoogleJwks = async () => {
   return googleJwksCache.keys;
 };
 
+// ── Google Directory API (for resolving Chat user name → real email via DWD) ──
+
+type GoogleServiceAccountCredentials = {
+  client_email?: string;
+  private_key?: string;
+  token_uri?: string;
+};
+
+const bytesToBase64Url = (bytes: Uint8Array) =>
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+
+const textToBase64Url = (value: string) => bytesToBase64Url(textEncoder.encode(value));
+
+const pemToArrayBuffer = (pem: string) => {
+  const base64 = pem
+    .replace(/\\n/g, "\n")
+    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+    .replace(/-----END PRIVATE KEY-----/g, "")
+    .replace(/\s+/g, "");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+};
+
+let directoryTokenCache: { accessToken: string; expiresAt: number } | null = null;
+
+const getDirectoryAccessToken = async () => {
+  if (directoryTokenCache && directoryTokenCache.expiresAt > Date.now() + 60_000) {
+    return directoryTokenCache.accessToken;
+  }
+
+  const rawCredentials = Deno.env.get("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON");
+  if (!rawCredentials) throw new Error("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON is not configured.");
+
+  const adminEmail = Deno.env.get("GOOGLE_DIRECTORY_ADMIN_EMAIL");
+  if (!adminEmail) throw new Error("GOOGLE_DIRECTORY_ADMIN_EMAIL is not configured.");
+
+  const credentials = JSON.parse(rawCredentials) as GoogleServiceAccountCredentials;
+  if (!credentials.client_email || !credentials.private_key) {
+    throw new Error("GOOGLE_CHAT_SERVICE_ACCOUNT_JSON is missing client_email or private_key.");
+  }
+
+  const tokenUri = credentials.token_uri ?? "https://oauth2.googleapis.com/token";
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const claims = {
+    iss: credentials.client_email,
+    scope: "https://www.googleapis.com/auth/admin.directory.user.readonly",
+    sub: adminEmail,
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const signingInput = `${textToBase64Url(JSON.stringify(header))}.${textToBase64Url(JSON.stringify(claims))}`;
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToArrayBuffer(credentials.private_key),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, textEncoder.encode(signingInput));
+  const jwt = `${signingInput}.${bytesToBase64Url(new Uint8Array(signature))}`;
+
+  const tokenResponse = await fetch(tokenUri, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  const tokenBody = await tokenResponse.json().catch(() => ({})) as Record<string, unknown>;
+  if (!tokenResponse.ok || typeof tokenBody.access_token !== "string") {
+    throw new Error(`Directory API token request failed: ${tokenBody.error_description ?? tokenBody.error ?? tokenResponse.status}`);
+  }
+
+  directoryTokenCache = {
+    accessToken: tokenBody.access_token as string,
+    expiresAt: Date.now() + (Number(tokenBody.expires_in) || 3600) * 1000,
+  };
+  return directoryTokenCache.accessToken;
+};
+
+// Resolves a Chat user's resource name (e.g. "users/12345") to their real
+// Google Workspace primaryEmail via the Admin SDK Directory API.
+// Returns null and degrades gracefully if DWD is not configured or lookup fails.
+const resolveEmailFromDirectory = async (chatUserName: string): Promise<string | null> => {
+  if (!Deno.env.get("GOOGLE_DIRECTORY_ADMIN_EMAIL")) return null;
+
+  const userId = chatUserName.replace(/^users\//, "");
+  if (!userId || userId === "app") return null;
+
+  try {
+    const accessToken = await getDirectoryAccessToken();
+    const response = await fetch(
+      `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userId)}?projection=basic`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({})) as Record<string, unknown>;
+      console.error("[google-chat-agent-events] directory lookup failed", response.status, err);
+      return null;
+    }
+
+    const data = await response.json() as Record<string, unknown>;
+    return typeof data.primaryEmail === "string" ? data.primaryEmail.toLowerCase() : null;
+  } catch (err) {
+    console.error("[google-chat-agent-events] resolveEmailFromDirectory error", err);
+    return null;
+  }
+};
+
 const verifyGoogleChatRequest = async (req: Request) => {
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
@@ -250,14 +369,16 @@ const getMessageInput = (payload: GoogleChatEvent) => {
 const getWorkspaceId = (email: string | null, user: GoogleChatUser) =>
   cleanString(user.domainId) ?? email?.split("@")[1] ?? "google_chat";
 
-const isAllowedDomain = (email: string | null) => {
+// Google Chat event payloads do not include the user's email address.
+// domainId is the fallback identifier when email is absent (e.g. "10minuteschool.com").
+const isAllowedDomain = (email: string | null, domainId?: string | null) => {
   const allowedDomains = (Deno.env.get("GOOGLE_CHAT_ALLOWED_DOMAIN") ?? "")
     .split(",")
     .map((domain) => domain.trim().toLowerCase())
     .filter(Boolean);
 
   if (allowedDomains.length === 0) return true;
-  const domain = email?.split("@")[1];
+  const domain = email?.split("@")[1] ?? domainId?.toLowerCase();
   return Boolean(domain && allowedDomains.includes(domain));
 };
 
@@ -285,53 +406,89 @@ const resolveOrCreateUser = async (
   googleUser: GoogleChatUser,
   workspaceId: string,
 ) => {
-  const email = normalizeEmail(googleUser.email);
-  if (!email) {
-    throw new Error("Google Chat did not provide your email address to this app.");
+  // Google Chat event payloads never include user email — identify by Chat user name (e.g. "users/12345").
+  const externalUserId = cleanString(googleUser.name);
+  if (!externalUserId) throw new Error("Google Chat did not provide a user identifier.");
+
+  // Google Chat payloads never include email — resolve via Directory API (DWD).
+  // Falls back gracefully to null if GOOGLE_DIRECTORY_ADMIN_EMAIL is not configured.
+  const payloadEmail = normalizeEmail(googleUser.email);
+  const directoryEmail = payloadEmail ?? await resolveEmailFromDirectory(externalUserId);
+  const email = directoryEmail;
+
+  if (email && !isAllowedDomain(email)) {
+    throw new Error("This Google Chat app is currently limited to approved 10MS domains.");
   }
-  if (!isAllowedDomain(email)) {
+  if (!email && !isAllowedDomain(null, cleanString(googleUser.domainId))) {
     throw new Error("This Google Chat app is currently limited to approved 10MS domains.");
   }
 
-  const displayName = cleanString(googleUser.displayName) ?? email.split("@")[0];
+  const displayName = cleanString(googleUser.displayName) ?? externalUserId;
   const avatarUrl = cleanString(googleUser.avatarUrl);
 
-  const { data: existingProfile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .order("created_at", { ascending: false })
-    .limit(1)
+  // Primary lookup: by Chat identity — doesn't require email.
+  const { data: existingIdentity, error: identityLookupError } = await supabase
+    .from("external_chat_identities")
+    .select("user_id, email")
+    .eq("platform", "google_chat")
+    .eq("workspace_id", workspaceId)
+    .eq("external_user_id", externalUserId)
     .maybeSingle();
-  if (profileError) throw profileError;
+  if (identityLookupError) throw identityLookupError;
 
-  let userId = existingProfile?.id ?? null;
-  if (!userId) {
-    let page = 1;
-    const perPage = 200;
-    while (page <= 25 && !userId) {
-      const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-      if (error) throw error;
-      const match = data.users.find((user) => user.email?.toLowerCase() === email);
-      if (match) {
-        userId = match.id;
-        break;
+  let userId = existingIdentity?.user_id ?? null;
+  // Prefer freshly resolved email over whatever was stored previously.
+  const resolvedEmail = email ?? existingIdentity?.email ?? null;
+
+  if (userId) {
+    // Known user — refresh display name and avatar, then return.
+    const profilePayload: Record<string, unknown> = { id: userId, full_name: displayName, avatar_url: avatarUrl };
+    if (resolvedEmail) profilePayload.email = resolvedEmail;
+    const { error: upsertProfileError } = await supabase.from("profiles").upsert(profilePayload, { onConflict: "id" });
+    if (upsertProfileError) throw upsertProfileError;
+    await mirrorUpsert(mirror, "profiles", profilePayload, "id");
+    return { userId, email: resolvedEmail, displayName, avatarUrl, externalUserId };
+  }
+
+  // Unknown user — try to match an existing Supabase user by email.
+  if (resolvedEmail) {
+    const { data: existingProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", resolvedEmail)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (profileError) throw profileError;
+    userId = existingProfile?.id ?? null;
+
+    if (!userId) {
+      let page = 1;
+      const perPage = 200;
+      while (page <= 25 && !userId) {
+        const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+        if (error) throw error;
+        const match = data.users.find((u) => u.email?.toLowerCase() === resolvedEmail);
+        if (match) { userId = match.id; break; }
+        if (data.users.length < perPage) break;
+        page += 1;
       }
-      if (data.users.length < perPage) break;
-      page += 1;
     }
   }
 
   if (!userId) {
+    // Create a new Supabase auth user. Use a stable synthetic email when the real email is unavailable.
+    const chatNumericId = externalUserId.replace(/^users\//, "");
+    const authEmail = resolvedEmail ?? `gchat-${chatNumericId}@gchat-identity.10minuteschool.com`;
     const { data: created, error: createError } = await supabase.auth.admin.createUser({
-      email,
+      email: authEmail,
       email_confirm: true,
       user_metadata: {
         full_name: displayName,
         avatar_url: avatarUrl,
         provider: "google_chat",
         google_chat_workspace_id: workspaceId,
-        google_chat_user_id: googleUser.name,
+        google_chat_user_id: externalUserId,
       },
     });
     if (createError || !created.user) {
@@ -340,12 +497,8 @@ const resolveOrCreateUser = async (
     userId = created.user.id;
   }
 
-  const profilePayload = {
-    id: userId,
-    email,
-    full_name: displayName,
-    avatar_url: avatarUrl,
-  };
+  const profilePayload: Record<string, unknown> = { id: userId, full_name: displayName, avatar_url: avatarUrl };
+  if (resolvedEmail) profilePayload.email = resolvedEmail;
   const { error: upsertProfileError } = await supabase
     .from("profiles")
     .upsert(profilePayload, { onConflict: "id" });
@@ -355,9 +508,9 @@ const resolveOrCreateUser = async (
   const identityPayload = {
     platform: "google_chat",
     workspace_id: workspaceId,
-    external_user_id: cleanString(googleUser.name) ?? email,
+    external_user_id: externalUserId,
     user_id: userId,
-    email,
+    email: resolvedEmail,
     display_name: displayName,
     avatar_url: avatarUrl,
     metadata: {
@@ -371,13 +524,7 @@ const resolveOrCreateUser = async (
   if (identityError) throw identityError;
   await mirrorUpsert(mirror, "external_chat_identities", identityPayload, "platform,workspace_id,external_user_id");
 
-  return {
-    userId,
-    email,
-    displayName,
-    avatarUrl,
-    externalUserId: identityPayload.external_user_id,
-  };
+  return { userId, email: resolvedEmail, displayName, avatarUrl, externalUserId };
 };
 
 const getMostRecentThread = async (
@@ -789,10 +936,7 @@ serve(async (req) => {
     const input = getMessageInput(payload);
     const user = getEventUser(payload);
     const email = normalizeEmail(user.email);
-    if (!email) {
-      return jsonResponse({ text: "I need access to your Google Workspace email before I can create a Data Agent session." });
-    }
-    if (!isAllowedDomain(email)) {
+    if (!isAllowedDomain(email, cleanString(user.domainId))) {
       return jsonResponse({ text: "This Data Agent is currently limited to approved 10MS domains." });
     }
     if (!input) {
