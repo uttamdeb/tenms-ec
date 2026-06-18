@@ -52,6 +52,23 @@ type GoogleChatEvent = {
   message?: GoogleChatMessage;
 };
 
+// Google Workspace Add-on event envelope. The Chat app is deployed as a Workspace
+// add-on, so events arrive nested under `chat` with no top-level `type` field.
+type AddonChatEvent = {
+  commonEventObject?: Record<string, unknown>;
+  authorizationEventObject?: Record<string, unknown>;
+  chat?: {
+    user?: GoogleChatUser;
+    eventTime?: string;
+    messagePayload?: { message?: GoogleChatMessage; space?: GoogleChatSpace };
+    addedToSpacePayload?: { space?: GoogleChatSpace };
+    removedFromSpacePayload?: { space?: GoogleChatSpace };
+    appCommandPayload?: { message?: GoogleChatMessage; space?: GoogleChatSpace };
+  };
+};
+
+type RawChatRequest = AddonChatEvent & GoogleChatEvent;
+
 type GoogleJwk = JsonWebKey & {
   kid?: string;
   alg?: string;
@@ -915,6 +932,50 @@ const processGoogleChatMessage = async (payload: GoogleChatEvent, input: string)
   }
 };
 
+// True when the request is a Workspace Add-on event (nested under `chat`)
+// rather than a classic Chat app event.
+const isAddonEvent = (raw: RawChatRequest): boolean => Boolean(raw.chat || raw.commonEventObject);
+
+// Flattens both the Workspace Add-on envelope and the classic Chat event into the
+// internal GoogleChatEvent shape so all downstream code stays format-agnostic.
+const normalizeChatEvent = (raw: RawChatRequest): GoogleChatEvent => {
+  if (!raw.chat) return raw as GoogleChatEvent; // classic format already matches
+
+  const chat = raw.chat;
+  if (chat.messagePayload) {
+    return {
+      type: "MESSAGE",
+      eventTime: chat.eventTime,
+      user: chat.user,
+      space: chat.messagePayload.space ?? chat.messagePayload.message?.space,
+      message: chat.messagePayload.message,
+    };
+  }
+  if (chat.appCommandPayload) {
+    return {
+      type: "MESSAGE",
+      eventTime: chat.eventTime,
+      user: chat.user,
+      space: chat.appCommandPayload.space ?? chat.appCommandPayload.message?.space,
+      message: chat.appCommandPayload.message,
+    };
+  }
+  if (chat.addedToSpacePayload) {
+    return { type: "ADDED_TO_SPACE", eventTime: chat.eventTime, user: chat.user, space: chat.addedToSpacePayload.space };
+  }
+  if (chat.removedFromSpacePayload) {
+    return { type: "REMOVED_FROM_SPACE", eventTime: chat.eventTime, user: chat.user, space: chat.removedFromSpacePayload.space };
+  }
+  return { type: "unknown", eventTime: chat.eventTime, user: chat.user };
+};
+
+// A Workspace Add-on must reply with the hostAppDataAction envelope; classic
+// Chat apps use the plain { text } shape.
+const chatTextReply = (text: string, addon: boolean): Record<string, unknown> =>
+  addon
+    ? { hostAppDataAction: { chatDataAction: { createMessageAction: { message: { text } } } } }
+    : { text };
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -923,12 +984,12 @@ serve(async (req) => {
     const verified = await verifyGoogleChatRequest(req);
     if (!verified) return jsonResponse({ error: "invalid_google_chat_token" }, 401);
 
-    const rawBody = await req.text();
-    console.log("[google-chat-agent-events] RAW PAYLOAD", rawBody.slice(0, 4000));
-    const payload = JSON.parse(rawBody) as GoogleChatEvent;
+    const rawEvent = JSON.parse(await req.text()) as RawChatRequest;
+    const addon = isAddonEvent(rawEvent);
+    const payload = normalizeChatEvent(rawEvent);
 
     if (payload.type === "ADDED_TO_SPACE") {
-      return jsonResponse({ text: "10MS Data Agent is ready. DM me or ask a question with `ec` or `10ms` first." });
+      return jsonResponse(chatTextReply("10MS Data Agent is ready. DM me or ask a question with `ec` or `10ms` first.", addon));
     }
 
     if (payload.type !== "MESSAGE") {
@@ -939,10 +1000,10 @@ serve(async (req) => {
     const user = getEventUser(payload);
     const email = normalizeEmail(user.email);
     if (!isAllowedDomain(email, cleanString(user.domainId))) {
-      return jsonResponse({ text: "This Data Agent is currently limited to approved 10MS domains." });
+      return jsonResponse(chatTextReply("This Data Agent is currently limited to approved 10MS domains.", addon));
     }
     if (!input) {
-      return jsonResponse({ text: "Send me a data question. Example: `ec revenue today`" });
+      return jsonResponse(chatTextReply("Send me a data question. Example: `ec revenue today`", addon));
     }
 
     const edgeRuntime = (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void } }).EdgeRuntime;
@@ -955,10 +1016,10 @@ serve(async (req) => {
 
     const parsed = parseModeAndInput(input, "ec");
     if (isNewChatCommand(parsed.input)) {
-      return jsonResponse({ text: `Started a new ${parsed.mode.toUpperCase()} Data Agent chat.` });
+      return jsonResponse(chatTextReply(`Started a new ${parsed.mode.toUpperCase()} Data Agent chat.`, addon));
     }
 
-    return jsonResponse({ text: "Data Agent is checking the data..." });
+    return jsonResponse(chatTextReply("Data Agent is checking the data...", addon));
   } catch (error) {
     console.error("[google-chat-agent-events] request failed", error);
     return jsonResponse({ error: "Internal server error" }, 500);
